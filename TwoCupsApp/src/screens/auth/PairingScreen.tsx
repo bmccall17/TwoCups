@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -18,7 +18,10 @@ import { colors, spacing, typography, borderRadius } from '../../theme';
 type Mode = 'choice' | 'create' | 'join';
 
 export function PairingScreen() {
-  const { signOut } = useAuth();
+  const { signOut, coupleData } = useAuth();
+  // If user already has a pending couple, show the invite code
+  const existingInviteCode = coupleData?.status === 'pending' ? coupleData.inviteCode : null;
+
   const [mode, setMode] = useState<Mode>('choice');
   const [displayName, setDisplayName] = useState('');
   const [initial, setInitial] = useState('');
@@ -30,6 +33,14 @@ export function PairingScreen() {
     initial?: string;
     inviteCode?: string;
   }>({});
+
+  // Update state when coupleData loads with existing pending couple
+  useEffect(() => {
+    if (existingInviteCode) {
+      setMode('create');
+      setGeneratedCode(existingInviteCode);
+    }
+  }, [existingInviteCode]);
 
   const validate = () => {
     const newErrors: typeof errors = {};
@@ -184,15 +195,17 @@ export function PairingScreen() {
         </View>
       )}
 
-      <Button
-        title="Back"
-        onPress={() => {
-          setMode('choice');
-          setGeneratedCode(null);
-        }}
-        variant="outline"
-        style={styles.backButton}
-      />
+      {!existingInviteCode && (
+        <Button
+          title="Back"
+          onPress={() => {
+            setMode('choice');
+            setGeneratedCode(null);
+          }}
+          variant="outline"
+          style={styles.backButton}
+        />
+      )}
     </View>
   );
 

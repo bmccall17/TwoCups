@@ -16,11 +16,12 @@ import {
 } from 'firebase/auth';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { auth, db } from '../services/firebase/config';
-import { User } from '../types';
+import { User, Couple } from '../types';
 
 interface AuthContextType {
   user: FirebaseUser | null;
   userData: User | null;
+  coupleData: Couple | null;
   loading: boolean;
   signUp: (email: string, password: string) => Promise<UserCredential>;
   signIn: (email: string, password: string) => Promise<UserCredential>;
@@ -37,7 +38,42 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [userData, setUserData] = useState<User | null>(null);
+  const [coupleData, setCoupleData] = useState<Couple | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Listen for couple document changes when activeCoupleId changes
+  useEffect(() => {
+    if (!userData?.activeCoupleId) {
+      setCoupleData(null);
+      return;
+    }
+
+    const coupleDocRef = doc(db, 'couples', userData.activeCoupleId);
+    const unsubscribeCouple = onSnapshot(
+      coupleDocRef,
+      (docSnapshot) => {
+        if (docSnapshot.exists()) {
+          const data = docSnapshot.data();
+          setCoupleData({
+            partnerIds: data?.partnerIds ?? [],
+            status: data?.status ?? 'pending',
+            inviteCode: data?.inviteCode ?? '',
+            pointsPerAcknowledgment: data?.pointsPerAcknowledgment ?? 5,
+            collectiveCupLevel: data?.collectiveCupLevel ?? 0,
+            createdAt: data?.createdAt?.toDate() ?? new Date(),
+            lastActivityAt: data?.lastActivityAt?.toDate() ?? new Date(),
+          });
+        } else {
+          setCoupleData(null);
+        }
+      },
+      (error) => {
+        console.error('Error listening to couple document:', error);
+      }
+    );
+
+    return () => unsubscribeCouple();
+  }, [userData?.activeCoupleId]);
 
   useEffect(() => {
     // Listen for auth state changes
@@ -72,6 +108,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         return () => unsubscribeUser();
       } else {
         setUserData(null);
+        setCoupleData(null);
         setLoading(false);
       }
     });
@@ -100,6 +137,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       value={{
         user,
         userData,
+        coupleData,
         loading,
         signUp,
         signIn,

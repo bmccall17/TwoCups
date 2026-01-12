@@ -1,5 +1,18 @@
 # Two Cups - Ship Log
 
+## 2026-01-12 - Clean Baseline Plan Created
+
+**Status:** Plan documented, ready to execute
+**See:** `CLEAN_BASELINE_PLAN.md` for full instructions
+
+### Quick Summary
+- Current app works and is deployed to https://twocups-2026.web.app
+- Plan created to make a clean `TwoCupsApp_clean/` folder
+- Copy only source files, reinstall deps fresh
+- No code changes, just folder reorganization
+
+---
+
 ## 2026-01-12 - Expo Migration & Web Deployment
 
 ### Major Change: React Native → Expo
