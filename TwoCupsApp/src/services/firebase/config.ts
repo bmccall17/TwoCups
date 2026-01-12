@@ -1,5 +1,5 @@
 import { initializeApp, getApps } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { getAuth, browserLocalPersistence, setPersistence } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 // Firebase configuration from Firebase Console
@@ -19,6 +19,9 @@ const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0
 // Get Firebase services
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+
+// Set auth persistence to local (survives browser restart)
+setPersistence(auth, browserLocalPersistence).catch(console.error);
 
 // Helper: Get current user
 export const getCurrentUser = () => auth.currentUser;
