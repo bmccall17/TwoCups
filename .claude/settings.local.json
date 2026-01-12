@@ -10,7 +10,9 @@
       "Bash(npx tsc:*)",
       "Bash(npx create-expo-app@latest:*)",
       "Bash(npx expo install:*)",
-      "Bash(npx expo export:*)"
+      "Bash(npx expo export:*)",
+      "Bash(git rev-parse:*)",
+      "Bash(git add:*)"
     ]
   }
 }
