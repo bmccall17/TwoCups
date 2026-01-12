@@ -12,7 +12,8 @@
       "Bash(npx expo install:*)",
       "Bash(npx expo export:*)",
       "Bash(git rev-parse:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(npm run build:web:*)"
     ]
   }
 }
