@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx @react-native-community/cli init TwoCupsApp)",
+      "Bash(bd add:*)",
+      "Bash(npm install:*)",
+      "Bash(firebase:*)",
+      "Bash(npm run build:*)",
+      "Bash(java -version:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx create-expo-app@latest:*)",
+      "Bash(npx expo install:*)",
+      "Bash(npx expo export:*)"
+    ]
+  }
+}
