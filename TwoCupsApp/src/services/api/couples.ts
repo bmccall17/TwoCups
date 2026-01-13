@@ -6,6 +6,7 @@ import {
   writeBatch,
   Timestamp,
   arrayUnion,
+  collection,
 } from 'firebase/firestore';
 import { db, getCurrentUserId } from '../firebase/config';
 
@@ -89,8 +90,8 @@ export async function createCouple(params: CreateCoupleParams): Promise<CreateCo
     new Date(Date.now() + INVITE_CODE_EXPIRATION_HOURS * 60 * 60 * 1000)
   );
 
-  // Create couple document
-  const coupleDocRef = doc(db, 'couples', crypto.randomUUID());
+  // Create couple document with auto-generated ID
+  const coupleDocRef = doc(collection(db, 'couples'));
   const coupleId = coupleDocRef.id;
 
   const batch = writeBatch(db);
