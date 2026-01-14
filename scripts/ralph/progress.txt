@@ -550,3 +550,45 @@ Built a redesigned GemCounter component with enhanced visuals and animations:
 - animatedValue.addListener() for updating display count during animation
 
 ---
+
+## 2026-01-14 - US-033 (Gem Summary in Toast Notifications) ✅
+Thread: https://ampcode.com/threads/T-019bbd5f-a165-7229-9645-1ee4bae86528
+
+### What was implemented
+Enhanced toast notifications to prominently display gem rewards:
+
+1. **Extended ToastContext** - Added GemReward interface with amount, isBonus, and partnerAmount fields
+   - Updated showToast, showSuccess, showCelebration to accept optional gemReward parameter
+
+2. **Enhanced Toast component** - Added gem-specific styling and display:
+   - GemRewardDisplay sub-component shows gem icon + amount prominently
+   - Bonus badge (green "BONUS" tag) for request fulfillment
+   - Partner gems row showing "+X to partner" for acknowledgments
+   - Purple gem-themed toast styling when gem reward present
+
+3. **LogAttemptScreen integration**:
+   - Log attempt toast shows "Attempt logged!" with gem icon + amount
+   - Request fulfillment toast shows "Request fulfilled!" with BONUS badge
+
+4. **AcknowledgeScreen integration**:
+   - Acknowledge toast shows "+3 gems to you, +3 gems to partner"
+   - Updated celebration messages to show per-player gem amounts
+
+### Files changed
+- `TwoCupsApp/src/context/ToastContext.tsx` - Added GemReward interface and updated toast functions
+- `TwoCupsApp/src/components/common/Toast.tsx` - Added GemRewardDisplay component and gem styling
+- `TwoCupsApp/src/screens/LogAttemptScreen.tsx` - Pass gem reward info to toast
+- `TwoCupsApp/src/screens/AcknowledgeScreen.tsx` - Pass gem reward with partner amount to toast
+
+### Acceptance Criteria Checklist
+- [x] Log attempt toast shows gem icon + amount earned
+- [x] Request fulfillment toast shows bonus gem indicator
+- [x] Acknowledge toast shows '+3 gems to you, +3 gems to partner'
+- [x] Gem icon in toast matches app gem design (uses 💎 emoji)
+- [x] Toast styling emphasizes the gem reward (purple gem-themed border and background)
+
+### Learnings
+- Extending existing context interfaces is cleaner than creating new specialized hooks
+- Optional parameters with default undefined allow backward compatibility
+
+---
