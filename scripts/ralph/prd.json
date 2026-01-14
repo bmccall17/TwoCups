@@ -40,7 +40,7 @@
         "Clear visual indication of active filter"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "blockedReason": null
     },

@@ -267,3 +267,32 @@ Built the History screen showing all attempts in reverse chronological order:
 - Player name resolution pattern: fetch all partner names once on mount, display "You" for current user
 
 ---
+
+## 2026-01-14 - US-016 (History Filters - By Player) ✅
+Thread: https://ampcode.com/threads/T-019bbd18-c6bb-71b9-bca6-3db6f7cd35ac
+
+### What was implemented
+Added player filter chips to the History screen:
+
+1. **PlayerFilterType** - Type for filter options: all, byMe, forMe, byPartner, forPartner
+2. **Filter chips UI** - Horizontal scrollable chips with counts showing active filter
+3. **useMemo filtering** - Client-side filtering of loaded attempts by player
+4. **Filter counts** - Each chip shows the count of matching attempts
+5. **Visual indication** - Active filter chip has primary color background
+
+### Files changed
+- `TwoCupsApp/src/screens/HistoryScreen.tsx` - Added filter state, filtering logic, filter chips UI
+
+### Acceptance Criteria Checklist
+- [x] Filter chips: All, By Me, For Me, By Partner, For Partner
+- [x] Filters update in real-time (client-side filtering)
+- [x] Show count of matching attempts in each chip
+- [x] Filters persist during session (state resets on screen exit)
+- [x] Clear visual indication of active filter (primary color)
+
+### Learnings
+- Client-side filtering with useMemo works well for paginated data that's already loaded
+- Horizontal ScrollView works well for filter chips that may overflow
+- partnerId derived from coupleData.partnerIds by excluding current user
+
+---
