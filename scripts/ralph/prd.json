@@ -105,7 +105,7 @@
         "Option to view weekly or all-time comparison"
       ],
       "priority": 6,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "blockedReason": null
     },

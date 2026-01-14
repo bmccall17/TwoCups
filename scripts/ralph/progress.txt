@@ -676,3 +676,43 @@ Built milestone celebration system that shows a modal when users reach gem miles
 - Modal z-index handled automatically by React Native Modal component
 
 ---
+
+## 2026-01-14 - US-036 (Gem Leaderboard - Couple View) ✅
+Thread: https://ampcode.com/threads/T-019bbd6d-2fc3-7656-b16e-619e96ead8f7
+
+### What was implemented
+Built a fun comparison view showing gem earnings between partners:
+
+1. **GemLeaderboard component** - Visual comparison of gem counts between partners:
+   - Visual bar chart with animated bars comparing gem counts
+   - "Gem Champion" crown label (👑) for whoever is ahead
+   - Playful, encouraging messages based on standings
+   - Toggle between "This Week" and "All Time" views
+
+2. **getWeeklyGemStats API** - Queries attempts from current week to calculate:
+   - Gems from logging attempts (base 1 + 2 bonus for fulfilled requests)
+   - Gems from acknowledgments (given and received)
+   - Calculates for both players in parallel
+
+3. **HomeScreen integration** - GemLeaderboard appears below GemCounter
+
+### Files created/changed
+- `TwoCupsApp/src/components/common/GemLeaderboard.tsx` (new)
+- `TwoCupsApp/src/components/common/index.ts` - Export GemLeaderboard
+- `TwoCupsApp/src/screens/HomeScreen.tsx` - Added GemLeaderboard component
+- `TwoCupsApp/src/services/api/actions.ts` - Added getWeeklyGemStats function
+- `TwoCupsApp/src/services/api/index.ts` - Exported new function and type
+
+### Acceptance Criteria Checklist
+- [x] Section on HomeScreen showing both partners' gems
+- [x] Visual bar chart comparing gem counts (animated bars)
+- [x] Playful messaging (not competitive, encouraging)
+- [x] Shows who's 'ahead' with fun label ('👑 Gem Champion')
+- [x] Option to view weekly or all-time comparison (toggle buttons)
+
+### Learnings
+- usePlayerData hook exposes player IDs via `odI` property (typo for `id`)
+- Week starts on Monday (ISO standard) - dayOfWeek calculation subtracts appropriate days
+- Animated.interpolate for percentage-based widths requires useNativeDriver: false
+
+---
