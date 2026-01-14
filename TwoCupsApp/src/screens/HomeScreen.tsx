@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, RefreshControl } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { useMilestoneCelebration } from '../context/MilestoneCelebrationContext';
 import { usePlayerData } from '../hooks';
@@ -26,6 +26,13 @@ export function HomeScreen({
   const { myPlayer, partnerPlayer, partnerName, loading, error, refresh } = usePlayerData();
   const { checkMilestone } = useMilestoneCelebration();
   const previousGemCount = useRef<number | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = useCallback(() => {
+    setRefreshing(true);
+    refresh();
+    setTimeout(() => setRefreshing(false), 500);
+  }, [refresh]);
 
   useEffect(() => {
     if (myPlayer && previousGemCount.current !== null) {
@@ -55,7 +62,17 @@ export function HomeScreen({
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
+          />
+        }
+      >
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>Two Cups</Text>

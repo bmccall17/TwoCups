@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Dimensions,
+  RefreshControl,
 } from 'react-native';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../services/firebase/config';
@@ -51,6 +52,7 @@ export function LogAttemptScreen({ onGoBack }: LogAttemptScreenProps) {
   const [dailyAttemptsInfo, setDailyAttemptsInfo] = useState<DailyAttemptsInfo | null>(null);
   const [suggestionFilter, setSuggestionFilter] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
 
   const coupleId = userData?.activeCoupleId;
   const myUid = user?.uid;
@@ -96,11 +98,16 @@ export function LogAttemptScreen({ onGoBack }: LogAttemptScreenProps) {
     return unsubscribe;
   }, [coupleId, myUid]);
 
-  const handleRetry = () => {
+  const handleRetry = useCallback(() => {
     setError(null);
     setInitialLoading(true);
     setRefreshKey(k => k + 1);
-  };
+  }, []);
+
+  const handleRefresh = useCallback(() => {
+    setRefreshing(true);
+    setRefreshKey(k => k + 1);
+  }, []);
 
   // Fetch partner's suggestions (ways to fill their cup)
   useEffect(() => {
@@ -121,10 +128,12 @@ export function LogAttemptScreen({ onGoBack }: LogAttemptScreenProps) {
       })) as Suggestion[];
       setPartnerSuggestions(suggestions);
       setInitialLoading(false);
+      setRefreshing(false);
     }, (err) => {
       console.error('Error fetching suggestions:', err);
       setError(err.message || 'Failed to load data');
       setInitialLoading(false);
+      setRefreshing(false);
     });
 
     return unsubscribe;
@@ -238,7 +247,17 @@ export function LogAttemptScreen({ onGoBack }: LogAttemptScreenProps) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
+          />
+        }
+      >
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={onGoBack} style={styles.backButton}>

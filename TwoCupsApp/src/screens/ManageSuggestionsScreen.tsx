@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  RefreshControl,
 } from 'react-native';
 import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
 import { db } from '../services/firebase/config';
@@ -43,15 +44,21 @@ export function ManageSuggestionsScreen({ onGoBack }: ManageSuggestionsScreenPro
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
 
   const coupleId = userData?.activeCoupleId;
   const myUid = user?.uid;
 
-  const handleRetry = () => {
+  const handleRetry = useCallback(() => {
     setError(null);
     setInitialLoading(true);
     setRefreshKey(k => k + 1);
-  };
+  }, []);
+
+  const handleRefresh = useCallback(() => {
+    setRefreshing(true);
+    setRefreshKey(k => k + 1);
+  }, []);
 
   useEffect(() => {
     if (!coupleId || !myUid) return;
@@ -72,10 +79,12 @@ export function ManageSuggestionsScreen({ onGoBack }: ManageSuggestionsScreenPro
       })) as Suggestion[];
       setSuggestions(items);
       setInitialLoading(false);
+      setRefreshing(false);
     }, (err) => {
       console.error('Error fetching suggestions:', err);
       setError(err.message || 'Failed to load suggestions');
       setInitialLoading(false);
+      setRefreshing(false);
     });
 
     return unsubscribe;
@@ -164,7 +173,17 @@ export function ManageSuggestionsScreen({ onGoBack }: ManageSuggestionsScreenPro
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
+          />
+        }
+      >
         <View style={styles.header}>
           <TouchableOpacity onPress={onGoBack} style={styles.backButton}>
             <Text style={styles.backText}>← Back</Text>

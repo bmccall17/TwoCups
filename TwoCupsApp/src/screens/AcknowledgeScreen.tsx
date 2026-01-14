@@ -7,6 +7,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Dimensions,
+  RefreshControl,
 } from 'react-native';
 import { collection, query, where, onSnapshot, orderBy, doc, getDoc } from 'firebase/firestore';
 import { db } from '../services/firebase/config';
@@ -43,6 +44,7 @@ export function AcknowledgeScreen() {
     message: '',
   });
   const [refreshKey, setRefreshKey] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
 
   const coupleId = userData?.activeCoupleId;
   const myUid = user?.uid;
@@ -73,6 +75,11 @@ export function AcknowledgeScreen() {
     setRefreshKey(k => k + 1);
   }, []);
 
+  const handleRefresh = useCallback(() => {
+    setRefreshing(true);
+    setRefreshKey(k => k + 1);
+  }, []);
+
   // Fetch attempts for current user (as recipient)
   useEffect(() => {
     if (!coupleId || !myUid) return;
@@ -94,10 +101,12 @@ export function AcknowledgeScreen() {
       })) as Attempt[];
       setAttempts(attemptsList);
       setLoading(false);
+      setRefreshing(false);
     }, (err) => {
       console.error('Error fetching attempts:', err);
       setError(err.message || 'Failed to load attempts');
       setLoading(false);
+      setRefreshing(false);
     });
 
     return unsubscribe;
@@ -182,7 +191,17 @@ export function AcknowledgeScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
+          />
+        }
+      >
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>Acknowledge Attempts</Text>
