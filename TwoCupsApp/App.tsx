@@ -20,6 +20,7 @@ import { MakeRequestScreen } from './src/screens/MakeRequestScreen';
 import { ManageSuggestionsScreen } from './src/screens/ManageSuggestionsScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
 import { HistoryScreen } from './src/screens/HistoryScreen';
+import { GemHistoryScreen } from './src/screens/GemHistoryScreen';
 import { colors } from './src/theme';
 
 type AuthStackParamList = {
@@ -40,6 +41,7 @@ type AppStackParamList = {
   MainTabs: undefined;
   MakeRequest: undefined;
   ManageSuggestions: undefined;
+  GemHistory: undefined;
 };
 
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
@@ -112,6 +114,7 @@ function MainTabNavigator({ navigation }: { navigation: any }) {
             onNavigateToAcknowledge={() => tabNavigation.navigate('AcknowledgeTab')}
             onNavigateToMakeRequest={() => navigation.navigate('MakeRequest')}
             onNavigateToManageSuggestions={() => navigation.navigate('ManageSuggestions')}
+            onNavigateToGemHistory={() => navigation.navigate('GemHistory')}
           />
         )}
       </MainTab.Screen>
@@ -157,6 +160,7 @@ function MainTabNavigator({ navigation }: { navigation: any }) {
           <SettingsScreen
             onNavigateToManageSuggestions={() => navigation.navigate('ManageSuggestions')}
             onNavigateToMakeRequest={() => navigation.navigate('MakeRequest')}
+            onNavigateToGemHistory={() => navigation.navigate('GemHistory')}
           />
         )}
       </MainTab.Screen>
@@ -190,6 +194,13 @@ function AppNavigator() {
           <AppStack.Screen name="ManageSuggestions">
             {(props) => (
               <ManageSuggestionsScreen
+                onGoBack={() => props.navigation.goBack()}
+              />
+            )}
+          </AppStack.Screen>
+          <AppStack.Screen name="GemHistory">
+            {(props) => (
+              <GemHistoryScreen
                 onGoBack={() => props.navigation.goBack()}
               />
             )}

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Animated, Easing, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Animated, Easing, Dimensions, TouchableOpacity } from 'react-native';
 import { colors, spacing, typography, borderRadius, shadows } from '../../theme';
 import { getDailyGemEarnings, DailyGemEarnings } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -9,6 +9,7 @@ interface GemCounterProps {
   partnerGems: number;
   myName?: string;
   partnerName?: string;
+  onPress?: () => void;
 }
 
 interface AnimatedGemDisplayProps {
@@ -178,7 +179,7 @@ function getEncouragingMessage(total: number, fromLogging: number, fromAcknowled
   return "Nice start! Every gem counts! ✨";
 }
 
-export function GemCounter({ myGems, partnerGems, myName = 'Me', partnerName = 'Partner' }: GemCounterProps) {
+export function GemCounter({ myGems, partnerGems, myName = 'Me', partnerName = 'Partner', onPress }: GemCounterProps) {
   const { width } = Dimensions.get('window');
   const isSmallScreen = width < 360;
   const { userData } = useAuth();
@@ -204,8 +205,11 @@ export function GemCounter({ myGems, partnerGems, myName = 'Me', partnerName = '
     return () => clearInterval(interval);
   }, [coupleId, myGems]); // Re-fetch when myGems changes (indicates new activity)
 
+  const Wrapper = onPress ? TouchableOpacity : View;
+  const wrapperProps = onPress ? { onPress, activeOpacity: 0.8 } : {};
+
   return (
-    <View style={[styles.container, isSmallScreen && styles.containerSmall]}>
+    <Wrapper style={[styles.container, isSmallScreen && styles.containerSmall]} {...wrapperProps}>
       <View style={styles.header}>
         <Text style={styles.headerIcon}>✨</Text>
         <Text style={styles.headerText}>Gem Treasury</Text>
@@ -255,7 +259,11 @@ export function GemCounter({ myGems, partnerGems, myName = 'Me', partnerName = '
           )}
         </Text>
       </View>
-    </View>
+
+      {onPress && (
+        <Text style={styles.tapHint}>Tap for gem history</Text>
+      )}
+    </Wrapper>
   );
 }
 
@@ -413,5 +421,11 @@ const styles = StyleSheet.create({
     color: colors.primaryLight,
     textAlign: 'center',
     fontStyle: 'italic',
+  },
+  tapHint: {
+    ...typography.caption,
+    color: colors.textMuted,
+    textAlign: 'center',
+    marginTop: spacing.sm,
   },
 });

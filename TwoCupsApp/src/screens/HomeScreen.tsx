@@ -12,6 +12,7 @@ interface HomeScreenProps {
   onNavigateToAcknowledge?: () => void;
   onNavigateToMakeRequest?: () => void;
   onNavigateToManageSuggestions?: () => void;
+  onNavigateToGemHistory?: () => void;
 }
 
 export function HomeScreen({
@@ -19,6 +20,7 @@ export function HomeScreen({
   onNavigateToAcknowledge,
   onNavigateToMakeRequest,
   onNavigateToManageSuggestions,
+  onNavigateToGemHistory,
 }: HomeScreenProps) {
   const { userData, coupleData } = useAuth();
   const { myPlayer, partnerPlayer, partnerName, loading } = usePlayerData();
@@ -58,6 +60,7 @@ export function HomeScreen({
           partnerGems={partnerPlayer?.gemCount ?? 0}
           myName={myName}
           partnerName={partnerName}
+          onPress={onNavigateToGemHistory}
         />
 
         {/* Gem Leaderboard Section */}
