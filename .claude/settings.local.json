@@ -16,7 +16,8 @@
       "Bash(npm run build:web:*)",
       "Bash(bd ready:*)",
       "Bash(bd migrate:*)",
-      "Bash(wc:*)"
+      "Bash(wc:*)",
+      "Bash(npx firebase deploy:*)"
     ]
   }
 }

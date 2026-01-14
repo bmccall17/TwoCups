@@ -1,27 +1,27 @@
 {
-  "name": "TwoCups Sprint 3 - History & Analytics",
-  "branchName": "ralph/sprint-3-history",
-  "description": "Add history timeline view and basic analytics to help players review past attempts and see relationship insights",
+  "name": "TwoCups Sprint 5 - Gem Economy Polish",
+  "branchName": "ralph/sprint-5-gems",
+  "description": "Enhance gem visuals, animations, and displays to make earning gems feel more rewarding",
   "created": "2026-01-14",
 
   "decisions": {
-    "D1_DateRange": "Default to last 7 days, allow 30-day and all-time views",
-    "D2_Storage": "All data already in Firestore, just need query views",
-    "D3_Charts": "Keep simple - text stats first, charts can come later"
+    "D1_Animation": "Use React Native Reanimated or Animated API for smooth animations",
+    "D2_Design": "Gems should feel valuable - sparkle effects, satisfying sounds optional",
+    "D3_Scope": "Focus on visual polish, not changing gem economy rules"
   },
 
   "userStories": [
     {
-      "id": "US-015",
-      "title": "History Screen with Timeline View",
-      "description": "Create a new History screen accessible from Settings or a new tab showing all attempts in chronological order.",
+      "id": "US-031",
+      "title": "Gem Earned Animation",
+      "description": "Show animated gem(s) floating up when user earns gems from logging or acknowledging.",
       "acceptanceCriteria": [
-        "New History screen added to navigation (tab or settings link)",
-        "Displays all attempts for the couple in reverse chronological order",
-        "Each attempt card shows: action, description, who logged it, for whom, timestamp",
-        "Shows acknowledged status with visual indicator (checkmark or badge)",
-        "Paginated or infinite scroll for large datasets (load 20 at a time)",
-        "Pull-to-refresh functionality"
+        "When logging attempt: show +1 or +2 gem animation",
+        "When acknowledging: show +3 gem animation",
+        "Gems float upward and fade out",
+        "Animation plays near the action that triggered it",
+        "Animation duration ~1-2 seconds",
+        "Different gem colors for different amounts (optional)"
       ],
       "priority": 1,
       "passes": true,
@@ -29,15 +29,15 @@
       "blockedReason": null
     },
     {
-      "id": "US-016",
-      "title": "History Filters - By Player",
-      "description": "Add filter controls to view attempts logged by specific player or for specific player.",
+      "id": "US-032",
+      "title": "Gem Counter Component Redesign",
+      "description": "Improve the gem counter display on HomeScreen to be more visually appealing.",
       "acceptanceCriteria": [
-        "Filter chips/tabs: All, By Me, For Me, By Partner, For Partner",
-        "Filters update the query in real-time",
-        "Show count of matching attempts",
-        "Filters persist during session (reset on screen exit is OK)",
-        "Clear visual indication of active filter"
+        "Gem icon with count displayed prominently",
+        "Counter animates when value changes (count up effect)",
+        "Shows both players' gem counts clearly",
+        "Gem icon has subtle sparkle or glow effect",
+        "Responsive sizing for different screen sizes"
       ],
       "priority": 2,
       "passes": true,
@@ -45,14 +45,15 @@
       "blockedReason": null
     },
     {
-      "id": "US-017",
-      "title": "History Filters - By Status",
-      "description": "Add filter to show only pending or only acknowledged attempts.",
+      "id": "US-033",
+      "title": "Gem Summary in Toast Notifications",
+      "description": "Enhance toast notifications to prominently display gem rewards.",
       "acceptanceCriteria": [
-        "Filter options: All, Pending, Acknowledged",
-        "Can combine with player filters (e.g., 'For Me' + 'Pending')",
-        "Show count for each status",
-        "Pending attempts highlighted or styled differently"
+        "Log attempt toast shows gem icon + amount earned",
+        "Request fulfillment toast shows bonus gem indicator",
+        "Acknowledge toast shows '+3 gems to you, +3 gems to partner'",
+        "Gem icon in toast matches app gem design",
+        "Toast styling emphasizes the gem reward"
       ],
       "priority": 3,
       "passes": true,
@@ -60,14 +61,15 @@
       "blockedReason": null
     },
     {
-      "id": "US-018",
-      "title": "History Filters - By Category",
-      "description": "Add category filter to view attempts by love language category.",
+      "id": "US-034",
+      "title": "Daily Gem Earnings Summary",
+      "description": "Show how many gems user has earned today on HomeScreen.",
       "acceptanceCriteria": [
-        "Category filter dropdown or chip selector",
-        "Shows all 9 categories plus 'All' option",
-        "Only shows categories that have attempts (hide empty categories)",
-        "Can combine with other filters"
+        "Display 'Today: +X gems' below total gem count",
+        "Resets at midnight local time",
+        "Shows breakdown: 'X from logging, Y from acknowledgments' (optional)",
+        "Encouraging message if gems earned today (e.g., 'Great job!')",
+        "Different message if no gems yet today"
       ],
       "priority": 4,
       "passes": true,
@@ -75,14 +77,16 @@
       "blockedReason": null
     },
     {
-      "id": "US-019",
-      "title": "History Filters - By Date Range",
-      "description": "Add date range filter to view attempts from specific time periods.",
+      "id": "US-035",
+      "title": "Gem Milestone Celebrations",
+      "description": "Celebrate when users hit gem milestones (100, 500, 1000, etc.).",
       "acceptanceCriteria": [
-        "Quick filters: Today, Last 7 Days, Last 30 Days, All Time",
-        "Default to Last 7 Days",
-        "Shows date range in header",
-        "Efficient Firestore query using timestamp index"
+        "Detect when gem count crosses milestone threshold",
+        "Show celebration modal/overlay for milestones",
+        "Milestones: 100, 250, 500, 1000, 2500, 5000, 10000",
+        "Celebration includes milestone badge/icon",
+        "Message acknowledges achievement (e.g., '500 gems! You're crushing it!')",
+        "Only triggers once per milestone (track in user doc)"
       ],
       "priority": 5,
       "passes": true,
@@ -90,16 +94,15 @@
       "blockedReason": null
     },
     {
-      "id": "US-020",
-      "title": "Analytics Dashboard - Basic Stats",
-      "description": "Create analytics section showing key relationship metrics.",
+      "id": "US-036",
+      "title": "Gem Leaderboard (Couple View)",
+      "description": "Fun comparison view showing gem earnings between partners.",
       "acceptanceCriteria": [
-        "Analytics section on History screen or separate Analytics screen",
-        "Shows total attempts logged (by each player)",
-        "Shows total attempts acknowledged",
-        "Shows acknowledgment rate (acknowledged / total as percentage)",
-        "Shows total gems earned (each player)",
-        "Stats update based on active date range filter"
+        "Section on HomeScreen or Settings showing both partners' gems",
+        "Visual bar chart comparing gem counts",
+        "Playful messaging (not competitive, encouraging)",
+        "Shows who's 'ahead' with fun label (e.g., 'Gem Champion this week')",
+        "Option to view weekly or all-time comparison"
       ],
       "priority": 6,
       "passes": true,
@@ -107,33 +110,18 @@
       "blockedReason": null
     },
     {
-      "id": "US-021",
-      "title": "Analytics - Category Breakdown",
-      "description": "Show which love language categories are used most frequently.",
+      "id": "US-037",
+      "title": "Gem History Log",
+      "description": "Detailed log of all gem transactions for transparency.",
       "acceptanceCriteria": [
-        "List of categories with attempt counts",
-        "Sorted by frequency (most used first)",
-        "Shows percentage of total for each category",
-        "Visual bar or indicator showing relative usage",
-        "Separate breakdown for 'attempts I logged' vs 'attempts for me'"
+        "Accessible from Settings or gem counter tap",
+        "Shows each gem earning event with timestamp",
+        "Entry shows: amount, reason (logged attempt, acknowledged, request fulfilled)",
+        "Links to the relevant attempt if applicable",
+        "Paginated list (load 20 at a time)",
+        "Running total displayed"
       ],
       "priority": 7,
-      "passes": true,
-      "blocked": false,
-      "blockedReason": null
-    },
-    {
-      "id": "US-022",
-      "title": "Analytics - Request Stats",
-      "description": "Show request fulfillment statistics.",
-      "acceptanceCriteria": [
-        "Total requests made (each player)",
-        "Total requests fulfilled",
-        "Fulfillment rate percentage",
-        "Average time to fulfill request (if data available)",
-        "Most requested categories"
-      ],
-      "priority": 8,
       "passes": true,
       "blocked": false,
       "blockedReason": null

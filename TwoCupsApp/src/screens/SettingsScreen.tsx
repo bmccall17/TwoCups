@@ -8,11 +8,13 @@ import { colors, spacing, typography, borderRadius } from '../theme';
 interface SettingsScreenProps {
   onNavigateToManageSuggestions?: () => void;
   onNavigateToMakeRequest?: () => void;
+  onNavigateToGemHistory?: () => void;
 }
 
 export function SettingsScreen({
   onNavigateToManageSuggestions,
   onNavigateToMakeRequest,
+  onNavigateToGemHistory,
 }: SettingsScreenProps) {
   const { userData, coupleData, signOut } = useAuth();
   const { partnerName } = usePlayerData();
@@ -57,6 +59,13 @@ export function SettingsScreen({
         {/* Quick Actions */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
+          
+          <Button
+            title="💎 Gem History"
+            onPress={onNavigateToGemHistory ?? (() => {})}
+            style={styles.actionButton}
+            variant="outline"
+          />
           
           <Button
             title="💡 Manage My Suggestions"

@@ -6,15 +6,19 @@ import {
   SafeAreaView,
   ScrollView,
   TouchableOpacity,
+  Dimensions,
 } from 'react-native';
 import { collection, query, where, onSnapshot, orderBy, doc, getDoc } from 'firebase/firestore';
 import { db } from '../services/firebase/config';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useGemAnimation } from '../context/GemAnimationContext';
 import { acknowledgeAttempt } from '../services/api';
 import { Button, LoadingSpinner, EmptyState, CelebrationOverlay } from '../components/common';
 import { colors, spacing, typography, borderRadius } from '../theme';
 import { Attempt } from '../types';
+
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 type FilterType = 'pending' | 'acknowledged' | 'all';
 
@@ -27,6 +31,7 @@ interface CelebrationState {
 export function AcknowledgeScreen() {
   const { user, userData, coupleData } = useAuth();
   const { showSuccess, showError } = useToast();
+  const { showGemAnimation } = useGemAnimation();
   const [attempts, setAttempts] = useState<Attempt[]>([]);
   const [loading, setLoading] = useState(true);
   const [acknowledging, setAcknowledging] = useState<string | null>(null);
@@ -102,20 +107,28 @@ export function AcknowledgeScreen() {
         attemptId: attempt.id,
       });
 
+      showGemAnimation(result.gemsAwarded, undefined, SCREEN_HEIGHT / 3);
+
+      const gemsPerPlayer = result.gemsAwarded / 2;
+
       if (result.collectiveCupOverflow) {
         setCelebration({
           visible: true,
           message: 'Collective Cup Overflowed!',
-          subMessage: `+${result.gemsAwarded} gems! You both reached 100 together!`,
+          subMessage: `+${gemsPerPlayer} gems each! You both reached 100 together!`,
         });
       } else if (result.cupOverflow) {
         setCelebration({
           visible: true,
           message: 'Your Cup Overflowed!',
-          subMessage: `+${result.gemsAwarded} gems! Amazing work!`,
+          subMessage: `+${gemsPerPlayer} gems each! Amazing work!`,
         });
       } else {
-        showSuccess(`+${result.gemsAwarded} gems! Thank you for acknowledging.`);
+        showSuccess(
+          `Thank you for acknowledging!`,
+          undefined,
+          { amount: gemsPerPlayer, partnerAmount: gemsPerPlayer }
+        );
       }
     } catch (error: any) {
       showError(error.message || 'Failed to acknowledge');

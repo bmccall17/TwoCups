@@ -126,7 +126,7 @@ service cloud.firestore {
       match /suggestions/{suggestionId} {
         allow read: if isPartnerInCouple(coupleId);
         allow create: if isPartnerInCouple(coupleId)
-          && request.resource.data.createdByPlayerId == request.auth.uid;
+          && request.resource.data.byPlayerId == request.auth.uid;
         allow update, delete: if isPartnerInCouple(coupleId);
       }
     }

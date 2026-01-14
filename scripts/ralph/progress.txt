@@ -8,6 +8,7 @@ Started: 2026-01-14
 - Firestore security rules require `createdAt` field on user documents
 - Use `getDocs` + pagination (startAfter, limit) for History-style screens (not onSnapshot)
 - FlatList with onEndReached for infinite scroll pattern
+- Use GemAnimationContext's `showGemAnimation(amount, x?, y?)` to trigger gem earned animations from any screen
 
 ---
 
@@ -458,5 +459,306 @@ Added collapsible Request Stats section to the History screen showing request fu
 - Request documents have fulfilledAt timestamp when fulfilled, useful for calculating response time
 - Reused existing breakdownSection styles for consistent category list display
 - Using colors.primaryLight for request category bars to differentiate from attempt category bars
+
+---
+
+## 2026-01-14 - US-031 (Gem Earned Animation) ✅
+Thread: https://ampcode.com/threads/T-019bbd57-8ff9-7705-be91-35b30f705ab6
+
+### What was implemented
+Built animated gem particles that float upward when gems are earned:
+
+1. **GemAnimation component** - Renders animated gem particles with:
+   - Scale-in spring animation on spawn
+   - Float upward with translateY animation
+   - Fade out as gems rise
+   - Subtle rotation for visual interest
+   - "+N" badge showing gem amount
+
+2. **GemAnimationContext** - Context provider for triggering animations from anywhere in app:
+   - `showGemAnimation(amount, x?, y?)` function
+   - Renders GemAnimation as overlay on top of all content
+   - Auto-hides on animation complete
+
+3. **Integration with LogAttemptScreen** - Shows gem animation when:
+   - Logging attempt: +1 gem animation
+   - Fulfilling request: +2 gems animation
+
+4. **Integration with AcknowledgeScreen** - Shows +3 gem animation when acknowledging
+
+### Files created/changed
+- `TwoCupsApp/src/components/common/GemAnimation.tsx` (new)
+- `TwoCupsApp/src/context/GemAnimationContext.tsx` (new)
+- `TwoCupsApp/src/components/common/index.ts` - Added export
+- `TwoCupsApp/App.tsx` - Added GemAnimationProvider
+- `TwoCupsApp/src/screens/LogAttemptScreen.tsx` - Trigger gem animation on success
+- `TwoCupsApp/src/screens/AcknowledgeScreen.tsx` - Trigger gem animation on success
+
+### Acceptance Criteria Checklist
+- [x] When logging attempt: show +1 or +2 gem animation
+- [x] When acknowledging: show +3 gem animation
+- [x] Gems float upward and fade out
+- [x] Animation plays near the action that triggered it (center of screen)
+- [x] Animation duration ~1-2 seconds (1.2s float + fade)
+- [x] Different gem colors for different amounts (optional - using gem emoji)
+
+### Learnings
+- React Native Animated API works well for particle effects without needing Reanimated
+- Using a Context for animations allows triggering from anywhere without prop drilling
+- Spring animations with high tension give a nice "pop" effect on spawn
+- Stagger delays (100ms) between particles adds visual interest
+
+---
+
+## 2026-01-14 - US-032 (Gem Counter Component Redesign) ✅
+Thread: https://ampcode.com/threads/T-019bbd5c-286b-7504-9216-e2461c188769
+
+### What was implemented
+Built a redesigned GemCounter component with enhanced visuals and animations:
+
+1. **GemCounter component** - Prominent gem display at top of HomeScreen
+   - Shows both players' gem counts side-by-side with "Gem Treasury" header
+   - "Together" total row showing combined gems
+   - Purple gem-themed styling with border and shadow
+
+2. **AnimatedGemDisplay sub-component** - Per-player gem counter with:
+   - Count-up animation when value changes (interpolates from old to new value)
+   - Scale "pop" effect (1.2x scale then spring back) on change
+   - Active glow pulse that fades when gems change
+   - Continuous subtle sparkle animation (pulsing opacity behind gem icon)
+
+3. **Responsive sizing** - Detects small screens (<360px) and adjusts padding
+
+4. **HomeScreen integration** - Added GemCounter below header, removed gemCount from CupVisualization props
+
+### Files created/changed
+- `TwoCupsApp/src/components/common/GemCounter.tsx` (new)
+- `TwoCupsApp/src/components/common/index.ts` - Export GemCounter
+- `TwoCupsApp/src/screens/HomeScreen.tsx` - Added GemCounter, removed gemCount from cups
+
+### Acceptance Criteria Checklist
+- [x] Gem icon with count displayed prominently
+- [x] Counter animates when value changes (count up effect)
+- [x] Shows both players' gem counts clearly
+- [x] Gem icon has subtle sparkle or glow effect (continuous pulsing animation)
+- [x] Responsive sizing for different screen sizes
+
+### Learnings
+- Animated.parallel() combines multiple animations (count, scale, glow) cleanly
+- Animated.loop() for continuous sparkle effect without manual restart
+- useRef for previousCount to detect value changes and trigger animations
+- animatedValue.addListener() for updating display count during animation
+
+---
+
+## 2026-01-14 - US-033 (Gem Summary in Toast Notifications) ✅
+Thread: https://ampcode.com/threads/T-019bbd5f-a165-7229-9645-1ee4bae86528
+
+### What was implemented
+Enhanced toast notifications to prominently display gem rewards:
+
+1. **Extended ToastContext** - Added GemReward interface with amount, isBonus, and partnerAmount fields
+   - Updated showToast, showSuccess, showCelebration to accept optional gemReward parameter
+
+2. **Enhanced Toast component** - Added gem-specific styling and display:
+   - GemRewardDisplay sub-component shows gem icon + amount prominently
+   - Bonus badge (green "BONUS" tag) for request fulfillment
+   - Partner gems row showing "+X to partner" for acknowledgments
+   - Purple gem-themed toast styling when gem reward present
+
+3. **LogAttemptScreen integration**:
+   - Log attempt toast shows "Attempt logged!" with gem icon + amount
+   - Request fulfillment toast shows "Request fulfilled!" with BONUS badge
+
+4. **AcknowledgeScreen integration**:
+   - Acknowledge toast shows "+3 gems to you, +3 gems to partner"
+   - Updated celebration messages to show per-player gem amounts
+
+### Files changed
+- `TwoCupsApp/src/context/ToastContext.tsx` - Added GemReward interface and updated toast functions
+- `TwoCupsApp/src/components/common/Toast.tsx` - Added GemRewardDisplay component and gem styling
+- `TwoCupsApp/src/screens/LogAttemptScreen.tsx` - Pass gem reward info to toast
+- `TwoCupsApp/src/screens/AcknowledgeScreen.tsx` - Pass gem reward with partner amount to toast
+
+### Acceptance Criteria Checklist
+- [x] Log attempt toast shows gem icon + amount earned
+- [x] Request fulfillment toast shows bonus gem indicator
+- [x] Acknowledge toast shows '+3 gems to you, +3 gems to partner'
+- [x] Gem icon in toast matches app gem design (uses 💎 emoji)
+- [x] Toast styling emphasizes the gem reward (purple gem-themed border and background)
+
+### Learnings
+- Extending existing context interfaces is cleaner than creating new specialized hooks
+- Optional parameters with default undefined allow backward compatibility
+
+---
+
+## 2026-01-14 - US-034 (Daily Gem Earnings Summary) ✅
+Thread: https://ampcode.com/threads/T-019bbd62-cd97-7344-b4ec-b3d83e4b748a
+
+### What was implemented
+Added daily gem earnings summary to the GemCounter component on HomeScreen:
+
+1. **getDailyGemEarnings API** - Queries today's attempts and acknowledgments to calculate gems earned:
+   - Logging gems: base 1 per attempt + 2 bonus for fulfilled requests
+   - Acknowledgment gems: 3 when partner acknowledges your attempts + 3 when you acknowledge partner's attempts
+
+2. **GemCounter updates**:
+   - "Today: +X gems" display below total gem count
+   - Breakdown showing "X from logging, Y from acknowledgments" when gems earned
+   - Encouraging messages based on daily progress:
+     - 0 gems: "Log an attempt or acknowledge your partner to earn gems!"
+     - 1-4 gems: "Nice start! Every gem counts!"
+     - 5-9 gems: "Great job! You're building something special!"
+     - 10-19 gems: "Fantastic progress! Keep it up!"
+     - 20+ gems: "Amazing day! You're on fire!"
+   - Auto-refreshes every 30 seconds and when myGems changes
+
+### Files created/changed
+- `TwoCupsApp/src/services/api/actions.ts` - Added DailyGemEarnings type and getDailyGemEarnings function
+- `TwoCupsApp/src/services/api/index.ts` - Exported new function and type
+- `TwoCupsApp/src/components/common/GemCounter.tsx` - Added daily earnings section with breakdown and encouraging messages
+
+### Acceptance Criteria Checklist
+- [x] Display 'Today: +X gems' below total gem count
+- [x] Resets at midnight local time (uses startOfDay in query)
+- [x] Shows breakdown: 'X from logging, Y from acknowledgments' (when gems > 0)
+- [x] Encouraging message if gems earned today (tiered messages)
+- [x] Different message if no gems yet today
+
+### Learnings
+- Use userData.activeCoupleId instead of coupleData.id (Couple type doesn't include id field)
+- Querying acknowledgedAt >= startOfDay captures both given and received acknowledgment gems
+
+---
+
+## 2026-01-14 - US-035 (Gem Milestone Celebrations) ✅
+Thread: https://ampcode.com/threads/T-019bbd66-85b1-7286-98ab-91eb9008c143
+
+### What was implemented
+Built milestone celebration system that shows a modal when users reach gem milestones:
+
+1. **MilestoneCelebrationContext** - Context provider for detecting and displaying milestone celebrations:
+   - Checks when gem count crosses milestone thresholds (100, 250, 500, 1000, 2500, 5000, 10000)
+   - Tracks achieved milestones in player document to prevent re-triggering
+   - Uses Firestore `arrayUnion` to persist achieved milestones
+
+2. **CelebrationModal component** - Animated celebration overlay:
+   - Spring animation on modal appearance
+   - Pulsing sparkle animations around the modal
+   - Milestone-specific badge emoji (💎, ✨, 🏆, 👑, 🌟, 💫, 🎆)
+   - Milestone-specific congratulation messages
+   - Purple gem-themed styling with glow effects
+
+3. **Player type updated** - Added optional `achievedMilestones: number[]` field
+
+4. **HomeScreen integration** - Monitors gem count changes and triggers milestone check
+
+### Files created/changed
+- `TwoCupsApp/src/context/MilestoneCelebrationContext.tsx` (new)
+- `TwoCupsApp/src/types/index.ts` - Added achievedMilestones to Player interface
+- `TwoCupsApp/src/hooks/usePlayerData.ts` - Include achievedMilestones in PlayerWithId
+- `TwoCupsApp/src/screens/HomeScreen.tsx` - Added milestone checking on gem changes
+- `TwoCupsApp/App.tsx` - Added MilestoneCelebrationProvider
+
+### Acceptance Criteria Checklist
+- [x] Detect when gem count crosses milestone threshold
+- [x] Show celebration modal/overlay for milestones
+- [x] Milestones: 100, 250, 500, 1000, 2500, 5000, 10000
+- [x] Celebration includes milestone badge/icon
+- [x] Message acknowledges achievement (e.g., '500 gems! You're crushing it!')
+- [x] Only triggers once per milestone (track in user doc via achievedMilestones array)
+
+### Learnings
+- Use `arrayUnion` from Firestore to atomically add milestones without read-modify-write
+- Track previous gem count with useRef to only trigger on increases
+- Spring animations with high tension give satisfying "pop" effects for celebrations
+- Modal z-index handled automatically by React Native Modal component
+
+---
+
+## 2026-01-14 - US-036 (Gem Leaderboard - Couple View) ✅
+Thread: https://ampcode.com/threads/T-019bbd6d-2fc3-7656-b16e-619e96ead8f7
+
+### What was implemented
+Built a fun comparison view showing gem earnings between partners:
+
+1. **GemLeaderboard component** - Visual comparison of gem counts between partners:
+   - Visual bar chart with animated bars comparing gem counts
+   - "Gem Champion" crown label (👑) for whoever is ahead
+   - Playful, encouraging messages based on standings
+   - Toggle between "This Week" and "All Time" views
+
+2. **getWeeklyGemStats API** - Queries attempts from current week to calculate:
+   - Gems from logging attempts (base 1 + 2 bonus for fulfilled requests)
+   - Gems from acknowledgments (given and received)
+   - Calculates for both players in parallel
+
+3. **HomeScreen integration** - GemLeaderboard appears below GemCounter
+
+### Files created/changed
+- `TwoCupsApp/src/components/common/GemLeaderboard.tsx` (new)
+- `TwoCupsApp/src/components/common/index.ts` - Export GemLeaderboard
+- `TwoCupsApp/src/screens/HomeScreen.tsx` - Added GemLeaderboard component
+- `TwoCupsApp/src/services/api/actions.ts` - Added getWeeklyGemStats function
+- `TwoCupsApp/src/services/api/index.ts` - Exported new function and type
+
+### Acceptance Criteria Checklist
+- [x] Section on HomeScreen showing both partners' gems
+- [x] Visual bar chart comparing gem counts (animated bars)
+- [x] Playful messaging (not competitive, encouraging)
+- [x] Shows who's 'ahead' with fun label ('👑 Gem Champion')
+- [x] Option to view weekly or all-time comparison (toggle buttons)
+
+### Learnings
+- usePlayerData hook exposes player IDs via `odI` property (typo for `id`)
+- Week starts on Monday (ISO standard) - dayOfWeek calculation subtracts appropriate days
+- Animated.interpolate for percentage-based widths requires useNativeDriver: false
+
+---
+
+## 2026-01-14 - US-037 (Gem History Log) ✅
+Thread: https://ampcode.com/threads/T-019bbd73-2a40-71f1-82f3-3485043667bc
+
+### What was implemented
+Built a detailed gem history log showing all gem transactions:
+
+1. **GemHistoryScreen component** - Paginated FlatList showing gem earning events:
+   - Queries attempts where user is either `byPlayerId` or `forPlayerId`
+   - Processes attempts into gem entries: logged attempt (+1), fulfilled request bonus (+2), acknowledgments (+3)
+   - Each entry shows: amount, reason icon, timestamp, related action
+   - Running total displayed at top
+   - Infinite scroll with 20 items per page
+
+2. **Navigation access**:
+   - From Settings → "💎 Gem History" button
+   - From HomeScreen → Tap the GemCounter component
+   - GemCounter shows "Tap for gem history" hint when tappable
+
+3. **Visual design**:
+   - Gem-themed purple accents
+   - Color-coded reason badges (primary for logging, success for fulfillment, gem color for acknowledgments)
+   - Icon badges for each transaction type (💝 logged, 🎯 fulfilled, ✅ you acknowledged, 🤝 partner acknowledged)
+
+### Files created/changed
+- `TwoCupsApp/src/screens/GemHistoryScreen.tsx` (new)
+- `TwoCupsApp/App.tsx` - Added GemHistory route and navigation wiring
+- `TwoCupsApp/src/screens/SettingsScreen.tsx` - Added Gem History navigation button
+- `TwoCupsApp/src/screens/HomeScreen.tsx` - Added onNavigateToGemHistory prop
+- `TwoCupsApp/src/components/common/GemCounter.tsx` - Made tappable with onPress prop
+
+### Acceptance Criteria Checklist
+- [x] Accessible from Settings or gem counter tap
+- [x] Shows each gem earning event with timestamp
+- [x] Entry shows: amount, reason (logged attempt, acknowledged, request fulfilled)
+- [x] Links to the relevant attempt if applicable (shows action in entry)
+- [x] Paginated list (load 20 at a time)
+- [x] Running total displayed
+
+### Learnings
+- Firestore `or()` query allows combining `byPlayerId` and `forPlayerId` filters
+- Process attempts into multiple gem entries (one attempt can generate 1-3 gem entries)
+- TouchableOpacity wrapper with conditional rendering works well for making components optionally tappable
+- EmptyState component uses `subtitle` not `message` prop
 
 ---

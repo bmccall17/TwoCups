@@ -2,20 +2,27 @@ import React, { createContext, useContext, useState, useCallback, useRef } from 
 
 export type ToastType = 'success' | 'error' | 'info' | 'celebration';
 
+export interface GemReward {
+  amount: number;
+  isBonus?: boolean;
+  partnerAmount?: number;
+}
+
 export interface ToastMessage {
   id: string;
   type: ToastType;
   message: string;
   duration?: number;
+  gemReward?: GemReward;
 }
 
 interface ToastContextType {
   toasts: ToastMessage[];
-  showToast: (message: string, type?: ToastType, duration?: number) => void;
-  showSuccess: (message: string, duration?: number) => void;
+  showToast: (message: string, type?: ToastType, duration?: number, gemReward?: GemReward) => void;
+  showSuccess: (message: string, duration?: number, gemReward?: GemReward) => void;
   showError: (message: string, duration?: number) => void;
   showInfo: (message: string, duration?: number) => void;
-  showCelebration: (message: string, duration?: number) => void;
+  showCelebration: (message: string, duration?: number, gemReward?: GemReward) => void;
   hideToast: (id: string) => void;
 }
 
@@ -29,9 +36,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     setToasts(prev => prev.filter(toast => toast.id !== id));
   }, []);
 
-  const showToast = useCallback((message: string, type: ToastType = 'info', duration = 3000) => {
+  const showToast = useCallback((message: string, type: ToastType = 'info', duration = 3000, gemReward?: GemReward) => {
     const id = `toast-${++toastIdRef.current}`;
-    const toast: ToastMessage = { id, type, message, duration };
+    const toast: ToastMessage = { id, type, message, duration, gemReward };
     
     setToasts(prev => [...prev, toast]);
 
@@ -42,8 +49,8 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     }
   }, [hideToast]);
 
-  const showSuccess = useCallback((message: string, duration?: number) => {
-    showToast(message, 'success', duration);
+  const showSuccess = useCallback((message: string, duration?: number, gemReward?: GemReward) => {
+    showToast(message, 'success', duration, gemReward);
   }, [showToast]);
 
   const showError = useCallback((message: string, duration?: number) => {
@@ -54,8 +61,8 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     showToast(message, 'info', duration);
   }, [showToast]);
 
-  const showCelebration = useCallback((message: string, duration = 4000) => {
-    showToast(message, 'celebration', duration);
+  const showCelebration = useCallback((message: string, duration = 4000, gemReward?: GemReward) => {
+    showToast(message, 'celebration', duration, gemReward);
   }, [showToast]);
 
   return (

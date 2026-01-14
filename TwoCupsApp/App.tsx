@@ -8,6 +8,8 @@ import { Text, View, StyleSheet } from 'react-native';
 
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { ToastProvider } from './src/context/ToastContext';
+import { GemAnimationProvider } from './src/context/GemAnimationContext';
+import { MilestoneCelebrationProvider } from './src/context/MilestoneCelebrationContext';
 import { LoadingSpinner, InstallAppModal, ToastContainer } from './src/components/common';
 import { useInstallPrompt } from './src/hooks';
 import { LoginScreen, SignUpScreen, PairingScreen } from './src/screens/auth';
@@ -18,6 +20,7 @@ import { MakeRequestScreen } from './src/screens/MakeRequestScreen';
 import { ManageSuggestionsScreen } from './src/screens/ManageSuggestionsScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
 import { HistoryScreen } from './src/screens/HistoryScreen';
+import { GemHistoryScreen } from './src/screens/GemHistoryScreen';
 import { colors } from './src/theme';
 
 type AuthStackParamList = {
@@ -38,6 +41,7 @@ type AppStackParamList = {
   MainTabs: undefined;
   MakeRequest: undefined;
   ManageSuggestions: undefined;
+  GemHistory: undefined;
 };
 
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
@@ -110,6 +114,7 @@ function MainTabNavigator({ navigation }: { navigation: any }) {
             onNavigateToAcknowledge={() => tabNavigation.navigate('AcknowledgeTab')}
             onNavigateToMakeRequest={() => navigation.navigate('MakeRequest')}
             onNavigateToManageSuggestions={() => navigation.navigate('ManageSuggestions')}
+            onNavigateToGemHistory={() => navigation.navigate('GemHistory')}
           />
         )}
       </MainTab.Screen>
@@ -155,6 +160,7 @@ function MainTabNavigator({ navigation }: { navigation: any }) {
           <SettingsScreen
             onNavigateToManageSuggestions={() => navigation.navigate('ManageSuggestions')}
             onNavigateToMakeRequest={() => navigation.navigate('MakeRequest')}
+            onNavigateToGemHistory={() => navigation.navigate('GemHistory')}
           />
         )}
       </MainTab.Screen>
@@ -188,6 +194,13 @@ function AppNavigator() {
           <AppStack.Screen name="ManageSuggestions">
             {(props) => (
               <ManageSuggestionsScreen
+                onGoBack={() => props.navigation.goBack()}
+              />
+            )}
+          </AppStack.Screen>
+          <AppStack.Screen name="GemHistory">
+            {(props) => (
+              <GemHistoryScreen
                 onGoBack={() => props.navigation.goBack()}
               />
             )}
@@ -239,12 +252,16 @@ export default function App() {
     <SafeAreaProvider>
       <StatusBar style="light" backgroundColor={colors.background} />
       <ToastProvider>
-        <AuthProvider>
-          <NavigationContainer>
-            <RootNavigator />
-          </NavigationContainer>
-          <ToastContainer />
-        </AuthProvider>
+        <GemAnimationProvider>
+          <AuthProvider>
+            <MilestoneCelebrationProvider>
+              <NavigationContainer>
+                <RootNavigator />
+              </NavigationContainer>
+              <ToastContainer />
+            </MilestoneCelebrationProvider>
+          </AuthProvider>
+        </GemAnimationProvider>
       </ToastProvider>
     </SafeAreaProvider>
   );

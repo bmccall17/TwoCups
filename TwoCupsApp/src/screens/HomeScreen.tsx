@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
 import { useAuth } from '../context/AuthContext';
+import { useMilestoneCelebration } from '../context/MilestoneCelebrationContext';
 import { usePlayerData } from '../hooks';
-import { Button, LoadingSpinner } from '../components/common';
+import { Button, LoadingSpinner, GemCounter, GemLeaderboard } from '../components/common';
 import { CupVisualization } from '../components/cups';
 import { colors, spacing, typography, borderRadius } from '../theme';
 
@@ -11,6 +12,7 @@ interface HomeScreenProps {
   onNavigateToAcknowledge?: () => void;
   onNavigateToMakeRequest?: () => void;
   onNavigateToManageSuggestions?: () => void;
+  onNavigateToGemHistory?: () => void;
 }
 
 export function HomeScreen({
@@ -18,9 +20,23 @@ export function HomeScreen({
   onNavigateToAcknowledge,
   onNavigateToMakeRequest,
   onNavigateToManageSuggestions,
+  onNavigateToGemHistory,
 }: HomeScreenProps) {
   const { userData, coupleData } = useAuth();
   const { myPlayer, partnerPlayer, partnerName, loading } = usePlayerData();
+  const { checkMilestone } = useMilestoneCelebration();
+  const previousGemCount = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (myPlayer && previousGemCount.current !== null) {
+      if (myPlayer.gemCount > previousGemCount.current) {
+        checkMilestone(myPlayer.gemCount, myPlayer.achievedMilestones);
+      }
+    }
+    if (myPlayer) {
+      previousGemCount.current = myPlayer.gemCount;
+    }
+  }, [myPlayer?.gemCount, myPlayer?.achievedMilestones, checkMilestone]);
 
   if (loading) {
     return <LoadingSpinner message="Loading..." />;
@@ -38,6 +54,27 @@ export function HomeScreen({
           <Text style={styles.subtitle}>Welcome, {myName}!</Text>
         </View>
 
+        {/* Gem Counter Section */}
+        <GemCounter
+          myGems={myPlayer?.gemCount ?? 0}
+          partnerGems={partnerPlayer?.gemCount ?? 0}
+          myName={myName}
+          partnerName={partnerName}
+          onPress={onNavigateToGemHistory}
+        />
+
+        {/* Gem Leaderboard Section */}
+        {myPlayer && partnerPlayer && (
+          <GemLeaderboard
+            myGems={myPlayer.gemCount}
+            partnerGems={partnerPlayer.gemCount}
+            myPlayerId={myPlayer.odI}
+            partnerPlayerId={partnerPlayer.odI}
+            myName={myName}
+            partnerName={partnerName}
+          />
+        )}
+
         {/* Cups Section */}
         <View style={styles.cupsSection}>
           {/* Individual Cups Row */}
@@ -46,14 +83,12 @@ export function HomeScreen({
               level={myPlayer?.cupLevel ?? 0}
               label="My Cup"
               sublabel={myName}
-              gemCount={myPlayer?.gemCount ?? 0}
               size="large"
             />
             <CupVisualization
               level={partnerPlayer?.cupLevel ?? 0}
               label="Partner's Cup"
               sublabel={partnerName}
-              gemCount={partnerPlayer?.gemCount ?? 0}
               size="large"
             />
           </View>

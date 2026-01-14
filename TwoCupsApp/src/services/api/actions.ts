@@ -43,6 +43,12 @@ export interface DailyAttemptsInfo {
   limit: number;
 }
 
+export interface DailyGemEarnings {
+  total: number;
+  fromLogging: number;
+  fromAcknowledgments: number;
+}
+
 export interface ActiveRequestsInfo {
   count: number;
   remaining: number;
@@ -88,6 +94,65 @@ export async function getDailyAttemptsInfo(coupleId: string): Promise<DailyAttem
     count,
     remaining: Math.max(0, DAILY_ATTEMPT_LIMIT - count),
     limit: DAILY_ATTEMPT_LIMIT,
+  };
+}
+
+/**
+ * Get today's gem earnings for the current user
+ */
+export async function getDailyGemEarnings(coupleId: string): Promise<DailyGemEarnings> {
+  const uid = getCurrentUserId();
+  if (!uid) {
+    throw new Error('Must be logged in');
+  }
+
+  const startOfDay = new Date();
+  startOfDay.setHours(0, 0, 0, 0);
+  const startOfDayTimestamp = Timestamp.fromDate(startOfDay);
+
+  // Get attempts logged by user today (for logging gems)
+  const attemptsRef = collection(db, 'couples', coupleId, 'attempts');
+  const attemptsQuery = query(
+    attemptsRef,
+    where('byPlayerId', '==', uid),
+    where('createdAt', '>=', startOfDayTimestamp)
+  );
+  const attemptsSnapshot = await getDocs(attemptsQuery);
+
+  // Calculate logging gems: base 1 + 2 bonus if fulfilled request
+  let fromLogging = 0;
+  attemptsSnapshot.docs.forEach((doc) => {
+    const data = doc.data();
+    fromLogging += BASE_GEM_AWARD;
+    if (data.fulfilledRequestId) {
+      fromLogging += REQUEST_FULFILLMENT_BONUS;
+    }
+  });
+
+  // Get attempts for user that were acknowledged today (for acknowledgment gems received)
+  const ackedAttemptsQuery = query(
+    attemptsRef,
+    where('forPlayerId', '==', uid),
+    where('acknowledgedAt', '>=', startOfDayTimestamp)
+  );
+  const ackedAttemptsSnapshot = await getDocs(ackedAttemptsQuery);
+  const fromAcknowledgmentsReceived = ackedAttemptsSnapshot.size * ACK_GEM_AWARD;
+
+  // Get attempts logged by user that were acknowledged today (for acknowledgment gems given)
+  const myAckedAttemptsQuery = query(
+    attemptsRef,
+    where('byPlayerId', '==', uid),
+    where('acknowledgedAt', '>=', startOfDayTimestamp)
+  );
+  const myAckedAttemptsSnapshot = await getDocs(myAckedAttemptsQuery);
+  const fromAcknowledgmentsGiven = myAckedAttemptsSnapshot.size * ACK_GEM_AWARD;
+
+  const fromAcknowledgments = fromAcknowledgmentsReceived + fromAcknowledgmentsGiven;
+
+  return {
+    total: fromLogging + fromAcknowledgments,
+    fromLogging,
+    fromAcknowledgments,
   };
 }
 
@@ -427,6 +492,75 @@ export async function deleteRequest(params: {
   await deleteDoc(requestDocRef);
 
   return { success: true };
+}
+
+export interface WeeklyGemStats {
+  myWeeklyGems: number;
+  partnerWeeklyGems: number;
+}
+
+/**
+ * Get weekly gem earnings for both players in a couple
+ */
+export async function getWeeklyGemStats(
+  coupleId: string,
+  myPlayerId: string,
+  partnerPlayerId: string
+): Promise<WeeklyGemStats> {
+  const startOfWeek = new Date();
+  const dayOfWeek = startOfWeek.getDay();
+  const daysToSubtract = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+  startOfWeek.setDate(startOfWeek.getDate() - daysToSubtract);
+  startOfWeek.setHours(0, 0, 0, 0);
+  const startOfWeekTimestamp = Timestamp.fromDate(startOfWeek);
+
+  const attemptsRef = collection(db, 'couples', coupleId, 'attempts');
+
+  const calculateGemsForPlayer = async (playerId: string): Promise<number> => {
+    let totalGems = 0;
+
+    const loggedAttemptsQuery = query(
+      attemptsRef,
+      where('byPlayerId', '==', playerId),
+      where('createdAt', '>=', startOfWeekTimestamp)
+    );
+    const loggedSnapshot = await getDocs(loggedAttemptsQuery);
+    loggedSnapshot.docs.forEach((doc) => {
+      const data = doc.data();
+      totalGems += BASE_GEM_AWARD;
+      if (data.fulfilledRequestId) {
+        totalGems += REQUEST_FULFILLMENT_BONUS;
+      }
+    });
+
+    const ackedForPlayerQuery = query(
+      attemptsRef,
+      where('forPlayerId', '==', playerId),
+      where('acknowledgedAt', '>=', startOfWeekTimestamp)
+    );
+    const ackedForSnapshot = await getDocs(ackedForPlayerQuery);
+    totalGems += ackedForSnapshot.size * ACK_GEM_AWARD;
+
+    const ackedByPlayerQuery = query(
+      attemptsRef,
+      where('byPlayerId', '==', playerId),
+      where('acknowledgedAt', '>=', startOfWeekTimestamp)
+    );
+    const ackedBySnapshot = await getDocs(ackedByPlayerQuery);
+    totalGems += ackedBySnapshot.size * ACK_GEM_AWARD;
+
+    return totalGems;
+  };
+
+  const [myWeeklyGems, partnerWeeklyGems] = await Promise.all([
+    calculateGemsForPlayer(myPlayerId),
+    calculateGemsForPlayer(partnerPlayerId),
+  ]);
+
+  return {
+    myWeeklyGems,
+    partnerWeeklyGems,
+  };
 }
 
 /**
