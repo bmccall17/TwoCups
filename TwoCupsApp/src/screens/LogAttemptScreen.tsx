@@ -11,7 +11,7 @@ import {
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../services/firebase/config';
 import { useAuth } from '../context/AuthContext';
-import { logAttempt } from '../services/api';
+import { logAttempt, getDailyAttemptsInfo, DailyAttemptsInfo } from '../services/api';
 import { Button, TextInput } from '../components/common';
 import { colors, spacing, typography, borderRadius } from '../theme';
 import { Request, Suggestion } from '../types';
@@ -40,11 +40,28 @@ export function LogAttemptScreen({ onGoBack }: LogAttemptScreenProps) {
   const [loading, setLoading] = useState(false);
   const [partnerRequests, setPartnerRequests] = useState<Request[]>([]);
   const [partnerSuggestions, setPartnerSuggestions] = useState<Suggestion[]>([]);
+  const [dailyAttemptsInfo, setDailyAttemptsInfo] = useState<DailyAttemptsInfo | null>(null);
 
   const coupleId = userData?.activeCoupleId;
   const myUid = user?.uid;
   const partnerIds = coupleData?.partnerIds ?? [];
   const partnerId = partnerIds.find(id => id !== myUid);
+
+  // Fetch daily attempts info
+  useEffect(() => {
+    if (!coupleId) return;
+
+    const fetchDailyInfo = async () => {
+      try {
+        const info = await getDailyAttemptsInfo(coupleId);
+        setDailyAttemptsInfo(info);
+      } catch (error) {
+        console.error('Error fetching daily attempts info:', error);
+      }
+    };
+
+    fetchDailyInfo();
+  }, [coupleId]);
 
   // Fetch partner's active requests (requests they made for ME to fulfill)
   useEffect(() => {
@@ -114,6 +131,11 @@ export function LogAttemptScreen({ onGoBack }: LogAttemptScreenProps) {
       return;
     }
 
+    if (dailyAttemptsInfo && dailyAttemptsInfo.remaining <= 0) {
+      Alert.alert('Daily Limit Reached', `You've logged ${dailyAttemptsInfo.limit} attempts today. Try again tomorrow!`);
+      return;
+    }
+
     setLoading(true);
     try {
       const result = await logAttempt({
@@ -124,13 +146,25 @@ export function LogAttemptScreen({ onGoBack }: LogAttemptScreenProps) {
         category: category || undefined,
       });
 
+      const remainingAfter = dailyAttemptsInfo ? dailyAttemptsInfo.remaining - 1 : null;
       const gemMessage = result.fulfilledRequestId
         ? `+${result.gemsAwarded} gems! 🎉 Request fulfilled!`
         : `+${result.gemsAwarded} gem!`;
 
-      Alert.alert('Success', gemMessage, [
+      const remainingMessage = remainingAfter !== null ? `\n${remainingAfter} attempts remaining today.` : '';
+
+      Alert.alert('Success', gemMessage + remainingMessage, [
         { text: 'OK', onPress: onGoBack }
       ]);
+
+      // Update daily attempts info
+      if (dailyAttemptsInfo) {
+        setDailyAttemptsInfo({
+          ...dailyAttemptsInfo,
+          count: dailyAttemptsInfo.count + 1,
+          remaining: dailyAttemptsInfo.remaining - 1,
+        });
+      }
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Failed to log attempt');
     } finally {
@@ -148,6 +182,23 @@ export function LogAttemptScreen({ onGoBack }: LogAttemptScreenProps) {
           </TouchableOpacity>
           <Text style={styles.title}>Log an Attempt</Text>
           <Text style={styles.subtitle}>What did you do for your partner?</Text>
+          
+          {/* Daily attempts counter */}
+          {dailyAttemptsInfo && (
+            <View style={[
+              styles.attemptsCounter,
+              dailyAttemptsInfo.remaining === 0 && styles.attemptsCounterLimit
+            ]}>
+              <Text style={[
+                styles.attemptsCounterText,
+                dailyAttemptsInfo.remaining === 0 && styles.attemptsCounterTextLimit
+              ]}>
+                {dailyAttemptsInfo.remaining === 0
+                  ? `Daily limit reached (${dailyAttemptsInfo.limit}/${dailyAttemptsInfo.limit})`
+                  : `${dailyAttemptsInfo.remaining} of ${dailyAttemptsInfo.limit} attempts remaining today`}
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* Partner's Requests */}
@@ -235,10 +286,10 @@ export function LogAttemptScreen({ onGoBack }: LogAttemptScreenProps) {
 
         {/* Submit Button */}
         <Button
-          title="Log Attempt 💝"
+          title={dailyAttemptsInfo?.remaining === 0 ? "Daily Limit Reached" : "Log Attempt 💝"}
           onPress={handleSubmit}
           loading={loading}
-          disabled={!action.trim()}
+          disabled={!action.trim() || dailyAttemptsInfo?.remaining === 0}
           style={styles.submitButton}
         />
       </ScrollView>
@@ -273,6 +324,28 @@ const styles = StyleSheet.create({
   subtitle: {
     ...typography.body,
     color: colors.textSecondary,
+  },
+  attemptsCounter: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    marginTop: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  attemptsCounterLimit: {
+    backgroundColor: colors.error + '20',
+    borderColor: colors.error,
+  },
+  attemptsCounterText: {
+    ...typography.bodySmall,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+  attemptsCounterTextLimit: {
+    color: colors.error,
+    fontWeight: '600',
   },
   requestsSection: {
     marginBottom: spacing.xl,

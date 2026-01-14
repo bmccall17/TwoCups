@@ -20,6 +20,7 @@ const REQUEST_FULFILLMENT_BONUS = 2;
 const ACK_GEM_AWARD = 3;
 const ACK_COLLECTIVE_CUP_AWARD = 3;
 const DEFAULT_POINTS_PER_ACK = 5;
+const DAILY_ATTEMPT_LIMIT = 20;
 
 export interface LogAttemptParams {
   coupleId: string;
@@ -35,6 +36,12 @@ export interface LogAttemptResult {
   fulfilledRequestId?: string;
 }
 
+export interface DailyAttemptsInfo {
+  count: number;
+  remaining: number;
+  limit: number;
+}
+
 export interface AcknowledgeAttemptParams {
   coupleId: string;
   attemptId: string;
@@ -45,6 +52,36 @@ export interface AcknowledgeAttemptResult {
   gemsAwarded: number;
   cupOverflow: boolean;
   collectiveCupOverflow: boolean;
+}
+
+/**
+ * Get today's attempts count for the current user
+ */
+export async function getDailyAttemptsInfo(coupleId: string): Promise<DailyAttemptsInfo> {
+  const uid = getCurrentUserId();
+  if (!uid) {
+    throw new Error('Must be logged in');
+  }
+
+  const startOfDay = new Date();
+  startOfDay.setHours(0, 0, 0, 0);
+  const startOfDayTimestamp = Timestamp.fromDate(startOfDay);
+
+  const attemptsRef = collection(db, 'couples', coupleId, 'attempts');
+  const q = query(
+    attemptsRef,
+    where('byPlayerId', '==', uid),
+    where('createdAt', '>=', startOfDayTimestamp)
+  );
+
+  const snapshot = await getDocs(q);
+  const count = snapshot.size;
+
+  return {
+    count,
+    remaining: Math.max(0, DAILY_ATTEMPT_LIMIT - count),
+    limit: DAILY_ATTEMPT_LIMIT,
+  };
 }
 
 /**
@@ -66,6 +103,12 @@ export async function logAttempt(params: LogAttemptParams): Promise<LogAttemptRe
   // Prevent self-attempts
   if (forPlayerId === uid) {
     throw new Error('Cannot log attempt for yourself');
+  }
+
+  // Check daily limit
+  const dailyInfo = await getDailyAttemptsInfo(coupleId);
+  if (dailyInfo.remaining <= 0) {
+    throw new Error(`Daily limit reached (${DAILY_ATTEMPT_LIMIT} attempts per day). Try again tomorrow!`);
   }
 
   const coupleDocRef = doc(db, 'couples', coupleId);
