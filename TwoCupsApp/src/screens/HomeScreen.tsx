@@ -19,7 +19,7 @@ export function HomeScreen({
   onNavigateToMakeRequest,
   onNavigateToManageSuggestions,
 }: HomeScreenProps) {
-  const { userData, coupleData, signOut } = useAuth();
+  const { userData, coupleData } = useAuth();
   const { myPlayer, partnerPlayer, partnerName, loading } = usePlayerData();
 
   if (loading) {
@@ -70,9 +70,9 @@ export function HomeScreen({
           </View>
         </View>
 
-        {/* Action Buttons */}
+        {/* Quick Actions */}
         <View style={styles.actionsSection}>
-          <Text style={styles.sectionTitle}>Actions</Text>
+          <Text style={styles.sectionTitle}>Quick Actions</Text>
           
           <Button
             title="📝 Make a Request"
@@ -80,35 +80,12 @@ export function HomeScreen({
             style={styles.actionButton}
             variant="outline"
           />
-          
-          <Button
-            title="💝 Log an Attempt"
-            onPress={onNavigateToLogAttempt ?? (() => {})}
-            style={styles.actionButton}
-          />
-          
-          <Button
-            title="✅ Acknowledge Attempts"
-            onPress={onNavigateToAcknowledge ?? (() => {})}
-            style={styles.actionButton}
-            variant="secondary"
-          />
 
           <Button
             title="💡 Manage My Suggestions"
             onPress={onNavigateToManageSuggestions ?? (() => {})}
             style={styles.actionButton}
             variant="outline"
-          />
-        </View>
-
-        {/* Sign Out */}
-        <View style={styles.footer}>
-          <Button
-            title="Sign Out"
-            onPress={signOut}
-            variant="outline"
-            style={styles.signOutButton}
           />
         </View>
       </ScrollView>
@@ -162,12 +139,5 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     marginBottom: spacing.sm,
-  },
-  footer: {
-    marginTop: 'auto',
-    paddingTop: spacing.lg,
-  },
-  signOutButton: {
-    opacity: 0.7,
   },
 });

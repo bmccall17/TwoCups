@@ -11,6 +11,7 @@
     "deploy": "npm run build:web && cd .. && firebase deploy --only hosting"
   },
   "dependencies": {
+    "@react-navigation/bottom-tabs": "^7.9.1",
     "@react-navigation/native": "^7.1.26",
     "@react-navigation/native-stack": "^7.9.0",
     "expo": "~54.0.31",
