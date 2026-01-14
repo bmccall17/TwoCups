@@ -10,7 +10,8 @@ import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { ToastProvider } from './src/context/ToastContext';
 import { GemAnimationProvider } from './src/context/GemAnimationContext';
 import { MilestoneCelebrationProvider } from './src/context/MilestoneCelebrationContext';
-import { LoadingSpinner, InstallAppModal, ToastContainer } from './src/components/common';
+import { NetworkProvider } from './src/context/NetworkContext';
+import { LoadingSpinner, InstallAppModal, ToastContainer, OfflineBanner } from './src/components/common';
 import { useInstallPrompt } from './src/hooks';
 import { LoginScreen, SignUpScreen, PairingScreen } from './src/screens/auth';
 import { HomeScreen } from './src/screens/HomeScreen';
@@ -254,12 +255,15 @@ export default function App() {
       <ToastProvider>
         <GemAnimationProvider>
           <AuthProvider>
-            <MilestoneCelebrationProvider>
-              <NavigationContainer>
-                <RootNavigator />
-              </NavigationContainer>
-              <ToastContainer />
-            </MilestoneCelebrationProvider>
+            <NetworkProvider>
+              <MilestoneCelebrationProvider>
+                <NavigationContainer>
+                  <RootNavigator />
+                  <OfflineBanner />
+                </NavigationContainer>
+                <ToastContainer />
+              </MilestoneCelebrationProvider>
+            </NetworkProvider>
           </AuthProvider>
         </GemAnimationProvider>
       </ToastProvider>

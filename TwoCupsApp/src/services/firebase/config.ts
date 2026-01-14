@@ -1,6 +1,13 @@
 import { initializeApp, getApps } from 'firebase/app';
 import { getAuth, browserLocalPersistence, setPersistence } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { 
+  getFirestore, 
+  enableIndexedDbPersistence,
+  CACHE_SIZE_UNLIMITED,
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager
+} from 'firebase/firestore';
 
 // Firebase configuration from Firebase Console
 const firebaseConfig = {
@@ -18,7 +25,22 @@ const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0
 
 // Get Firebase services
 export const auth = getAuth(app);
-export const db = getFirestore(app);
+
+// Initialize Firestore with persistence enabled
+// Use the new persistent cache API (Firebase v9.8+)
+export const db = (() => {
+  try {
+    // Try to initialize with persistent cache (new API)
+    return initializeFirestore(app, {
+      localCache: persistentLocalCache({
+        tabManager: persistentMultipleTabManager()
+      })
+    });
+  } catch (e) {
+    // If already initialized (e.g., hot reload), get the existing instance
+    return getFirestore(app);
+  }
+})();
 
 // Set auth persistence to local (survives browser restart)
 setPersistence(auth, browserLocalPersistence).catch(console.error);
