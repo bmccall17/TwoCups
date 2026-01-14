@@ -6,14 +6,13 @@ import {
   SafeAreaView,
   ScrollView,
   TouchableOpacity,
-  ActivityIndicator,
 } from 'react-native';
 import { collection, query, where, onSnapshot, orderBy, doc, getDoc } from 'firebase/firestore';
 import { db } from '../services/firebase/config';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { acknowledgeAttempt } from '../services/api';
-import { Button } from '../components/common';
+import { Button, LoadingSpinner, EmptyState } from '../components/common';
 import { colors, spacing, typography, borderRadius } from '../theme';
 import { Attempt } from '../types';
 
@@ -177,22 +176,19 @@ export function AcknowledgeScreen() {
 
         {/* Attempts List */}
         {loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={colors.primary} />
-          </View>
+          <LoadingSpinner message="Loading attempts..." />
         ) : filteredAttempts.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>
-              {filter === 'pending'
+          <EmptyState
+            icon="✨"
+            title={
+              filter === 'pending'
                 ? 'No pending attempts to acknowledge'
                 : filter === 'acknowledged'
                 ? 'No acknowledged attempts yet'
-                : 'No attempts yet'}
-            </Text>
-            <Text style={styles.emptyHint}>
-              When your partner logs something they did for you, it will appear here.
-            </Text>
-          </View>
+                : 'No attempts yet'
+            }
+            subtitle="Your partner can log attempts for you!"
+          />
         ) : (
           <View style={styles.attemptsList}>
             {filteredAttempts.map((attempt) => (
@@ -299,29 +295,7 @@ const styles = StyleSheet.create({
     color: colors.textOnPrimary,
     fontWeight: '600',
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: spacing.xxl,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: spacing.xxl,
-  },
-  emptyText: {
-    ...typography.body,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginBottom: spacing.sm,
-  },
-  emptyHint: {
-    ...typography.caption,
-    color: colors.textMuted,
-    textAlign: 'center',
-  },
+  
   attemptsList: {
     gap: spacing.md,
   },

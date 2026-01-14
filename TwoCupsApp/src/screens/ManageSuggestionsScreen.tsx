@@ -12,7 +12,7 @@ import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestor
 import { db } from '../services/firebase/config';
 import { useAuth } from '../context/AuthContext';
 import { createSuggestion, deleteSuggestion } from '../services/api';
-import { Button, TextInput } from '../components/common';
+import { Button, TextInput, LoadingSpinner, EmptyState } from '../components/common';
 import { colors, spacing, typography, borderRadius } from '../theme';
 import { Suggestion } from '../types';
 
@@ -39,6 +39,7 @@ export function ManageSuggestionsScreen({ onGoBack }: ManageSuggestionsScreenPro
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
 
   const coupleId = userData?.activeCoupleId;
@@ -61,6 +62,7 @@ export function ManageSuggestionsScreen({ onGoBack }: ManageSuggestionsScreenPro
         createdAt: doc.data().createdAt?.toDate() ?? new Date(),
       })) as Suggestion[];
       setSuggestions(items);
+      setInitialLoading(false);
     });
 
     return unsubscribe;
@@ -129,6 +131,10 @@ export function ManageSuggestionsScreen({ onGoBack }: ManageSuggestionsScreenPro
     acc[cat].push(suggestion);
     return acc;
   }, {} as Record<string, Suggestion[]>);
+
+  if (initialLoading) {
+    return <LoadingSpinner message="Loading suggestions..." />;
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -225,11 +231,11 @@ export function ManageSuggestionsScreen({ onGoBack }: ManageSuggestionsScreenPro
           </Text>
 
           {suggestions.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyText}>
-                No suggestions yet. Add some to help your partner know what fills your cup!
-              </Text>
-            </View>
+            <EmptyState
+              icon="💝"
+              title="No suggestions yet"
+              subtitle="Add ways your partner can fill your cup!"
+            />
           ) : (
             Object.entries(groupedSuggestions).map(([cat, items]) => (
               <View key={cat} style={styles.categoryGroup}>
@@ -357,17 +363,6 @@ const styles = StyleSheet.create({
     ...typography.h3,
     color: colors.textPrimary,
     marginBottom: spacing.md,
-  },
-  emptyState: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.md,
-    padding: spacing.lg,
-    alignItems: 'center',
-  },
-  emptyText: {
-    ...typography.body,
-    color: colors.textSecondary,
-    textAlign: 'center',
   },
   categoryGroup: {
     marginBottom: spacing.lg,

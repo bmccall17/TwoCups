@@ -12,7 +12,7 @@ import { db } from '../services/firebase/config';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { logAttempt, getDailyAttemptsInfo, DailyAttemptsInfo } from '../services/api';
-import { Button, TextInput } from '../components/common';
+import { Button, TextInput, LoadingSpinner, EmptyState } from '../components/common';
 import { colors, spacing, typography, borderRadius } from '../theme';
 import { Request, Suggestion } from '../types';
 
@@ -39,6 +39,7 @@ export function LogAttemptScreen({ onGoBack }: LogAttemptScreenProps) {
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [partnerRequests, setPartnerRequests] = useState<Request[]>([]);
   const [partnerSuggestions, setPartnerSuggestions] = useState<Suggestion[]>([]);
   const [dailyAttemptsInfo, setDailyAttemptsInfo] = useState<DailyAttemptsInfo | null>(null);
@@ -104,6 +105,7 @@ export function LogAttemptScreen({ onGoBack }: LogAttemptScreenProps) {
         createdAt: doc.data().createdAt?.toDate() ?? new Date(),
       })) as Suggestion[];
       setPartnerSuggestions(suggestions);
+      setInitialLoading(false);
     });
 
     return unsubscribe;
@@ -172,6 +174,10 @@ export function LogAttemptScreen({ onGoBack }: LogAttemptScreenProps) {
     }
   };
 
+  if (initialLoading) {
+    return <LoadingSpinner message="Loading suggestions..." />;
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -222,11 +228,11 @@ export function LogAttemptScreen({ onGoBack }: LogAttemptScreenProps) {
         )}
 
         {/* Partner's Suggestions */}
-        {partnerSuggestions.length > 0 && (
-          <View style={styles.suggestionsSection}>
-            <Text style={styles.sectionTitle}>Partner's Suggestions</Text>
-            <Text style={styles.suggestionHint}>Ways to fill your partner's cup</Text>
-            {partnerSuggestions.map((suggestion) => (
+        <View style={styles.suggestionsSection}>
+          <Text style={styles.sectionTitle}>Partner's Suggestions</Text>
+          <Text style={styles.suggestionHint}>Ways to fill your partner's cup</Text>
+          {partnerSuggestions.length > 0 ? (
+            partnerSuggestions.map((suggestion) => (
               <TouchableOpacity
                 key={suggestion.id}
                 style={styles.suggestionCard}
@@ -237,9 +243,15 @@ export function LogAttemptScreen({ onGoBack }: LogAttemptScreenProps) {
                   <Text style={styles.suggestionCategory}>{suggestion.category}</Text>
                 )}
               </TouchableOpacity>
-            ))}
-          </View>
-        )}
+            ))
+          ) : (
+            <EmptyState
+              icon="💡"
+              title="Your partner hasn't added suggestions yet"
+              subtitle="You can still log custom attempts!"
+            />
+          )}
+        </View>
 
         {/* Action Input */}
         <View style={styles.formSection}>

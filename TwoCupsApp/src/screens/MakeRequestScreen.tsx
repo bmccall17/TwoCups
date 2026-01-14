@@ -7,12 +7,15 @@ import {
   ScrollView,
   TouchableOpacity,
 } from 'react-native';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { db } from '../services/firebase/config';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { createRequest, getActiveRequestsInfo } from '../services/api';
 import type { ActiveRequestsInfo } from '../services/api';
-import { Button, TextInput } from '../components/common';
+import { Button, TextInput, LoadingSpinner, EmptyState } from '../components/common';
 import { colors, spacing, typography, borderRadius } from '../theme';
+import { Request } from '../types';
 
 const CATEGORIES = [
   'Words of Affirmation',
@@ -37,7 +40,9 @@ export function MakeRequestScreen({ onGoBack }: MakeRequestScreenProps) {
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [requestsInfo, setRequestsInfo] = useState<ActiveRequestsInfo | null>(null);
+  const [activeRequests, setActiveRequests] = useState<Request[]>([]);
 
   const coupleId = userData?.activeCoupleId;
   const myUid = user?.uid;
@@ -57,6 +62,29 @@ export function MakeRequestScreen({ onGoBack }: MakeRequestScreenProps) {
   useEffect(() => {
     loadRequestsInfo();
   }, [loadRequestsInfo]);
+
+  useEffect(() => {
+    if (!coupleId || !myUid) return;
+
+    const requestsRef = collection(db, 'couples', coupleId, 'requests');
+    const q = query(
+      requestsRef,
+      where('byPlayerId', '==', myUid),
+      where('status', '==', 'active')
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const requests: Request[] = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate() ?? new Date(),
+      })) as Request[];
+      setActiveRequests(requests);
+      setInitialLoading(false);
+    });
+
+    return unsubscribe;
+  }, [coupleId, myUid]);
 
   const atLimit = requestsInfo !== null && requestsInfo.remaining <= 0;
 
@@ -90,6 +118,10 @@ export function MakeRequestScreen({ onGoBack }: MakeRequestScreenProps) {
       setLoading(false);
     }
   };
+
+  if (initialLoading) {
+    return <LoadingSpinner message="Loading requests..." />;
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -172,6 +204,27 @@ export function MakeRequestScreen({ onGoBack }: MakeRequestScreenProps) {
           disabled={!action.trim() || atLimit}
           style={styles.submitButton}
         />
+
+        {/* Active Requests List */}
+        <View style={styles.activeRequestsSection}>
+          <Text style={styles.sectionTitle}>Your Active Requests</Text>
+          {activeRequests.length > 0 ? (
+            activeRequests.map((request) => (
+              <View key={request.id} style={styles.requestCard}>
+                <Text style={styles.requestAction}>{request.action}</Text>
+                {request.category && (
+                  <Text style={styles.requestCategory}>{request.category}</Text>
+                )}
+              </View>
+            ))
+          ) : (
+            <EmptyState
+              icon="📝"
+              title="No active requests"
+              subtitle="Create one above!"
+            />
+          )}
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -270,5 +323,31 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     marginTop: 'auto',
+  },
+  activeRequestsSection: {
+    marginTop: spacing.xl,
+  },
+  sectionTitle: {
+    ...typography.h3,
+    color: colors.textPrimary,
+    marginBottom: spacing.md,
+  },
+  requestCard: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    marginBottom: spacing.sm,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.primary,
+  },
+  requestAction: {
+    ...typography.body,
+    color: colors.textPrimary,
+    fontWeight: '600',
+  },
+  requestCategory: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    marginTop: spacing.xs,
   },
 });
