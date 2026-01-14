@@ -40,7 +40,7 @@
         "Responsive sizing for different screen sizes"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "blockedReason": null
     },

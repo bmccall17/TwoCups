@@ -509,3 +509,44 @@ Built animated gem particles that float upward when gems are earned:
 - Stagger delays (100ms) between particles adds visual interest
 
 ---
+
+## 2026-01-14 - US-032 (Gem Counter Component Redesign) ✅
+Thread: https://ampcode.com/threads/T-019bbd5c-286b-7504-9216-e2461c188769
+
+### What was implemented
+Built a redesigned GemCounter component with enhanced visuals and animations:
+
+1. **GemCounter component** - Prominent gem display at top of HomeScreen
+   - Shows both players' gem counts side-by-side with "Gem Treasury" header
+   - "Together" total row showing combined gems
+   - Purple gem-themed styling with border and shadow
+
+2. **AnimatedGemDisplay sub-component** - Per-player gem counter with:
+   - Count-up animation when value changes (interpolates from old to new value)
+   - Scale "pop" effect (1.2x scale then spring back) on change
+   - Active glow pulse that fades when gems change
+   - Continuous subtle sparkle animation (pulsing opacity behind gem icon)
+
+3. **Responsive sizing** - Detects small screens (<360px) and adjusts padding
+
+4. **HomeScreen integration** - Added GemCounter below header, removed gemCount from CupVisualization props
+
+### Files created/changed
+- `TwoCupsApp/src/components/common/GemCounter.tsx` (new)
+- `TwoCupsApp/src/components/common/index.ts` - Export GemCounter
+- `TwoCupsApp/src/screens/HomeScreen.tsx` - Added GemCounter, removed gemCount from cups
+
+### Acceptance Criteria Checklist
+- [x] Gem icon with count displayed prominently
+- [x] Counter animates when value changes (count up effect)
+- [x] Shows both players' gem counts clearly
+- [x] Gem icon has subtle sparkle or glow effect (continuous pulsing animation)
+- [x] Responsive sizing for different screen sizes
+
+### Learnings
+- Animated.parallel() combines multiple animations (count, scale, glow) cleanly
+- Animated.loop() for continuous sparkle effect without manual restart
+- useRef for previousCount to detect value changes and trigger animations
+- animatedValue.addListener() for updating display count during animation
+
+---
