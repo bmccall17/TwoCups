@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,8 @@ import {
   FlatList,
   RefreshControl,
   ActivityIndicator,
+  TouchableOpacity,
+  ScrollView,
 } from 'react-native';
 import {
   collection,
@@ -28,6 +30,8 @@ import { Attempt } from '../types';
 
 const PAGE_SIZE = 20;
 
+type PlayerFilterType = 'all' | 'byMe' | 'forMe' | 'byPartner' | 'forPartner';
+
 export function HistoryScreen() {
   const { user, userData, coupleData } = useAuth();
   const [attempts, setAttempts] = useState<Attempt[]>([]);
@@ -37,9 +41,11 @@ export function HistoryScreen() {
   const [hasMore, setHasMore] = useState(true);
   const [lastDoc, setLastDoc] = useState<QueryDocumentSnapshot<DocumentData> | null>(null);
   const [playerNames, setPlayerNames] = useState<Record<string, string>>({});
+  const [playerFilter, setPlayerFilter] = useState<PlayerFilterType>('all');
 
   const coupleId = userData?.activeCoupleId;
   const myUid = user?.uid;
+  const partnerId = coupleData?.partnerIds?.find(id => id !== myUid);
 
   useEffect(() => {
     if (!coupleData?.partnerIds) return;
@@ -159,6 +165,41 @@ export function HistoryScreen() {
     return playerNames[playerId] || 'Partner';
   };
 
+  // Filter attempts by player
+  const filteredAttempts = useMemo(() => {
+    return attempts.filter(attempt => {
+      switch (playerFilter) {
+        case 'byMe':
+          return attempt.byPlayerId === myUid;
+        case 'forMe':
+          return attempt.forPlayerId === myUid;
+        case 'byPartner':
+          return attempt.byPlayerId === partnerId;
+        case 'forPartner':
+          return attempt.forPlayerId === partnerId;
+        default:
+          return true;
+      }
+    });
+  }, [attempts, playerFilter, myUid, partnerId]);
+
+  // Calculate counts for each filter
+  const filterCounts = useMemo(() => ({
+    all: attempts.length,
+    byMe: attempts.filter(a => a.byPlayerId === myUid).length,
+    forMe: attempts.filter(a => a.forPlayerId === myUid).length,
+    byPartner: attempts.filter(a => a.byPlayerId === partnerId).length,
+    forPartner: attempts.filter(a => a.forPlayerId === partnerId).length,
+  }), [attempts, myUid, partnerId]);
+
+  const playerFilterOptions: { key: PlayerFilterType; label: string }[] = [
+    { key: 'all', label: 'All' },
+    { key: 'byMe', label: 'By Me' },
+    { key: 'forMe', label: 'For Me' },
+    { key: 'byPartner', label: 'By Partner' },
+    { key: 'forPartner', label: 'For Partner' },
+  ];
+
   const renderAttemptCard = ({ item: attempt }: { item: Attempt }) => (
     <View
       style={[
@@ -236,21 +277,53 @@ export function HistoryScreen() {
       <View style={styles.header}>
         <Text style={styles.title}>History</Text>
         <Text style={styles.subtitle}>
-          {attempts.length > 0
-            ? `${attempts.length}${hasMore ? '+' : ''} attempts`
+          {filteredAttempts.length > 0
+            ? `${filteredAttempts.length}${hasMore && playerFilter === 'all' ? '+' : ''} attempts`
             : 'No attempts yet'}
         </Text>
       </View>
 
-      {attempts.length === 0 ? (
+      {/* Player Filter Chips */}
+      <ScrollView 
+        horizontal 
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.filterScrollContent}
+        style={styles.filterScroll}
+      >
+        {playerFilterOptions.map(option => (
+          <TouchableOpacity
+            key={option.key}
+            style={[
+              styles.filterChip,
+              playerFilter === option.key && styles.filterChipActive,
+            ]}
+            onPress={() => setPlayerFilter(option.key)}
+          >
+            <Text
+              style={[
+                styles.filterChipText,
+                playerFilter === option.key && styles.filterChipTextActive,
+              ]}
+            >
+              {option.label} ({filterCounts[option.key]})
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+
+      {filteredAttempts.length === 0 ? (
         <EmptyState
           icon="📜"
-          title="No history yet"
-          subtitle="Start logging attempts to see your relationship timeline!"
+          title={playerFilter === 'all' ? 'No history yet' : 'No matching attempts'}
+          subtitle={
+            playerFilter === 'all'
+              ? 'Start logging attempts to see your relationship timeline!'
+              : 'Try a different filter to see more attempts.'
+          }
         />
       ) : (
         <FlatList
-          data={attempts}
+          data={filteredAttempts}
           renderItem={renderAttemptCard}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContent}
@@ -288,6 +361,34 @@ const styles = StyleSheet.create({
   subtitle: {
     ...typography.body,
     color: colors.textSecondary,
+  },
+  filterScroll: {
+    maxHeight: 50,
+    marginBottom: spacing.md,
+  },
+  filterScrollContent: {
+    paddingHorizontal: spacing.lg,
+    gap: spacing.sm,
+  },
+  filterChip: {
+    backgroundColor: colors.surface,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.full,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  filterChipActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  filterChipText: {
+    ...typography.bodySmall,
+    color: colors.textSecondary,
+  },
+  filterChipTextActive: {
+    color: colors.textOnPrimary,
+    fontWeight: '600',
   },
   listContent: {
     paddingHorizontal: spacing.lg,
