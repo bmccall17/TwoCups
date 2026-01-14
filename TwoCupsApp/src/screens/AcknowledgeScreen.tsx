@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -12,20 +12,30 @@ import { db } from '../services/firebase/config';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { acknowledgeAttempt } from '../services/api';
-import { Button, LoadingSpinner, EmptyState } from '../components/common';
+import { Button, LoadingSpinner, EmptyState, CelebrationOverlay } from '../components/common';
 import { colors, spacing, typography, borderRadius } from '../theme';
 import { Attempt } from '../types';
 
 type FilterType = 'pending' | 'acknowledged' | 'all';
 
+interface CelebrationState {
+  visible: boolean;
+  message: string;
+  subMessage?: string;
+}
+
 export function AcknowledgeScreen() {
   const { user, userData, coupleData } = useAuth();
-  const { showSuccess, showError, showCelebration } = useToast();
+  const { showSuccess, showError } = useToast();
   const [attempts, setAttempts] = useState<Attempt[]>([]);
   const [loading, setLoading] = useState(true);
   const [acknowledging, setAcknowledging] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterType>('pending');
   const [partnerNames, setPartnerNames] = useState<Record<string, string>>({});
+  const [celebration, setCelebration] = useState<CelebrationState>({
+    visible: false,
+    message: '',
+  });
 
   const coupleId = userData?.activeCoupleId;
   const myUid = user?.uid;
@@ -78,6 +88,10 @@ export function AcknowledgeScreen() {
     return unsubscribe;
   }, [coupleId, myUid]);
 
+  const handleDismissCelebration = useCallback(() => {
+    setCelebration({ visible: false, message: '' });
+  }, []);
+
   const handleAcknowledge = async (attempt: Attempt) => {
     if (!coupleId) return;
 
@@ -88,8 +102,18 @@ export function AcknowledgeScreen() {
         attemptId: attempt.id,
       });
 
-      if (result.cupOverflow) {
-        showCelebration(`+${result.gemsAwarded} gems! Your cup overflowed!`);
+      if (result.collectiveCupOverflow) {
+        setCelebration({
+          visible: true,
+          message: 'Collective Cup Overflowed!',
+          subMessage: `+${result.gemsAwarded} gems! You both reached 100 together!`,
+        });
+      } else if (result.cupOverflow) {
+        setCelebration({
+          visible: true,
+          message: 'Your Cup Overflowed!',
+          subMessage: `+${result.gemsAwarded} gems! Amazing work!`,
+        });
       } else {
         showSuccess(`+${result.gemsAwarded} gems! Thank you for acknowledging.`);
       }
@@ -246,6 +270,13 @@ export function AcknowledgeScreen() {
           </View>
         )}
       </ScrollView>
+
+      <CelebrationOverlay
+        visible={celebration.visible}
+        message={celebration.message}
+        subMessage={celebration.subMessage}
+        onDismiss={handleDismissCelebration}
+      />
     </SafeAreaView>
   );
 }
