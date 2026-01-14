@@ -1,0 +1,210 @@
+{
+  "name": "TwoCups Sprint 6 - Streaks & Achievements",
+  "branchName": "ralph/sprint-6-achievements",
+  "description": "Add streak tracking and achievement system to encourage daily engagement and celebrate relationship milestones",
+  "created": "2026-01-14",
+
+  "decisions": {
+    "D1_StreakReset": "Streak resets if no acknowledged attempt in 24 hours (either direction)",
+    "D2_Achievements": "Start with ~15-20 achievements, can add more later",
+    "D3_Storage": "Store streaks and achievements in couple stats subcollection"
+  },
+
+  "userStories": [
+    {
+      "id": "US-038",
+      "title": "Daily Acknowledgment Streak Tracking",
+      "description": "Track consecutive days where at least one attempt was acknowledged.",
+      "acceptanceCriteria": [
+        "Streak increments when first acknowledgment of the day occurs",
+        "Streak resets to 0 if a day passes with no acknowledgments",
+        "Streak count stored in couple stats document",
+        "Track 'current streak' and 'longest streak' separately",
+        "Streak calculation based on couple's timezone (or UTC)"
+      ],
+      "priority": 1,
+      "passes": false,
+      "blocked": false,
+      "blockedReason": null
+    },
+    {
+      "id": "US-039",
+      "title": "Streak Display on HomeScreen",
+      "description": "Show current streak prominently on the home dashboard.",
+      "acceptanceCriteria": [
+        "Streak counter with flame/fire icon displayed on HomeScreen",
+        "Shows current streak number (e.g., '7 day streak')",
+        "Visual indicator changes at milestones (different colors at 7, 30, 100)",
+        "Tap to see streak details (current vs best)",
+        "Encouraging message based on streak length"
+      ],
+      "priority": 2,
+      "passes": false,
+      "blocked": true,
+      "blockedReason": "Depends on US-038"
+    },
+    {
+      "id": "US-040",
+      "title": "Streak Milestone Celebrations",
+      "description": "Celebrate when couple hits streak milestones.",
+      "acceptanceCriteria": [
+        "Celebration popup at streak milestones: 7, 14, 30, 60, 100, 365 days",
+        "Special badge/icon for each milestone",
+        "Celebratory message acknowledging consistency",
+        "Option to share achievement (future feature hook)",
+        "Record milestone achievements in couple document"
+      ],
+      "priority": 3,
+      "passes": false,
+      "blocked": true,
+      "blockedReason": "Depends on US-038"
+    },
+    {
+      "id": "US-041",
+      "title": "Streak Protection Warning",
+      "description": "Warn users when their streak is at risk of breaking.",
+      "acceptanceCriteria": [
+        "If no acknowledgment today and it's past 6 PM, show warning on HomeScreen",
+        "Warning message: 'Your streak is at risk! Acknowledge an attempt to keep it going.'",
+        "Visual indicator (yellow/orange styling) on streak display",
+        "Optional push notification at 8 PM if streak at risk (ties to notifications sprint)"
+      ],
+      "priority": 4,
+      "passes": false,
+      "blocked": true,
+      "blockedReason": "Depends on US-038"
+    },
+    {
+      "id": "US-042",
+      "title": "Achievement System Foundation",
+      "description": "Create achievement data model and tracking infrastructure.",
+      "acceptanceCriteria": [
+        "Achievement type definitions with id, title, description, icon, criteria",
+        "Achievements subcollection in couple document",
+        "Track unlocked achievements with timestamp",
+        "Achievement checking logic that runs on relevant actions",
+        "Prevent duplicate achievement unlocks"
+      ],
+      "priority": 5,
+      "passes": false,
+      "blocked": false,
+      "blockedReason": null
+    },
+    {
+      "id": "US-043",
+      "title": "Achievement Unlock Celebration",
+      "description": "Show celebration when user unlocks a new achievement.",
+      "acceptanceCriteria": [
+        "Modal/overlay appears when achievement unlocked",
+        "Shows achievement icon, title, and description",
+        "Celebratory animation (confetti, sparkles)",
+        "Button to view all achievements or dismiss",
+        "Achievement unlocks feel special and rewarding"
+      ],
+      "priority": 6,
+      "passes": false,
+      "blocked": true,
+      "blockedReason": "Depends on US-042"
+    },
+    {
+      "id": "US-044",
+      "title": "Achievements Screen",
+      "description": "Screen to view all achievements and progress toward locked ones.",
+      "acceptanceCriteria": [
+        "Accessible from Settings or profile area",
+        "Shows all possible achievements in grid or list",
+        "Unlocked achievements highlighted with colored icon",
+        "Locked achievements shown grayed out with hint text",
+        "Progress indicator for achievements with numeric goals",
+        "Shows unlock date for earned achievements"
+      ],
+      "priority": 7,
+      "passes": false,
+      "blocked": true,
+      "blockedReason": "Depends on US-042"
+    },
+    {
+      "id": "US-045",
+      "title": "Activity Achievements",
+      "description": "Achievements based on logging and acknowledging attempts.",
+      "acceptanceCriteria": [
+        "First Attempt: Log your first attempt",
+        "First Acknowledgment: Acknowledge your first attempt",
+        "Helping Hand: Log 10 attempts",
+        "Dedicated Partner: Log 50 attempts",
+        "Century Club: Log 100 attempts",
+        "Grateful Heart: Acknowledge 50 attempts",
+        "Each triggers achievement unlock celebration"
+      ],
+      "priority": 8,
+      "passes": false,
+      "blocked": true,
+      "blockedReason": "Depends on US-042, US-043"
+    },
+    {
+      "id": "US-046",
+      "title": "Streak Achievements",
+      "description": "Achievements based on maintaining acknowledgment streaks.",
+      "acceptanceCriteria": [
+        "Week Warrior: 7 day streak",
+        "Fortnight Fighter: 14 day streak",
+        "Monthly Marvel: 30 day streak",
+        "Quarterly Queen/King: 90 day streak",
+        "Year of Love: 365 day streak",
+        "Triggers when streak milestone is hit"
+      ],
+      "priority": 9,
+      "passes": false,
+      "blocked": true,
+      "blockedReason": "Depends on US-038, US-042"
+    },
+    {
+      "id": "US-047",
+      "title": "Category Diversity Achievements",
+      "description": "Achievements for using different love language categories.",
+      "acceptanceCriteria": [
+        "Love Language Learner: Use 3 different categories",
+        "Well-Rounded: Use all 9 categories",
+        "Category Champion: Log 10 attempts in a single category",
+        "Track categories used per player",
+        "Achievement checks run when attempt is logged"
+      ],
+      "priority": 10,
+      "passes": false,
+      "blocked": true,
+      "blockedReason": "Depends on US-042"
+    },
+    {
+      "id": "US-048",
+      "title": "Request Achievements",
+      "description": "Achievements based on making and fulfilling requests.",
+      "acceptanceCriteria": [
+        "First Request: Make your first request",
+        "Wish Granter: Fulfill your first request",
+        "Request Master: Fulfill 10 requests",
+        "Clear Communicator: Make 20 requests",
+        "Track request fulfillment per player"
+      ],
+      "priority": 11,
+      "passes": false,
+      "blocked": true,
+      "blockedReason": "Depends on US-042"
+    },
+    {
+      "id": "US-049",
+      "title": "Cup Overflow Achievements",
+      "description": "Achievements based on cup overflows.",
+      "acceptanceCriteria": [
+        "First Overflow: Experience your first cup overflow",
+        "Overflowing Love: 5 cup overflows",
+        "Cup Runneth Over: 25 cup overflows",
+        "Collective Achievement: First collective cup overflow",
+        "Track overflow count in couple stats"
+      ],
+      "priority": 12,
+      "passes": false,
+      "blocked": true,
+      "blockedReason": "Depends on US-042"
+    }
+  ]
+}

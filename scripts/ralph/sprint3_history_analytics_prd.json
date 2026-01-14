@@ -24,7 +24,7 @@
         "Pull-to-refresh functionality"
       ],
       "priority": 1,
-      "passes": true,
+      "passes": false,
       "blocked": false,
       "blockedReason": null
     },
@@ -40,9 +40,9 @@
         "Clear visual indication of active filter"
       ],
       "priority": 2,
-      "passes": true,
-      "blocked": false,
-      "blockedReason": null
+      "passes": false,
+      "blocked": true,
+      "blockedReason": "Depends on US-015"
     },
     {
       "id": "US-017",
@@ -55,9 +55,9 @@
         "Pending attempts highlighted or styled differently"
       ],
       "priority": 3,
-      "passes": true,
-      "blocked": false,
-      "blockedReason": null
+      "passes": false,
+      "blocked": true,
+      "blockedReason": "Depends on US-015"
     },
     {
       "id": "US-018",
@@ -70,9 +70,9 @@
         "Can combine with other filters"
       ],
       "priority": 4,
-      "passes": true,
-      "blocked": false,
-      "blockedReason": null
+      "passes": false,
+      "blocked": true,
+      "blockedReason": "Depends on US-015"
     },
     {
       "id": "US-019",
@@ -85,9 +85,9 @@
         "Efficient Firestore query using timestamp index"
       ],
       "priority": 5,
-      "passes": true,
-      "blocked": false,
-      "blockedReason": null
+      "passes": false,
+      "blocked": true,
+      "blockedReason": "Depends on US-015"
     },
     {
       "id": "US-020",
@@ -102,9 +102,9 @@
         "Stats update based on active date range filter"
       ],
       "priority": 6,
-      "passes": true,
-      "blocked": false,
-      "blockedReason": null
+      "passes": false,
+      "blocked": true,
+      "blockedReason": "Depends on US-015"
     },
     {
       "id": "US-021",
@@ -118,9 +118,9 @@
         "Separate breakdown for 'attempts I logged' vs 'attempts for me'"
       ],
       "priority": 7,
-      "passes": true,
-      "blocked": false,
-      "blockedReason": null
+      "passes": false,
+      "blocked": true,
+      "blockedReason": "Depends on US-020"
     },
     {
       "id": "US-022",
@@ -134,9 +134,9 @@
         "Most requested categories"
       ],
       "priority": 8,
-      "passes": true,
-      "blocked": false,
-      "blockedReason": null
+      "passes": false,
+      "blocked": true,
+      "blockedReason": "Depends on US-020"
     }
   ]
 }

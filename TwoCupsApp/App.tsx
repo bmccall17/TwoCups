@@ -17,6 +17,7 @@ import { AcknowledgeScreen } from './src/screens/AcknowledgeScreen';
 import { MakeRequestScreen } from './src/screens/MakeRequestScreen';
 import { ManageSuggestionsScreen } from './src/screens/ManageSuggestionsScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
+import { HistoryScreen } from './src/screens/HistoryScreen';
 import { colors } from './src/theme';
 
 type AuthStackParamList = {
@@ -28,6 +29,7 @@ type MainTabParamList = {
   HomeTab: undefined;
   LogTab: undefined;
   AcknowledgeTab: undefined;
+  HistoryTab: undefined;
   SettingsTab: undefined;
 };
 
@@ -130,6 +132,16 @@ function MainTabNavigator({ navigation }: { navigation: any }) {
         }}
       >
         {() => <AcknowledgeScreen />}
+      </MainTab.Screen>
+
+      <MainTab.Screen
+        name="HistoryTab"
+        options={{
+          tabBarLabel: 'History',
+          tabBarIcon: ({ focused }) => <TabIcon icon="📜" focused={focused} />,
+        }}
+      >
+        {() => <HistoryScreen />}
       </MainTab.Screen>
 
       <MainTab.Screen
