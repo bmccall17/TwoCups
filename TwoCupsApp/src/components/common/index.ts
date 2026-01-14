@@ -9,3 +9,4 @@ export { GemAnimation } from './GemAnimation';
 export { GemCounter } from './GemCounter';
 export { GemLeaderboard } from './GemLeaderboard';
 export { OfflineBanner } from './OfflineBanner';
+export { ErrorBoundary } from './ErrorBoundary';

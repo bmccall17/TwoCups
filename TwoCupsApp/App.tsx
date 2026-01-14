@@ -11,7 +11,7 @@ import { ToastProvider } from './src/context/ToastContext';
 import { GemAnimationProvider } from './src/context/GemAnimationContext';
 import { MilestoneCelebrationProvider } from './src/context/MilestoneCelebrationContext';
 import { NetworkProvider } from './src/context/NetworkContext';
-import { LoadingSpinner, InstallAppModal, ToastContainer, OfflineBanner } from './src/components/common';
+import { LoadingSpinner, InstallAppModal, ToastContainer, OfflineBanner, ErrorBoundary } from './src/components/common';
 import { useInstallPrompt } from './src/hooks';
 import { LoginScreen, SignUpScreen, PairingScreen } from './src/screens/auth';
 import { HomeScreen } from './src/screens/HomeScreen';
@@ -251,22 +251,24 @@ const styles = StyleSheet.create({
 export default function App() {
   return (
     <SafeAreaProvider>
-      <StatusBar style="light" backgroundColor={colors.background} />
-      <ToastProvider>
-        <GemAnimationProvider>
-          <AuthProvider>
-            <NetworkProvider>
-              <MilestoneCelebrationProvider>
-                <NavigationContainer>
-                  <RootNavigator />
-                  <OfflineBanner />
-                </NavigationContainer>
-                <ToastContainer />
-              </MilestoneCelebrationProvider>
-            </NetworkProvider>
-          </AuthProvider>
-        </GemAnimationProvider>
-      </ToastProvider>
+      <ErrorBoundary>
+        <StatusBar style="light" backgroundColor={colors.background} />
+        <ToastProvider>
+          <GemAnimationProvider>
+            <AuthProvider>
+              <NetworkProvider>
+                <MilestoneCelebrationProvider>
+                  <NavigationContainer>
+                    <RootNavigator />
+                    <OfflineBanner />
+                  </NavigationContainer>
+                  <ToastContainer />
+                </MilestoneCelebrationProvider>
+              </NetworkProvider>
+            </AuthProvider>
+          </GemAnimationProvider>
+        </ToastProvider>
+      </ErrorBoundary>
     </SafeAreaProvider>
   );
 }

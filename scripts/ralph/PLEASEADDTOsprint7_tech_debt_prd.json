@@ -1,0 +1,66 @@
+13 new stories (US-063 through US-075) based on the codebase review:
+  ID: US-063
+  Title: Fix Cryptographic Randomness for Invite Codes
+  Priority: 14
+  Notes: Security: Math.random() → crypto
+  ────────────────────────────────────────
+  ID: US-064
+  Title: Replace 'any' Types with Proper TypeScript Types
+  Priority: 15
+  Notes: 10+ instances found
+  ────────────────────────────────────────
+  ID: US-065
+  Title: Fix Type Mismatches Between Functions and Mobile
+  Priority: 16
+  Notes: Suggestion, Request interfaces differ
+  ────────────────────────────────────────
+  ID: US-066
+  Title: Remove Debug Console Statements
+  Priority: 17
+  Notes: 20+ console.log/error calls
+  ────────────────────────────────────────
+  ID: US-067
+  Title: Clean Up Firestore Rules
+  Priority: 18
+  Notes: Unused getPartnerId function
+  ────────────────────────────────────────
+  ID: US-068
+  Title: Centralize Configuration Constants
+  Priority: 19
+  Notes: Duplicated in 3+ files
+  ────────────────────────────────────────
+  ID: US-069
+  Title: Input Validation Improvements
+  Priority: 20
+  Notes: Max lengths, email regex, sanitization
+  ────────────────────────────────────────
+  ID: US-070
+  Title: Fix Unawaited Promises
+  Priority: 21
+  Notes: MilestoneCelebrationContext, AcknowledgeScreen
+  ────────────────────────────────────────
+  ID: US-071
+  Title: Fix Silent Failures
+  Priority: 22
+  Notes: Empty catch blocks
+  ────────────────────────────────────────
+  ID: US-072
+  Title: Fix Confusing Property Names
+  Priority: 23
+  Notes: 'odI' → clearer naming
+  ────────────────────────────────────────
+  ID: US-073
+  Title: Tighten Firestore Security Rules
+  Priority: 24
+  Notes: Overly permissive rules
+  ────────────────────────────────────────
+  ID: US-074
+  Title: Add Rate Limiting for Sensitive Operations
+  Priority: 25
+  Notes: Prevent abuse
+  ────────────────────────────────────────
+  ID: US-075
+  Title: Optimize Animation Performance
+  Priority: 26
+  Notes: Pre-calculate random values
+  Blocked stories: US-066 and US-071 are blocked by US-062 (Crashlytics) since they involve replacing console logging with proper error reporting.
