@@ -1,13 +1,14 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, memo, useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   SafeAreaView,
-  ScrollView,
+  FlatList,
   TouchableOpacity,
   Dimensions,
   RefreshControl,
+  ListRenderItemInfo,
 } from 'react-native';
 import { collection, query, where, onSnapshot, orderBy, doc, getDoc } from 'firebase/firestore';
 import { db } from '../services/firebase/config';
@@ -28,6 +29,74 @@ interface CelebrationState {
   message: string;
   subMessage?: string;
 }
+
+interface AttemptCardProps {
+  attempt: Attempt;
+  getPartnerName: (playerId: string) => string;
+  formatDate: (date: Date) => string;
+  acknowledging: string | null;
+  onAcknowledge: (attempt: Attempt) => void;
+}
+
+const AttemptCard = memo(function AttemptCard({
+  attempt,
+  getPartnerName,
+  formatDate,
+  acknowledging,
+  onAcknowledge,
+}: AttemptCardProps) {
+  return (
+    <View
+      style={[
+        styles.attemptCard,
+        attempt.acknowledged && styles.attemptCardAcknowledged,
+      ]}
+    >
+      <View style={styles.attemptHeader}>
+        <Text style={styles.attemptBy}>
+          {getPartnerName(attempt.byPlayerId)}
+        </Text>
+        <Text style={styles.attemptTime}>
+          {formatDate(attempt.createdAt)}
+        </Text>
+      </View>
+
+      <Text style={styles.attemptAction}>{attempt.action}</Text>
+
+      {attempt.description && (
+        <Text style={styles.attemptDescription}>{attempt.description}</Text>
+      )}
+
+      {attempt.category && (
+        <View style={styles.categoryBadge}>
+          <Text style={styles.categoryText}>{attempt.category}</Text>
+        </View>
+      )}
+
+      {attempt.fulfilledRequestId && (
+        <View style={styles.fulfilledBadge}>
+          <Text style={styles.fulfilledText}>Fulfilled your request!</Text>
+        </View>
+      )}
+
+      {!attempt.acknowledged ? (
+        <Button
+          title={acknowledging === attempt.id ? 'Acknowledging...' : 'Acknowledge'}
+          onPress={() => onAcknowledge(attempt)}
+          loading={acknowledging === attempt.id}
+          disabled={acknowledging !== null}
+          style={styles.acknowledgeButton}
+        />
+      ) : (
+        <View style={styles.acknowledgedStatus}>
+          <Text style={styles.acknowledgedText}>
+            Acknowledged {attempt.acknowledgedAt ? formatDate(attempt.acknowledgedAt) : ''}
+          </Text>
+        </View>
+      )}
+    </View>
+  );
+});
 
 export function AcknowledgeScreen() {
   const { user, userData, coupleData } = useAuth();
@@ -165,7 +234,7 @@ export function AcknowledgeScreen() {
   const pendingCount = attempts.filter(a => !a.acknowledged).length;
   const acknowledgedCount = attempts.filter(a => a.acknowledged).length;
 
-  const formatDate = (date: Date) => {
+  const formatDate = useCallback((date: Date) => {
     const now = new Date();
     const diff = now.getTime() - date.getTime();
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
@@ -183,16 +252,107 @@ export function AcknowledgeScreen() {
       return `${days}d ago`;
     }
     return date.toLocaleDateString();
-  };
+  }, []);
 
-  const getPartnerName = (playerId: string) => {
+  const getPartnerName = useCallback((playerId: string) => {
     return partnerNames[playerId] || 'Partner';
-  };
+  }, [partnerNames]);
+
+  const renderAttemptCard = useCallback(({ item: attempt }: ListRenderItemInfo<Attempt>) => (
+    <AttemptCard
+      attempt={attempt}
+      getPartnerName={getPartnerName}
+      formatDate={formatDate}
+      acknowledging={acknowledging}
+      onAcknowledge={handleAcknowledge}
+    />
+  ), [getPartnerName, formatDate, acknowledging, handleAcknowledge]);
+
+  const keyExtractor = useCallback((item: Attempt) => item.id, []);
+
+  const ListHeaderComponent = useMemo(() => (
+    <>
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.title}>Acknowledge Attempts</Text>
+        <Text style={styles.subtitle}>
+          {pendingCount > 0
+            ? `${pendingCount} pending acknowledgment${pendingCount !== 1 ? 's' : ''}`
+            : 'All caught up!'}
+        </Text>
+      </View>
+
+      {/* Filter Tabs */}
+      <View style={styles.filterContainer}>
+        <TouchableOpacity
+          style={[styles.filterTab, filter === 'pending' && styles.filterTabActive]}
+          onPress={() => setFilter('pending')}
+        >
+          <Text style={[styles.filterText, filter === 'pending' && styles.filterTextActive]}>
+            Pending ({pendingCount})
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.filterTab, filter === 'acknowledged' && styles.filterTabActive]}
+          onPress={() => setFilter('acknowledged')}
+        >
+          <Text style={[styles.filterText, filter === 'acknowledged' && styles.filterTextActive]}>
+            Done ({acknowledgedCount})
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.filterTab, filter === 'all' && styles.filterTabActive]}
+          onPress={() => setFilter('all')}
+        >
+          <Text style={[styles.filterText, filter === 'all' && styles.filterTextActive]}>
+            All ({attempts.length})
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </>
+  ), [pendingCount, acknowledgedCount, attempts.length, filter]);
+
+  const ListEmptyComponent = useMemo(() => (
+    <EmptyState
+      icon="✨"
+      title={
+        filter === 'pending'
+          ? 'No pending attempts to acknowledge'
+          : filter === 'acknowledged'
+          ? 'No acknowledged attempts yet'
+          : 'No attempts yet'
+      }
+      subtitle="Your partner can log attempts for you!"
+    />
+  ), [filter]);
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <LoadingSpinner message="Loading attempts..." />
+      </SafeAreaView>
+    );
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.errorContainer}>
+          <ErrorState error={error} onRetry={handleRetry} />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
+      <FlatList
+        data={filteredAttempts}
+        renderItem={renderAttemptCard}
+        keyExtractor={keyExtractor}
+        contentContainerStyle={styles.listContent}
+        ListHeaderComponent={ListHeaderComponent}
+        ListEmptyComponent={ListEmptyComponent}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -201,119 +361,12 @@ export function AcknowledgeScreen() {
             colors={[colors.primary]}
           />
         }
-      >
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>Acknowledge Attempts</Text>
-          <Text style={styles.subtitle}>
-            {pendingCount > 0
-              ? `${pendingCount} pending acknowledgment${pendingCount !== 1 ? 's' : ''}`
-              : 'All caught up!'}
-          </Text>
-        </View>
-
-        {/* Filter Tabs */}
-        <View style={styles.filterContainer}>
-          <TouchableOpacity
-            style={[styles.filterTab, filter === 'pending' && styles.filterTabActive]}
-            onPress={() => setFilter('pending')}
-          >
-            <Text style={[styles.filterText, filter === 'pending' && styles.filterTextActive]}>
-              Pending ({pendingCount})
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.filterTab, filter === 'acknowledged' && styles.filterTabActive]}
-            onPress={() => setFilter('acknowledged')}
-          >
-            <Text style={[styles.filterText, filter === 'acknowledged' && styles.filterTextActive]}>
-              Done ({acknowledgedCount})
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.filterTab, filter === 'all' && styles.filterTabActive]}
-            onPress={() => setFilter('all')}
-          >
-            <Text style={[styles.filterText, filter === 'all' && styles.filterTextActive]}>
-              All ({attempts.length})
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Attempts List */}
-        {loading ? (
-          <LoadingSpinner message="Loading attempts..." />
-        ) : error ? (
-          <ErrorState error={error} onRetry={handleRetry} />
-        ) : filteredAttempts.length === 0 ? (
-          <EmptyState
-            icon="✨"
-            title={
-              filter === 'pending'
-                ? 'No pending attempts to acknowledge'
-                : filter === 'acknowledged'
-                ? 'No acknowledged attempts yet'
-                : 'No attempts yet'
-            }
-            subtitle="Your partner can log attempts for you!"
-          />
-        ) : (
-          <View style={styles.attemptsList}>
-            {filteredAttempts.map((attempt) => (
-              <View
-                key={attempt.id}
-                style={[
-                  styles.attemptCard,
-                  attempt.acknowledged && styles.attemptCardAcknowledged,
-                ]}
-              >
-                <View style={styles.attemptHeader}>
-                  <Text style={styles.attemptBy}>
-                    {getPartnerName(attempt.byPlayerId)}
-                  </Text>
-                  <Text style={styles.attemptTime}>
-                    {formatDate(attempt.createdAt)}
-                  </Text>
-                </View>
-
-                <Text style={styles.attemptAction}>{attempt.action}</Text>
-
-                {attempt.description && (
-                  <Text style={styles.attemptDescription}>{attempt.description}</Text>
-                )}
-
-                {attempt.category && (
-                  <View style={styles.categoryBadge}>
-                    <Text style={styles.categoryText}>{attempt.category}</Text>
-                  </View>
-                )}
-
-                {attempt.fulfilledRequestId && (
-                  <View style={styles.fulfilledBadge}>
-                    <Text style={styles.fulfilledText}>Fulfilled your request!</Text>
-                  </View>
-                )}
-
-                {!attempt.acknowledged ? (
-                  <Button
-                    title={acknowledging === attempt.id ? 'Acknowledging...' : 'Acknowledge'}
-                    onPress={() => handleAcknowledge(attempt)}
-                    loading={acknowledging === attempt.id}
-                    disabled={acknowledging !== null}
-                    style={styles.acknowledgeButton}
-                  />
-                ) : (
-                  <View style={styles.acknowledgedStatus}>
-                    <Text style={styles.acknowledgedText}>
-                      Acknowledged {attempt.acknowledgedAt ? formatDate(attempt.acknowledgedAt) : ''}
-                    </Text>
-                  </View>
-                )}
-              </View>
-            ))}
-          </View>
-        )}
-      </ScrollView>
+        initialNumToRender={10}
+        maxToRenderPerBatch={10}
+        windowSize={10}
+        removeClippedSubviews={true}
+        getItemLayout={undefined}
+      />
 
       <CelebrationOverlay
         visible={celebration.visible}
@@ -330,8 +383,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  scrollContent: {
+  listContent: {
     flexGrow: 1,
+    padding: spacing.lg,
+  },
+  errorContainer: {
+    flex: 1,
     padding: spacing.lg,
   },
   header: {
@@ -369,10 +426,6 @@ const styles = StyleSheet.create({
   filterTextActive: {
     color: colors.textOnPrimary,
     fontWeight: '600',
-  },
-  
-  attemptsList: {
-    gap: spacing.md,
   },
   attemptCard: {
     backgroundColor: colors.surface,

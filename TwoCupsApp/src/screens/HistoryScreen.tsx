@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   ScrollView,
+  ListRenderItemInfo,
 } from 'react-native';
 import {
   collection,
@@ -90,6 +91,72 @@ const formatDateRange = (filter: DateRangeFilterType): string => {
       return 'All Time';
   }
 };
+
+interface HistoryAttemptCardProps {
+  attempt: Attempt;
+  getPlayerName: (playerId: string) => string;
+  formatDate: (date: Date) => string;
+}
+
+const HistoryAttemptCard = memo(function HistoryAttemptCard({
+  attempt,
+  getPlayerName,
+  formatDate,
+}: HistoryAttemptCardProps) {
+  return (
+    <View
+      style={[
+        styles.attemptCard,
+        attempt.acknowledged && styles.attemptCardAcknowledged,
+      ]}
+    >
+      <View style={styles.attemptHeader}>
+        <View style={styles.playerInfo}>
+          <Text style={styles.byPlayer}>
+            {getPlayerName(attempt.byPlayerId)}
+          </Text>
+          <Text style={styles.arrowText}> → </Text>
+          <Text style={styles.forPlayer}>
+            {getPlayerName(attempt.forPlayerId)}
+          </Text>
+        </View>
+        <Text style={styles.attemptTime}>
+          {formatDate(attempt.createdAt)}
+        </Text>
+      </View>
+
+      <Text style={styles.attemptAction}>{attempt.action}</Text>
+
+      {attempt.description && (
+        <Text style={styles.attemptDescription}>{attempt.description}</Text>
+      )}
+
+      <View style={styles.badgeRow}>
+        {attempt.category && (
+          <View style={styles.categoryBadge}>
+            <Text style={styles.categoryText}>{attempt.category}</Text>
+          </View>
+        )}
+
+        {attempt.fulfilledRequestId && (
+          <View style={styles.fulfilledBadge}>
+            <Text style={styles.fulfilledText}>Fulfilled request</Text>
+          </View>
+        )}
+
+        {attempt.acknowledged ? (
+          <View style={styles.acknowledgedBadge}>
+            <Text style={styles.acknowledgedText}>✓ Acknowledged</Text>
+          </View>
+        ) : (
+          <View style={styles.pendingBadge}>
+            <Text style={styles.pendingText}>Pending</Text>
+          </View>
+        )}
+      </View>
+    </View>
+  );
+});
 
 export function HistoryScreen() {
   const { user, userData, coupleData } = useAuth();
@@ -254,7 +321,7 @@ export function HistoryScreen() {
     fetchAttempts(true);
   }, [fetchAttempts]);
 
-  const formatDate = (date: Date) => {
+  const formatDate = useCallback((date: Date) => {
     const now = new Date();
     const diff = now.getTime() - date.getTime();
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
@@ -272,12 +339,12 @@ export function HistoryScreen() {
       return `${days}d ago`;
     }
     return date.toLocaleDateString();
-  };
+  }, []);
 
-  const getPlayerName = (playerId: string) => {
+  const getPlayerName = useCallback((playerId: string) => {
     if (playerId === myUid) return 'You';
     return playerNames[playerId] || 'Partner';
-  };
+  }, [myUid, playerNames]);
 
   // Filter attempts by player, status, and category
   const filteredAttempts = useMemo(() => {
@@ -516,61 +583,17 @@ export function HistoryScreen() {
     { key: 'alltime', label: 'All Time' },
   ];
 
-  const renderAttemptCard = ({ item: attempt }: { item: Attempt }) => (
-    <View
-      style={[
-        styles.attemptCard,
-        attempt.acknowledged && styles.attemptCardAcknowledged,
-      ]}
-    >
-      <View style={styles.attemptHeader}>
-        <View style={styles.playerInfo}>
-          <Text style={styles.byPlayer}>
-            {getPlayerName(attempt.byPlayerId)}
-          </Text>
-          <Text style={styles.arrowText}> → </Text>
-          <Text style={styles.forPlayer}>
-            {getPlayerName(attempt.forPlayerId)}
-          </Text>
-        </View>
-        <Text style={styles.attemptTime}>
-          {formatDate(attempt.createdAt)}
-        </Text>
-      </View>
+  const renderAttemptCard = useCallback(({ item: attempt }: ListRenderItemInfo<Attempt>) => (
+    <HistoryAttemptCard
+      attempt={attempt}
+      getPlayerName={getPlayerName}
+      formatDate={formatDate}
+    />
+  ), [getPlayerName, formatDate]);
 
-      <Text style={styles.attemptAction}>{attempt.action}</Text>
+  const keyExtractor = useCallback((item: Attempt) => item.id, []);
 
-      {attempt.description && (
-        <Text style={styles.attemptDescription}>{attempt.description}</Text>
-      )}
-
-      <View style={styles.badgeRow}>
-        {attempt.category && (
-          <View style={styles.categoryBadge}>
-            <Text style={styles.categoryText}>{attempt.category}</Text>
-          </View>
-        )}
-
-        {attempt.fulfilledRequestId && (
-          <View style={styles.fulfilledBadge}>
-            <Text style={styles.fulfilledText}>Fulfilled request</Text>
-          </View>
-        )}
-
-        {attempt.acknowledged ? (
-          <View style={styles.acknowledgedBadge}>
-            <Text style={styles.acknowledgedText}>✓ Acknowledged</Text>
-          </View>
-        ) : (
-          <View style={styles.pendingBadge}>
-            <Text style={styles.pendingText}>Pending</Text>
-          </View>
-        )}
-      </View>
-    </View>
-  );
-
-  const renderFooter = () => {
+  const renderFooter = useCallback(() => {
     if (!loadingMore) return null;
     return (
       <View style={styles.footerLoader}>
@@ -578,7 +601,7 @@ export function HistoryScreen() {
         <Text style={styles.loadingMoreText}>Loading more...</Text>
       </View>
     );
-  };
+  }, [loadingMore]);
 
   if (loading) {
     return (
@@ -1026,7 +1049,7 @@ export function HistoryScreen() {
         <FlatList
           data={filteredAttempts}
           renderItem={renderAttemptCard}
-          keyExtractor={(item) => item.id}
+          keyExtractor={keyExtractor}
           contentContainerStyle={styles.listContent}
           refreshControl={
             <RefreshControl
@@ -1039,6 +1062,10 @@ export function HistoryScreen() {
           onEndReached={loadMore}
           onEndReachedThreshold={0.3}
           ListFooterComponent={renderFooter}
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={10}
+          removeClippedSubviews={true}
         />
       )}
     </SafeAreaView>
