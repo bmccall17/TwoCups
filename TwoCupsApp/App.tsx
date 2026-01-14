@@ -8,6 +8,7 @@ import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { LoadingSpinner } from './src/components/common';
 import { LoginScreen, SignUpScreen, PairingScreen } from './src/screens/auth';
 import { HomeScreen } from './src/screens/HomeScreen';
+import { LogAttemptScreen } from './src/screens/LogAttemptScreen';
 import { colors } from './src/theme';
 
 type AuthStackParamList = {
@@ -18,6 +19,7 @@ type AuthStackParamList = {
 type AppStackParamList = {
   Pairing: undefined;
   Home: undefined;
+  LogAttempt: undefined;
 };
 
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
@@ -49,10 +51,7 @@ function AuthNavigator() {
 
 function AppNavigator() {
   const { coupleData, userData } = useAuth();
-  // Show HomeScreen only when couple is active (both partners joined)
   const coupleIsActive = coupleData?.status === 'active';
-  
-  console.log('[AppNavigator] Render - userData.activeCoupleId:', userData?.activeCoupleId, 'coupleData?.status:', coupleData?.status, 'coupleIsActive:', coupleIsActive);
 
   return (
     <AppStack.Navigator
@@ -62,7 +61,24 @@ function AppNavigator() {
       {!coupleIsActive ? (
         <AppStack.Screen name="Pairing" component={PairingScreen} />
       ) : (
-        <AppStack.Screen name="Home" component={HomeScreen} />
+        <>
+          <AppStack.Screen name="Home">
+            {(props) => (
+              <HomeScreen
+                onNavigateToLogAttempt={() => props.navigation.navigate('LogAttempt')}
+                onNavigateToAcknowledge={() => {}}
+                onNavigateToMakeRequest={() => {}}
+              />
+            )}
+          </AppStack.Screen>
+          <AppStack.Screen name="LogAttempt">
+            {(props) => (
+              <LogAttemptScreen
+                onGoBack={() => props.navigation.goBack()}
+              />
+            )}
+          </AppStack.Screen>
+        </>
       )}
     </AppStack.Navigator>
   );

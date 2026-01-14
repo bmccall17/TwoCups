@@ -9,37 +9,55 @@ Started: 2026-01-14
 
 ---
 
-## 2026-01-14 - US-001 (Fix Auth Flow)
+## 2026-01-14 - US-001 (Fix Auth Flow) ✅
 Thread: https://ampcode.com/threads/T-019bbae3-4db0-7208-aa9f-ea7393030e39
 
 ### What was implemented
 Fixed anonymous auth flow that was failing due to race condition:
 1. AuthContext now auto-creates user document on anonymous sign-in
 2. Added proper cleanup of Firestore listeners on auth state change
-3. Fixed loading state getting stuck when user doc doesn't exist
+3. Fixed Firestore security rules for join flow
 
 ### Files changed
-- `TwoCupsApp/src/context/AuthContext.tsx`
-  - Added `getDoc`, `setDoc`, `Timestamp` imports
-  - Auto-create user doc if it doesn't exist after auth
-  - Set empty userData (not null) when doc missing to prevent stuck state
-  - Fixed listener cleanup pattern
+- `TwoCupsApp/src/context/AuthContext.tsx` - Auto-create user doc, fix listeners
+- `firestore.rules` - Relaxed rules for join flow (read users, couples, players)
 
-### Verification Required
-**Manual testing needed in browser:**
-1. Open https://twocups-2026.web.app (or localhost)
-2. Click "Continue as Guest" 
-3. Verify: No errors, reaches Pairing screen
-4. Create couple with name + initial
-5. Verify: Invite code displayed
-6. In incognito/different browser:
-   - Continue as Guest
-   - Join with invite code
-7. Verify: Both users see "Home" screen (couple active)
-
-### Learnings for future iterations
+### Learnings
 - Anonymous auth doesn't auto-create user documents - must do it manually
-- Firestore onSnapshot fires immediately, even before document exists
-- Setting userData to empty object (not null) prevents navigation issues
+- Firestore security rules must allow reading partner's user doc for join flow
+- Use `firebase deploy` (not `--only hosting`) for reliable deploys
+
+---
+
+## 2026-01-14 - US-002 (HomeScreen with Cup Visualizations) ✅
+Thread: https://ampcode.com/threads/T-019bbae3-4db0-7208-aa9f-ea7393030e39
+
+### What was implemented
+- CupVisualization component with fill level display
+- usePlayerData hook for real-time player data from Firestore
+- HomeScreen shows My Cup, Partner Cup, Collective Cup with gem counts
+- Navigation buttons for Make Request, Log Attempt, Acknowledge
+
+### Files created
+- `src/components/cups/CupVisualization.tsx`
+- `src/hooks/usePlayerData.ts`
+- `src/hooks/index.ts`
+
+---
+
+## 2026-01-14 - US-003 (Log Attempt Screen) 🔄 IN PROGRESS
+Thread: https://ampcode.com/threads/T-019bbae3-4db0-7208-aa9f-ea7393030e39
+
+### What was implemented
+- LogAttemptScreen with action input, description, category picker
+- Shows partner's active requests at top (for fulfillment bonus)
+- Submits attempt to Firestore, awards gems
+- Navigation from HomeScreen working
+
+### Files created
+- `src/screens/LogAttemptScreen.tsx`
+
+### Status
+Deployed, needs user testing to verify.
 
 ---
