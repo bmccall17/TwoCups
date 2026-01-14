@@ -20,14 +20,14 @@
         "User document created in Firestore",
         "User can create a couple and see invite code",
         "Second user can join couple with invite code",
-        "Both users see 'couple active' state"
-        "data from sessions on each respective device remains on that device"
+        "Both users see 'couple active' state",
+        "Data from sessions on each respective device remains on that device"
       ],
       "priority": 1,
       "passes": false,
       "blocked": false,
       "blockedReason": null,
-      "notes": "This may require Firebase Console changes, not just code"
+      "notes": "Code fix committed. NEEDS BROWSER TESTING. Check Firebase Console: 1) Auth > Anonymous enabled, 2) Auth > Authorized domains includes localhost"
     },
     {
       "id": "US-002",
