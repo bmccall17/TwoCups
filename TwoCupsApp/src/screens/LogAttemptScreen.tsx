@@ -43,6 +43,7 @@ export function LogAttemptScreen({ onGoBack }: LogAttemptScreenProps) {
   const [partnerRequests, setPartnerRequests] = useState<Request[]>([]);
   const [partnerSuggestions, setPartnerSuggestions] = useState<Suggestion[]>([]);
   const [dailyAttemptsInfo, setDailyAttemptsInfo] = useState<DailyAttemptsInfo | null>(null);
+  const [suggestionFilter, setSuggestionFilter] = useState<string | null>(null);
 
   const coupleId = userData?.activeCoupleId;
   const myUid = user?.uid;
@@ -122,6 +123,22 @@ export function LogAttemptScreen({ onGoBack }: LogAttemptScreenProps) {
     setDescription(suggestion.description || '');
     setCategory(suggestion.category || null);
   };
+
+  // Compute category counts for filter chips
+  const categoryCounts = partnerSuggestions.reduce((acc, s) => {
+    if (s.category) {
+      acc[s.category] = (acc[s.category] || 0) + 1;
+    }
+    return acc;
+  }, {} as Record<string, number>);
+
+  // Filter suggestions by selected category
+  const filteredSuggestions = suggestionFilter
+    ? partnerSuggestions.filter(s => s.category === suggestionFilter)
+    : partnerSuggestions;
+
+  // Get categories that have suggestions
+  const categoriesWithSuggestions = CATEGORIES.filter(cat => categoryCounts[cat] > 0);
 
   const handleSubmit = async () => {
     if (!action.trim()) {
@@ -231,19 +248,74 @@ export function LogAttemptScreen({ onGoBack }: LogAttemptScreenProps) {
         <View style={styles.suggestionsSection}>
           <Text style={styles.sectionTitle}>Partner's Suggestions</Text>
           <Text style={styles.suggestionHint}>Ways to fill your partner's cup</Text>
-          {partnerSuggestions.length > 0 ? (
-            partnerSuggestions.map((suggestion) => (
+          
+          {/* Category filter chips */}
+          {partnerSuggestions.length > 0 && (
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false} 
+              style={styles.filterChipsScroll}
+              contentContainerStyle={styles.filterChipsContainer}
+            >
               <TouchableOpacity
-                key={suggestion.id}
-                style={styles.suggestionCard}
-                onPress={() => handleSelectSuggestion(suggestion)}
+                style={[
+                  styles.filterChip,
+                  suggestionFilter === null && styles.filterChipSelected,
+                ]}
+                onPress={() => setSuggestionFilter(null)}
               >
-                <Text style={styles.suggestionAction}>{suggestion.action}</Text>
-                {suggestion.category && (
-                  <Text style={styles.suggestionCategory}>{suggestion.category}</Text>
-                )}
+                <Text
+                  style={[
+                    styles.filterChipText,
+                    suggestionFilter === null && styles.filterChipTextSelected,
+                  ]}
+                >
+                  All ({partnerSuggestions.length})
+                </Text>
               </TouchableOpacity>
-            ))
+              {categoriesWithSuggestions.map((cat) => (
+                <TouchableOpacity
+                  key={cat}
+                  style={[
+                    styles.filterChip,
+                    suggestionFilter === cat && styles.filterChipSelected,
+                  ]}
+                  onPress={() => setSuggestionFilter(suggestionFilter === cat ? null : cat)}
+                >
+                  <Text
+                    style={[
+                      styles.filterChipText,
+                      suggestionFilter === cat && styles.filterChipTextSelected,
+                    ]}
+                  >
+                    {cat} ({categoryCounts[cat]})
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          )}
+
+          {/* Suggestions list */}
+          {partnerSuggestions.length > 0 ? (
+            <View style={styles.suggestionsList}>
+              {filteredSuggestions.map((suggestion) => (
+                <TouchableOpacity
+                  key={suggestion.id}
+                  style={styles.suggestionCard}
+                  onPress={() => handleSelectSuggestion(suggestion)}
+                >
+                  <Text style={styles.suggestionAction}>{suggestion.action}</Text>
+                  {suggestion.category && (
+                    <Text style={styles.suggestionCategory}>{suggestion.category}</Text>
+                  )}
+                </TouchableOpacity>
+              ))}
+              {filteredSuggestions.length === 0 && suggestionFilter && (
+                <Text style={styles.noSuggestionsText}>
+                  No suggestions in this category
+                </Text>
+              )}
+            </View>
           ) : (
             <EmptyState
               icon="💡"
@@ -253,8 +325,9 @@ export function LogAttemptScreen({ onGoBack }: LogAttemptScreenProps) {
           )}
         </View>
 
-        {/* Action Input */}
+        {/* Custom Entry Section */}
         <View style={styles.formSection}>
+          <Text style={styles.formSectionTitle}>Or Log a Custom Attempt</Text>
           <TextInput
             label="Action"
             value={action}
@@ -392,16 +465,51 @@ const styles = StyleSheet.create({
   },
   suggestionsSection: {
     marginBottom: spacing.xl,
+    backgroundColor: colors.primary + '08',
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.primary + '20',
   },
   suggestionHint: {
     ...typography.caption,
     color: colors.textSecondary,
     marginBottom: spacing.md,
   },
+  filterChipsScroll: {
+    marginBottom: spacing.md,
+  },
+  filterChipsContainer: {
+    paddingRight: spacing.md,
+  },
+  filterChip: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.full,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    marginRight: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  filterChipSelected: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  filterChipText: {
+    ...typography.caption,
+    color: colors.textSecondary,
+  },
+  filterChipTextSelected: {
+    color: colors.textOnPrimary,
+    fontWeight: '600',
+  },
+  suggestionsList: {
+    maxHeight: 300,
+  },
   suggestionCard: {
     backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.primary + '40',
     borderRadius: borderRadius.md,
     padding: spacing.md,
     marginBottom: spacing.sm,
@@ -412,11 +520,27 @@ const styles = StyleSheet.create({
   },
   suggestionCategory: {
     ...typography.caption,
-    color: colors.textSecondary,
+    color: colors.primary,
     marginTop: spacing.xs,
+  },
+  noSuggestionsText: {
+    ...typography.body,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    paddingVertical: spacing.lg,
   },
   formSection: {
     marginBottom: spacing.xl,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  formSectionTitle: {
+    ...typography.h3,
+    color: colors.textPrimary,
+    marginBottom: spacing.md,
   },
   inputLabel: {
     ...typography.bodySmall,
