@@ -9,6 +9,9 @@ Started: 2026-01-14
 - Use `getDocs` + pagination (startAfter, limit) for History-style screens (not onSnapshot)
 - FlatList with onEndReached for infinite scroll pattern
 - Use GemAnimationContext's `showGemAnimation(amount, x?, y?)` to trigger gem earned animations from any screen
+- Use `userData?.activeCoupleId` for couple ID (not `coupleData?.id`)
+- Use `{ includeMetadataChanges: true }` in onSnapshot to track pending writes for offline support
+- Firestore persistence enabled via `initializeFirestore` with `persistentLocalCache`
 
 ---
 
@@ -760,5 +763,59 @@ Built a detailed gem history log showing all gem transactions:
 - Process attempts into multiple gem entries (one attempt can generate 1-3 gem entries)
 - TouchableOpacity wrapper with conditional rendering works well for making components optionally tappable
 - EmptyState component uses `subtitle` not `message` prop
+
+---
+
+## 2026-01-14 - US-050 & US-051 (Firestore Offline Persistence & Offline Mode Indicator) ✅
+Thread: https://ampcode.com/threads/T-019bbdb5-cc03-7248-9532-78c4c5610307
+
+### What was implemented
+Enabled Firestore offline persistence and added visual indicators for offline mode:
+
+1. **Firestore persistence** - Updated firebase config to use `initializeFirestore` with `persistentLocalCache` and `persistentMultipleTabManager` for multi-tab IndexedDB persistence
+
+2. **NetworkContext** - New context provider for:
+   - Tracking online/offline status via browser events (navigator.onLine, online/offline events)
+   - Monitoring pending Firestore writes via `includeMetadataChanges` on snapshots
+   - Showing toast notifications when coming back online ("Back online!")
+   - Showing toast when pending writes sync ("All changes synced!")
+
+3. **OfflineBanner component** - Animated banner at top of screen showing:
+   - "📡 You're offline • Data will sync when connected" when offline
+   - "📡 Offline • X action(s) pending" when offline with pending writes
+   - "⏳ Syncing X action(s)..." when online but writes pending
+   - Auto-dismisses when back online with all synced
+   - Pulsing animation when offline
+
+4. **App integration** - NetworkProvider wraps app, OfflineBanner shown above navigation
+
+### Files created/changed
+- `TwoCupsApp/src/services/firebase/config.ts` - Added persistent cache initialization
+- `TwoCupsApp/src/context/NetworkContext.tsx` (new) - Network status and pending writes tracking
+- `TwoCupsApp/src/components/common/OfflineBanner.tsx` (new) - Animated offline indicator
+- `TwoCupsApp/src/components/common/index.ts` - Export OfflineBanner
+- `TwoCupsApp/App.tsx` - Added NetworkProvider and OfflineBanner
+
+### Acceptance Criteria Checklist (US-050)
+- [x] Enable Firestore persistence in firebase config
+- [x] App loads cached data when offline (automatic with persistence)
+- [x] User can view HomeScreen, history while offline
+- [x] Pending writes sync when back online (automatic with Firestore)
+- [x] Visual indicator when app is offline
+- [x] Queue actions taken offline and sync later (automatic with Firestore)
+
+### Acceptance Criteria Checklist (US-051)
+- [x] Banner or icon shows when device is offline
+- [x] Shows count of pending actions to sync
+- [x] Banner dismisses automatically when back online
+- [x] Toast notification when sync completes
+- [x] Non-intrusive but visible placement
+
+### Learnings
+- Firebase JS SDK v9.8+ uses `initializeFirestore` with `persistentLocalCache` instead of deprecated `enableIndexedDbPersistence`
+- Use `persistentMultipleTabManager()` for multi-tab support
+- `snapshot.metadata.hasPendingWrites` indicates documents with local changes not yet synced
+- Use `{ includeMetadataChanges: true }` in onSnapshot to receive metadata change events
+- Use `userData?.activeCoupleId` instead of `coupleData?.id` (Couple type doesn't include id)
 
 ---

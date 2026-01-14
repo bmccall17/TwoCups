@@ -1,27 +1,27 @@
 {
-  "name": "TwoCups Sprint 5 - Gem Economy Polish",
-  "branchName": "ralph/sprint-5-gems",
-  "description": "Enhance gem visuals, animations, and displays to make earning gems feel more rewarding",
+  "name": "TwoCups Sprint 7 - Technical Debt & Polish",
+  "branchName": "ralph/sprint-7-tech-debt",
+  "description": "Address technical debt, improve reliability, add offline support, and prepare for production release",
   "created": "2026-01-14",
 
   "decisions": {
-    "D1_Animation": "Use React Native Reanimated or Animated API for smooth animations",
-    "D2_Design": "Gems should feel valuable - sparkle effects, satisfying sounds optional",
-    "D3_Scope": "Focus on visual polish, not changing gem economy rules"
+    "D1_Offline": "Use Firestore persistence for offline support",
+    "D2_ErrorBoundary": "React error boundaries with fallback UI",
+    "D3_Testing": "Focus on critical path testing, not 100% coverage"
   },
 
   "userStories": [
     {
-      "id": "US-031",
-      "title": "Gem Earned Animation",
-      "description": "Show animated gem(s) floating up when user earns gems from logging or acknowledging.",
+      "id": "US-050",
+      "title": "Firestore Offline Persistence",
+      "description": "Enable Firestore offline persistence so app works without internet connection.",
       "acceptanceCriteria": [
-        "When logging attempt: show +1 or +2 gem animation",
-        "When acknowledging: show +3 gem animation",
-        "Gems float upward and fade out",
-        "Animation plays near the action that triggered it",
-        "Animation duration ~1-2 seconds",
-        "Different gem colors for different amounts (optional)"
+        "Enable Firestore persistence in firebase config",
+        "App loads cached data when offline",
+        "User can view HomeScreen, history while offline",
+        "Pending writes sync when back online",
+        "Visual indicator when app is offline",
+        "Queue actions taken offline and sync later"
       ],
       "priority": 1,
       "passes": true,
@@ -29,15 +29,15 @@
       "blockedReason": null
     },
     {
-      "id": "US-032",
-      "title": "Gem Counter Component Redesign",
-      "description": "Improve the gem counter display on HomeScreen to be more visually appealing.",
+      "id": "US-051",
+      "title": "Offline Mode Indicator",
+      "description": "Show clear indicator when app is offline and actions are queued.",
       "acceptanceCriteria": [
-        "Gem icon with count displayed prominently",
-        "Counter animates when value changes (count up effect)",
-        "Shows both players' gem counts clearly",
-        "Gem icon has subtle sparkle or glow effect",
-        "Responsive sizing for different screen sizes"
+        "Banner or icon shows when device is offline",
+        "Shows count of pending actions to sync",
+        "Banner dismisses automatically when back online",
+        "Toast notification when sync completes",
+        "Non-intrusive but visible placement"
       ],
       "priority": 2,
       "passes": true,
@@ -45,84 +45,381 @@
       "blockedReason": null
     },
     {
-      "id": "US-033",
-      "title": "Gem Summary in Toast Notifications",
-      "description": "Enhance toast notifications to prominently display gem rewards.",
+      "id": "US-052",
+      "title": "Global Error Boundary",
+      "description": "Add React error boundary to catch and handle crashes gracefully.",
       "acceptanceCriteria": [
-        "Log attempt toast shows gem icon + amount earned",
-        "Request fulfillment toast shows bonus gem indicator",
-        "Acknowledge toast shows '+3 gems to you, +3 gems to partner'",
-        "Gem icon in toast matches app gem design",
-        "Toast styling emphasizes the gem reward"
+        "Error boundary wraps main app component",
+        "Crash shows friendly error screen instead of white screen",
+        "Error screen has 'Try Again' button to reload",
+        "Error details logged (console or remote logging)",
+        "User can report issue from error screen (optional)"
       ],
       "priority": 3,
-      "passes": true,
+      "passes": false,
       "blocked": false,
       "blockedReason": null
     },
     {
-      "id": "US-034",
-      "title": "Daily Gem Earnings Summary",
-      "description": "Show how many gems user has earned today on HomeScreen.",
+      "id": "US-053",
+      "title": "Screen-Level Error Handling",
+      "description": "Add error handling to each screen for Firestore query failures.",
       "acceptanceCriteria": [
-        "Display 'Today: +X gems' below total gem count",
-        "Resets at midnight local time",
-        "Shows breakdown: 'X from logging, Y from acknowledgments' (optional)",
-        "Encouraging message if gems earned today (e.g., 'Great job!')",
-        "Different message if no gems yet today"
+        "Each screen handles query errors gracefully",
+        "Error state shows 'Something went wrong' with retry button",
+        "Network errors show specific 'No connection' message",
+        "Permission errors show appropriate message",
+        "Retry button re-fetches data"
       ],
       "priority": 4,
-      "passes": true,
+      "passes": false,
       "blocked": false,
       "blockedReason": null
     },
     {
-      "id": "US-035",
-      "title": "Gem Milestone Celebrations",
-      "description": "Celebrate when users hit gem milestones (100, 500, 1000, etc.).",
+      "id": "US-054",
+      "title": "Loading State Improvements",
+      "description": "Ensure all screens have consistent, polished loading states.",
       "acceptanceCriteria": [
-        "Detect when gem count crosses milestone threshold",
-        "Show celebration modal/overlay for milestones",
-        "Milestones: 100, 250, 500, 1000, 2500, 5000, 10000",
-        "Celebration includes milestone badge/icon",
-        "Message acknowledges achievement (e.g., '500 gems! You're crushing it!')",
-        "Only triggers once per milestone (track in user doc)"
+        "Consistent loading spinner component used everywhere",
+        "Skeleton loaders for content-heavy screens (optional enhancement)",
+        "Loading states don't flash if data loads quickly (min display time)",
+        "Loading text appropriate to context ('Loading attempts...', etc.)",
+        "Pull-to-refresh shows loading indicator"
       ],
       "priority": 5,
-      "passes": true,
+      "passes": false,
       "blocked": false,
       "blockedReason": null
     },
     {
-      "id": "US-036",
-      "title": "Gem Leaderboard (Couple View)",
-      "description": "Fun comparison view showing gem earnings between partners.",
+      "id": "US-055",
+      "title": "Android Build and Testing",
+      "description": "Create production-ready Android APK and test on real devices.",
       "acceptanceCriteria": [
-        "Section on HomeScreen or Settings showing both partners' gems",
-        "Visual bar chart comparing gem counts",
-        "Playful messaging (not competitive, encouraging)",
-        "Shows who's 'ahead' with fun label (e.g., 'Gem Champion this week')",
-        "Option to view weekly or all-time comparison"
+        "Android build completes without errors",
+        "APK runs on Android emulator",
+        "APK runs on at least 2 physical Android devices",
+        "All screens render correctly on different screen sizes",
+        "Navigation works correctly",
+        "Firebase auth and Firestore work on Android"
       ],
       "priority": 6,
-      "passes": true,
+      "passes": false,
       "blocked": false,
       "blockedReason": null
     },
     {
-      "id": "US-037",
-      "title": "Gem History Log",
-      "description": "Detailed log of all gem transactions for transparency.",
+      "id": "US-056",
+      "title": "Performance Audit - Home Screen",
+      "description": "Profile and optimize HomeScreen rendering performance.",
       "acceptanceCriteria": [
-        "Accessible from Settings or gem counter tap",
-        "Shows each gem earning event with timestamp",
-        "Entry shows: amount, reason (logged attempt, acknowledged, request fulfilled)",
-        "Links to the relevant attempt if applicable",
-        "Paginated list (load 20 at a time)",
-        "Running total displayed"
+        "HomeScreen renders in under 500ms on mid-range device",
+        "No unnecessary re-renders when data hasn't changed",
+        "Firestore listeners properly cleaned up on unmount",
+        "Memory usage stable (no leaks on repeated navigation)",
+        "Cup animations run at 60fps"
       ],
       "priority": 7,
-      "passes": true,
+      "passes": false,
+      "blocked": false,
+      "blockedReason": null
+    },
+    {
+      "id": "US-057",
+      "title": "Performance Audit - Lists",
+      "description": "Optimize list rendering for screens with many items.",
+      "acceptanceCriteria": [
+        "History/Acknowledge screens use FlatList for virtualization",
+        "Smooth scrolling with 100+ items",
+        "No jank when loading more items",
+        "Proper key props on list items",
+        "Memoized list item components where appropriate"
+      ],
+      "priority": 8,
+      "passes": false,
+      "blocked": false,
+      "blockedReason": null
+    },
+    {
+      "id": "US-058",
+      "title": "Firestore Security Rules Audit",
+      "description": "Review and tighten Firestore security rules for production.",
+      "acceptanceCriteria": [
+        "Users can only read/write their own user document",
+        "Users can only access couples they belong to",
+        "Attempts can only be created by authenticated users in the couple",
+        "Requests can only be created by authenticated users in the couple",
+        "No public read/write access anywhere",
+        "Rules tested with Firebase emulator"
+      ],
+      "priority": 9,
+      "passes": false,
+      "blocked": false,
+      "blockedReason": null
+    },
+    {
+      "id": "US-059",
+      "title": "Environment Configuration",
+      "description": "Set up proper environment configuration for dev/staging/prod.",
+      "acceptanceCriteria": [
+        "Environment variables for Firebase config",
+        "Separate Firebase projects for dev and prod (or emulator for dev)",
+        "Build scripts for different environments",
+        "No hardcoded API keys in source code",
+        "Documentation for environment setup"
+      ],
+      "priority": 10,
+      "passes": false,
+      "blocked": false,
+      "blockedReason": null
+    },
+    {
+      "id": "US-060",
+      "title": "App Icon and Splash Screen",
+      "description": "Create and configure app icon and splash screen for Android.",
+      "acceptanceCriteria": [
+        "App icon designed (Two Cups theme)",
+        "Icon configured for all Android densities",
+        "Splash screen shows app logo on launch",
+        "Splash screen transitions smoothly to app",
+        "No white flash between splash and app"
+      ],
+      "priority": 11,
+      "passes": false,
+      "blocked": false,
+      "blockedReason": null
+    },
+    {
+      "id": "US-061",
+      "title": "Accessibility Audit",
+      "description": "Ensure app is accessible to users with disabilities.",
+      "acceptanceCriteria": [
+        "All interactive elements have accessible labels",
+        "Screen reader can navigate all screens",
+        "Color contrast meets WCAG AA standards",
+        "Touch targets are at least 44x44 points",
+        "Focus order is logical",
+        "No information conveyed by color alone"
+      ],
+      "priority": 12,
+      "passes": false,
+      "blocked": false,
+      "blockedReason": null
+    },
+    {
+      "id": "US-062",
+      "title": "Crashlytics / Error Reporting Setup",
+      "description": "Set up crash reporting to monitor production issues.",
+      "acceptanceCriteria": [
+        "Firebase Crashlytics integrated",
+        "Crashes automatically reported with stack traces",
+        "Non-fatal errors can be logged",
+        "User ID associated with crashes (for debugging)",
+        "Dashboard accessible in Firebase Console"
+      ],
+      "priority": 13,
+      "passes": false,
+      "blocked": false,
+      "blockedReason": null
+    },
+    {
+      "id": "US-063",
+      "title": "Fix Cryptographic Randomness for Invite Codes",
+      "description": "Replace Math.random() with crypto-secure random generation for invite codes.",
+      "acceptanceCriteria": [
+        "Math.random() replaced with crypto.getRandomValues() or equivalent",
+        "Invite codes are cryptographically secure",
+        "Existing invite code generation logic preserved",
+        "Unit tests pass for new implementation"
+      ],
+      "priority": 14,
+      "passes": false,
+      "blocked": false,
+      "blockedReason": null
+    },
+    {
+      "id": "US-064",
+      "title": "Replace 'any' Types with Proper TypeScript Types",
+      "description": "Eliminate 'any' types throughout the codebase for better type safety.",
+      "acceptanceCriteria": [
+        "All 10+ instances of 'any' type identified and replaced",
+        "Proper interfaces/types defined where needed",
+        "TypeScript strict mode passes without errors",
+        "No runtime regressions introduced"
+      ],
+      "priority": 15,
+      "passes": false,
+      "blocked": false,
+      "blockedReason": null
+    },
+    {
+      "id": "US-065",
+      "title": "Fix Type Mismatches Between Functions and Mobile",
+      "description": "Align Suggestion and Request interfaces between Cloud Functions and mobile app.",
+      "acceptanceCriteria": [
+        "Shared type definitions between functions and mobile",
+        "Suggestion interface consistent across codebase",
+        "Request interface consistent across codebase",
+        "TypeScript compilation passes in both projects"
+      ],
+      "priority": 16,
+      "passes": false,
+      "blocked": false,
+      "blockedReason": null
+    },
+    {
+      "id": "US-066",
+      "title": "Remove Debug Console Statements",
+      "description": "Clean up console.log and console.error statements, replace with proper logging.",
+      "acceptanceCriteria": [
+        "All 20+ debug console statements identified",
+        "Production code uses Crashlytics for error logging",
+        "Development logging is conditional on __DEV__ flag",
+        "No sensitive data logged"
+      ],
+      "priority": 17,
+      "passes": false,
+      "blocked": true,
+      "blockedReason": "Depends on US-062 (Crashlytics) for proper error reporting replacement"
+    },
+    {
+      "id": "US-067",
+      "title": "Clean Up Firestore Rules",
+      "description": "Remove unused functions and dead code from Firestore security rules.",
+      "acceptanceCriteria": [
+        "Unused getPartnerId function removed",
+        "All helper functions are actually used",
+        "Rules file is clean and well-organized",
+        "Security rules still pass all tests"
+      ],
+      "priority": 18,
+      "passes": false,
+      "blocked": false,
+      "blockedReason": null
+    },
+    {
+      "id": "US-068",
+      "title": "Centralize Configuration Constants",
+      "description": "Move duplicated configuration values to a single source of truth.",
+      "acceptanceCriteria": [
+        "Configuration constants in single config file",
+        "No duplicated magic numbers or strings",
+        "All 3+ files with duplicated config updated",
+        "Easy to modify configuration in one place"
+      ],
+      "priority": 19,
+      "passes": false,
+      "blocked": false,
+      "blockedReason": null
+    },
+    {
+      "id": "US-069",
+      "title": "Input Validation Improvements",
+      "description": "Add comprehensive input validation with max lengths, email regex, and sanitization.",
+      "acceptanceCriteria": [
+        "Max length validation on all text inputs",
+        "Proper email regex validation",
+        "Input sanitization to prevent injection",
+        "Validation error messages are user-friendly",
+        "Server-side validation matches client-side"
+      ],
+      "priority": 20,
+      "passes": false,
+      "blocked": false,
+      "blockedReason": null
+    },
+    {
+      "id": "US-070",
+      "title": "Fix Unawaited Promises",
+      "description": "Add proper await handling to promises in MilestoneCelebrationContext and AcknowledgeScreen.",
+      "acceptanceCriteria": [
+        "All promises properly awaited or handled",
+        "MilestoneCelebrationContext async issues fixed",
+        "AcknowledgeScreen async issues fixed",
+        "No unhandled promise rejections",
+        "ESLint no-floating-promises rule passes"
+      ],
+      "priority": 21,
+      "passes": false,
+      "blocked": false,
+      "blockedReason": null
+    },
+    {
+      "id": "US-071",
+      "title": "Fix Silent Failures",
+      "description": "Replace empty catch blocks with proper error handling.",
+      "acceptanceCriteria": [
+        "All empty catch blocks identified and fixed",
+        "Errors logged to Crashlytics or handled appropriately",
+        "User notified when operations fail",
+        "No silent swallowing of errors"
+      ],
+      "priority": 22,
+      "passes": false,
+      "blocked": true,
+      "blockedReason": "Depends on US-062 (Crashlytics) for proper error logging"
+    },
+    {
+      "id": "US-072",
+      "title": "Fix Confusing Property Names",
+      "description": "Rename unclear property names like 'odI' to descriptive names.",
+      "acceptanceCriteria": [
+        "'odI' renamed to clear, descriptive name",
+        "All confusing property names identified and fixed",
+        "Naming follows project conventions",
+        "All usages updated consistently"
+      ],
+      "priority": 23,
+      "passes": false,
+      "blocked": false,
+      "blockedReason": null
+    },
+    {
+      "id": "US-073",
+      "title": "Tighten Firestore Security Rules",
+      "description": "Review and fix overly permissive Firestore security rules.",
+      "acceptanceCriteria": [
+        "All overly permissive rules identified",
+        "Rules follow principle of least privilege",
+        "No unnecessary read/write permissions",
+        "Security rules tested with Firebase emulator",
+        "Complements US-058 security audit"
+      ],
+      "priority": 24,
+      "passes": false,
+      "blocked": false,
+      "blockedReason": null
+    },
+    {
+      "id": "US-074",
+      "title": "Add Rate Limiting for Sensitive Operations",
+      "description": "Implement rate limiting to prevent abuse of sensitive operations.",
+      "acceptanceCriteria": [
+        "Rate limiting on invite code generation",
+        "Rate limiting on pairing attempts",
+        "Rate limiting on authentication attempts",
+        "Appropriate error messages when rate limited",
+        "Configurable rate limit thresholds"
+      ],
+      "priority": 25,
+      "passes": false,
+      "blocked": false,
+      "blockedReason": null
+    },
+    {
+      "id": "US-075",
+      "title": "Optimize Animation Performance",
+      "description": "Pre-calculate random values and optimize animations for smooth 60fps.",
+      "acceptanceCriteria": [
+        "Random values pre-calculated before animation starts",
+        "No random calculations during animation frames",
+        "Animations run at consistent 60fps",
+        "Memory usage stable during animations",
+        "No dropped frames on mid-range devices"
+      ],
+      "priority": 26,
+      "passes": false,
       "blocked": false,
       "blockedReason": null
     }
