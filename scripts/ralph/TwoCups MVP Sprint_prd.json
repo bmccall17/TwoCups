@@ -1,0 +1,133 @@
+{
+  "name": "TwoCups MVP Sprint",
+  "branchName": "ralph/mvp-core-loop",
+  "description": "Build the core game loop: cup visualizations, log attempts, acknowledge attempts, and requests for mobile-first app",
+  "created": "2026-01-14",
+
+  "decisions": {
+    "D1_AuthStrategy": "A - Fix anonymous auth",
+    "D2_StartingPoint": "A - Fix auth flow first",
+    "D3_Priority": "C - Full game loop (Request + Log + Acknowledge + basic Home)"
+  },
+
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Fix Auth Flow",
+      "description": "Debug and fix the anonymous auth + couple creation flow. Verify in Firebase Console that anonymous auth is enabled and localhost is authorized.",
+      "acceptanceCriteria": [
+        "User can tap 'Continue as Guest' and get authenticated",
+        "User document created in Firestore",
+        "User can create a couple and see invite code",
+        "Second user can join couple with invite code",
+        "Both users see 'couple active' state",
+        "Data from sessions on each respective device remains on that device"
+      ],
+      "priority": 1,
+      "passes": true,
+      "blocked": false,
+      "blockedReason": null,
+      "notes": "Code fix committed. NEEDS BROWSER TESTING. Check Firebase Console: 1) Auth > Anonymous enabled, 2) Auth > Authorized domains includes localhost"
+    },
+    {
+      "id": "US-002",
+      "title": "HomeScreen with Cup Visualizations",
+      "description": "Build the main dashboard showing both players' cups, collective cup, and gem counts. Real-time updates when data changes.",
+      "acceptanceCriteria": [
+        "Shows 'My Cup' with gem fill level (0-100)",
+        "Shows 'Partner Cup' with gem fill level",
+        "Shows 'Collective Cup' with liquid fill level",
+        "Shows gem count for current user",
+        "Updates in real-time when data changes",
+        "Has navigation to Make a Request screen",
+        "Has navigation to Log Attempt screen",
+        "Has navigation to Acknowledge screen"
+      ],
+      "priority": 2,
+      "passes": true,
+      "blocked": false,
+      "blockedReason": null
+    },
+    {
+      "id": "US-003",
+      "title": "Log Attempt Screen",
+      "description": "Build screen where user can log an action they did for their partner. Should show partner's active requests and suggestions.",
+      "acceptanceCriteria": [
+        "User can enter action text",
+        "User can add optional description",
+        "User can select category from 9 love language categories",
+        "Partner's active requests shown prominently at top",
+        "Submitting creates attempt doc in Firestore",
+        "User sees +1 gem immediate feedback (or +2 if fulfills request)",
+        "Request auto-fulfillment detection works"
+      ],
+      "priority": 3,
+      "passes": true,
+      "blocked": false,
+      "blockedReason": null
+    },
+    {
+      "id": "US-004",
+      "title": "Acknowledge Attempts Screen",
+      "description": "Build screen where user reviews and acknowledges attempts their partner logged for them.",
+      "acceptanceCriteria": [
+        "Shows list of pending attempts (for current user)",
+        "Each attempt shows: action, description, timestamp, who logged it",
+        "User can tap to acknowledge",
+        "Acknowledging updates: attempt.acknowledged, both gem counts, cups",
+        "Visual feedback on acknowledgment",
+        "Can filter by pending/acknowledged"
+      ],
+      "priority": 4,
+      "passes": true,
+      "blocked": false,
+      "blockedReason": null
+    },
+    {
+      "id": "US-005",
+      "title": "Make Request Screen",
+      "description": "Build screen where user can request specific actions from their partner.",
+      "acceptanceCriteria": [
+        "User can enter request action text",
+        "User can add optional description",
+        "User can select category",
+        "Submitting creates request doc in Firestore",
+        "Request appears in partner's Log Attempt screen"
+      ],
+      "priority": 5,
+      "passes": true,
+      "blocked": false,
+      "blockedReason": null
+    },
+    {
+      "id": "US-006",
+      "title": "Manage Suggestions & Requests Screen",
+      "description": "Build screen where user manages their own suggestions and requests (ways partner can fill their cup).",
+      "acceptanceCriteria": [
+        "User can add new suggestions",
+        "User can view their suggestions grouped by category",
+        "User can delete suggestions",
+        "Suggestions appear in partner's Log Attempt screen"
+      ],
+      "priority": 6,
+      "passes": true,
+      "blocked": false,
+      "blockedReason": null
+    },
+    {
+      "id": "US-007",
+      "title": "Bottom Navigation",
+      "description": "Add bottom navigation bar to switch between Home, Request, Log, Acknowledge, and Settings.",
+      "acceptanceCriteria": [
+        "Tab bar at bottom of screen",
+        "Tabs: Home, Log, Acknowledge, Settings",
+        "Active tab highlighted",
+        "Navigation works between all screens"
+      ],
+      "priority": 7,
+      "passes": true,
+      "blocked": false,
+      "blockedReason": null
+    }
+  ]
+}
