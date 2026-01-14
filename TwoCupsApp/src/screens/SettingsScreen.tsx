@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { usePlayerData } from '../hooks';
-import { Button } from '../components/common';
+import { Button, ErrorState } from '../components/common';
 import { colors, spacing, typography, borderRadius } from '../theme';
 
 interface SettingsScreenProps {
@@ -17,11 +17,24 @@ export function SettingsScreen({
   onNavigateToGemHistory,
 }: SettingsScreenProps) {
   const { userData, coupleData, signOut } = useAuth();
-  const { partnerName } = usePlayerData();
+  const { partnerName, error, refresh } = usePlayerData();
 
   const displayName = userData?.displayName || 'Guest';
   const inviteCode = coupleData?.inviteCode || '—';
   const isActive = coupleData?.status === 'active';
+
+  if (error) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.scrollContent}>
+          <View style={styles.header}>
+            <Text style={styles.title}>Settings</Text>
+          </View>
+          <ErrorState error={error} onRetry={refresh} />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>

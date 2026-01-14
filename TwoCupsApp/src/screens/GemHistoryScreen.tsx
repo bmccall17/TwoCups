@@ -26,7 +26,7 @@ import {
 } from 'firebase/firestore';
 import { db, getCurrentUserId } from '../services/firebase/config';
 import { useAuth } from '../context/AuthContext';
-import { LoadingSpinner, EmptyState, Button } from '../components/common';
+import { LoadingSpinner, EmptyState, ErrorState, Button } from '../components/common';
 import { colors, spacing, typography, borderRadius, shadows } from '../theme';
 import { Attempt } from '../types';
 
@@ -54,6 +54,7 @@ export function GemHistoryScreen({ onGoBack }: GemHistoryScreenProps) {
   const { user, userData, coupleData } = useAuth();
   const [entries, setEntries] = useState<GemHistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
@@ -158,6 +159,7 @@ export function GemHistoryScreen({ onGoBack }: GemHistoryScreenProps) {
     } else {
       setLoading(true);
     }
+    setError(null);
 
     try {
       const attemptsRef = collection(db, 'couples', coupleId, 'attempts');
@@ -180,8 +182,10 @@ export function GemHistoryScreen({ onGoBack }: GemHistoryScreenProps) {
 
       const total = gemEntries.reduce((sum, entry) => sum + entry.amount, 0);
       setRunningTotal(total);
-    } catch (error) {
-      console.error('Error fetching gem history:', error);
+    } catch (err: unknown) {
+      console.error('Error fetching gem history:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load gem history';
+      setError(errorMessage);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -342,6 +346,24 @@ export function GemHistoryScreen({ onGoBack }: GemHistoryScreenProps) {
           <Text style={styles.title}>Gem History</Text>
         </View>
         <LoadingSpinner message="Loading gem history..." />
+      </SafeAreaView>
+    );
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          {onGoBack && (
+            <TouchableOpacity onPress={onGoBack} style={styles.backButton}>
+              <Text style={styles.backButtonText}>← Back</Text>
+            </TouchableOpacity>
+          )}
+          <Text style={styles.title}>Gem History</Text>
+        </View>
+        <View style={{ flex: 1, paddingHorizontal: spacing.lg }}>
+          <ErrorState error={error} onRetry={() => fetchEntries()} />
+        </View>
       </SafeAreaView>
     );
   }

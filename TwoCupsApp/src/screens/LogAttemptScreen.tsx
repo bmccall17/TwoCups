@@ -14,7 +14,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useGemAnimation } from '../context/GemAnimationContext';
 import { logAttempt, getDailyAttemptsInfo, DailyAttemptsInfo } from '../services/api';
-import { Button, TextInput, LoadingSpinner, EmptyState } from '../components/common';
+import { Button, TextInput, LoadingSpinner, EmptyState, ErrorState } from '../components/common';
 import { colors, spacing, typography, borderRadius } from '../theme';
 import { Request, Suggestion } from '../types';
 
@@ -45,10 +45,12 @@ export function LogAttemptScreen({ onGoBack }: LogAttemptScreenProps) {
   const [category, setCategory] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [partnerRequests, setPartnerRequests] = useState<Request[]>([]);
   const [partnerSuggestions, setPartnerSuggestions] = useState<Suggestion[]>([]);
   const [dailyAttemptsInfo, setDailyAttemptsInfo] = useState<DailyAttemptsInfo | null>(null);
   const [suggestionFilter, setSuggestionFilter] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const coupleId = userData?.activeCoupleId;
   const myUid = user?.uid;
@@ -94,10 +96,17 @@ export function LogAttemptScreen({ onGoBack }: LogAttemptScreenProps) {
     return unsubscribe;
   }, [coupleId, myUid]);
 
+  const handleRetry = () => {
+    setError(null);
+    setInitialLoading(true);
+    setRefreshKey(k => k + 1);
+  };
+
   // Fetch partner's suggestions (ways to fill their cup)
   useEffect(() => {
     if (!coupleId || !partnerId) return;
 
+    setError(null);
     const suggestionsRef = collection(db, 'couples', coupleId, 'suggestions');
     const q = query(
       suggestionsRef,
@@ -112,10 +121,14 @@ export function LogAttemptScreen({ onGoBack }: LogAttemptScreenProps) {
       })) as Suggestion[];
       setPartnerSuggestions(suggestions);
       setInitialLoading(false);
+    }, (err) => {
+      console.error('Error fetching suggestions:', err);
+      setError(err.message || 'Failed to load data');
+      setInitialLoading(false);
     });
 
     return unsubscribe;
-  }, [coupleId, partnerId]);
+  }, [coupleId, partnerId, refreshKey]);
 
   const handleSelectRequest = (request: Request) => {
     setAction(request.action);
@@ -208,6 +221,19 @@ export function LogAttemptScreen({ onGoBack }: LogAttemptScreenProps) {
 
   if (initialLoading) {
     return <LoadingSpinner message="Loading suggestions..." />;
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.scrollContent}>
+          <TouchableOpacity onPress={onGoBack} style={styles.backButton}>
+            <Text style={styles.backText}>← Back</Text>
+          </TouchableOpacity>
+          <ErrorState error={error} onRetry={handleRetry} />
+        </View>
+      </SafeAreaView>
+    );
   }
 
   return (

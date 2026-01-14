@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { doc, onSnapshot, collection } from 'firebase/firestore';
 import { db } from '../services/firebase/config';
 import { useAuth } from '../context/AuthContext';
@@ -15,6 +15,7 @@ interface UsePlayerDataResult {
   partnerName: string;
   loading: boolean;
   error: string | null;
+  refresh: () => void;
 }
 
 export function usePlayerData(): UsePlayerDataResult {
@@ -24,10 +25,17 @@ export function usePlayerData(): UsePlayerDataResult {
   const [partnerName, setPartnerName] = useState<string>('Partner');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const coupleId = userData?.activeCoupleId;
   const myUid = user?.uid;
   const partnerIds = coupleData?.partnerIds ?? [];
+
+  const refresh = useCallback(() => {
+    setError(null);
+    setLoading(true);
+    setRefreshKey(k => k + 1);
+  }, []);
 
   useEffect(() => {
     if (!coupleId || !myUid || partnerIds.length === 0) {
@@ -97,7 +105,7 @@ export function usePlayerData(): UsePlayerDataResult {
       unsubscribeMy();
       if (unsubscribePartner) unsubscribePartner();
     };
-  }, [coupleId, myUid, partnerIds.join(',')]);
+  }, [coupleId, myUid, partnerIds.join(','), refreshKey]);
 
-  return { myPlayer, partnerPlayer, partnerName, loading, error };
+  return { myPlayer, partnerPlayer, partnerName, loading, error, refresh };
 }

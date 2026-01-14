@@ -12,7 +12,7 @@ import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestor
 import { db } from '../services/firebase/config';
 import { useAuth } from '../context/AuthContext';
 import { createSuggestion, deleteSuggestion } from '../services/api';
-import { Button, TextInput, LoadingSpinner, EmptyState } from '../components/common';
+import { Button, TextInput, LoadingSpinner, EmptyState, ErrorState } from '../components/common';
 import { colors, spacing, typography, borderRadius } from '../theme';
 import { Suggestion } from '../types';
 
@@ -40,14 +40,23 @@ export function ManageSuggestionsScreen({ onGoBack }: ManageSuggestionsScreenPro
   const [category, setCategory] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const coupleId = userData?.activeCoupleId;
   const myUid = user?.uid;
 
+  const handleRetry = () => {
+    setError(null);
+    setInitialLoading(true);
+    setRefreshKey(k => k + 1);
+  };
+
   useEffect(() => {
     if (!coupleId || !myUid) return;
 
+    setError(null);
     const suggestionsRef = collection(db, 'couples', coupleId, 'suggestions');
     const q = query(
       suggestionsRef,
@@ -63,10 +72,14 @@ export function ManageSuggestionsScreen({ onGoBack }: ManageSuggestionsScreenPro
       })) as Suggestion[];
       setSuggestions(items);
       setInitialLoading(false);
+    }, (err) => {
+      console.error('Error fetching suggestions:', err);
+      setError(err.message || 'Failed to load suggestions');
+      setInitialLoading(false);
     });
 
     return unsubscribe;
-  }, [coupleId, myUid]);
+  }, [coupleId, myUid, refreshKey]);
 
   const handleSubmit = async () => {
     if (!action.trim()) {
@@ -134,6 +147,19 @@ export function ManageSuggestionsScreen({ onGoBack }: ManageSuggestionsScreenPro
 
   if (initialLoading) {
     return <LoadingSpinner message="Loading suggestions..." />;
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.scrollContent}>
+          <TouchableOpacity onPress={onGoBack} style={styles.backButton}>
+            <Text style={styles.backText}>← Back</Text>
+          </TouchableOpacity>
+          <ErrorState error={error} onRetry={handleRetry} />
+        </View>
+      </SafeAreaView>
+    );
   }
 
   return (

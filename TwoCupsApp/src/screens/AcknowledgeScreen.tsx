@@ -14,7 +14,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useGemAnimation } from '../context/GemAnimationContext';
 import { acknowledgeAttempt } from '../services/api';
-import { Button, LoadingSpinner, EmptyState, CelebrationOverlay } from '../components/common';
+import { Button, LoadingSpinner, EmptyState, ErrorState, CelebrationOverlay } from '../components/common';
 import { colors, spacing, typography, borderRadius } from '../theme';
 import { Attempt } from '../types';
 
@@ -34,6 +34,7 @@ export function AcknowledgeScreen() {
   const { showGemAnimation } = useGemAnimation();
   const [attempts, setAttempts] = useState<Attempt[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [acknowledging, setAcknowledging] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterType>('pending');
   const [partnerNames, setPartnerNames] = useState<Record<string, string>>({});
@@ -41,6 +42,7 @@ export function AcknowledgeScreen() {
     visible: false,
     message: '',
   });
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const coupleId = userData?.activeCoupleId;
   const myUid = user?.uid;
@@ -65,10 +67,17 @@ export function AcknowledgeScreen() {
     fetchNames();
   }, [coupleData?.partnerIds, myUid]);
 
+  const handleRetry = useCallback(() => {
+    setError(null);
+    setLoading(true);
+    setRefreshKey(k => k + 1);
+  }, []);
+
   // Fetch attempts for current user (as recipient)
   useEffect(() => {
     if (!coupleId || !myUid) return;
 
+    setError(null);
     const attemptsRef = collection(db, 'couples', coupleId, 'attempts');
     const q = query(
       attemptsRef,
@@ -85,13 +94,14 @@ export function AcknowledgeScreen() {
       })) as Attempt[];
       setAttempts(attemptsList);
       setLoading(false);
-    }, (error) => {
-      console.error('Error fetching attempts:', error);
+    }, (err) => {
+      console.error('Error fetching attempts:', err);
+      setError(err.message || 'Failed to load attempts');
       setLoading(false);
     });
 
     return unsubscribe;
-  }, [coupleId, myUid]);
+  }, [coupleId, myUid, refreshKey]);
 
   const handleDismissCelebration = useCallback(() => {
     setCelebration({ visible: false, message: '' });
@@ -214,6 +224,8 @@ export function AcknowledgeScreen() {
         {/* Attempts List */}
         {loading ? (
           <LoadingSpinner message="Loading attempts..." />
+        ) : error ? (
+          <ErrorState error={error} onRetry={handleRetry} />
         ) : filteredAttempts.length === 0 ? (
           <EmptyState
             icon="✨"

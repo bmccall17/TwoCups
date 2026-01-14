@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { useMilestoneCelebration } from '../context/MilestoneCelebrationContext';
 import { usePlayerData } from '../hooks';
-import { Button, LoadingSpinner, GemCounter, GemLeaderboard } from '../components/common';
+import { Button, LoadingSpinner, ErrorState, GemCounter, GemLeaderboard } from '../components/common';
 import { CupVisualization } from '../components/cups';
 import { colors, spacing, typography, borderRadius } from '../theme';
 
@@ -23,7 +23,7 @@ export function HomeScreen({
   onNavigateToGemHistory,
 }: HomeScreenProps) {
   const { userData, coupleData } = useAuth();
-  const { myPlayer, partnerPlayer, partnerName, loading } = usePlayerData();
+  const { myPlayer, partnerPlayer, partnerName, loading, error, refresh } = usePlayerData();
   const { checkMilestone } = useMilestoneCelebration();
   const previousGemCount = useRef<number | null>(null);
 
@@ -40,6 +40,14 @@ export function HomeScreen({
 
   if (loading) {
     return <LoadingSpinner message="Loading..." />;
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <ErrorState error={error} onRetry={refresh} />
+      </SafeAreaView>
+    );
   }
 
   const myName = userData?.displayName || 'Me';

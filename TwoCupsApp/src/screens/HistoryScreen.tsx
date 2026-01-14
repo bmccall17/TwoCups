@@ -27,7 +27,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../services/firebase/config';
 import { useAuth } from '../context/AuthContext';
-import { LoadingSpinner, EmptyState, GemLeaderboard } from '../components/common';
+import { LoadingSpinner, EmptyState, ErrorState, GemLeaderboard } from '../components/common';
 import { colors, spacing, typography, borderRadius } from '../theme';
 import { Attempt, Request } from '../types';
 import { usePlayerData } from '../hooks/usePlayerData';
@@ -96,6 +96,7 @@ export function HistoryScreen() {
   const { myPlayer, partnerPlayer, partnerName } = usePlayerData();
   const [attempts, setAttempts] = useState<Attempt[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
@@ -173,6 +174,7 @@ export function HistoryScreen() {
     } else {
       setLoading(true);
     }
+    setError(null);
 
     try {
       const attemptsRef = collection(db, 'couples', coupleId, 'attempts');
@@ -196,8 +198,10 @@ export function HistoryScreen() {
       setAttempts(attemptsList);
       setLastDoc(snapshot.docs[snapshot.docs.length - 1] || null);
       setHasMore(snapshot.docs.length === PAGE_SIZE);
-    } catch (error) {
-      console.error('Error fetching attempts:', error);
+    } catch (err: unknown) {
+      console.error('Error fetching attempts:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load history';
+      setError(errorMessage);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -580,6 +584,19 @@ export function HistoryScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <LoadingSpinner message="Loading history..." />
+      </SafeAreaView>
+    );
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.title}>History</Text>
+        </View>
+        <View style={{ flex: 1, paddingHorizontal: spacing.lg }}>
+          <ErrorState error={error} onRetry={() => fetchAttempts()} />
+        </View>
       </SafeAreaView>
     );
   }

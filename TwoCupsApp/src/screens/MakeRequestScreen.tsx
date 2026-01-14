@@ -14,7 +14,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { createRequest, deleteRequest, getActiveRequestsInfo } from '../services/api';
 import type { ActiveRequestsInfo } from '../services/api';
-import { Button, TextInput, LoadingSpinner, EmptyState } from '../components/common';
+import { Button, TextInput, LoadingSpinner, EmptyState, ErrorState } from '../components/common';
 import { colors, spacing, typography, borderRadius } from '../theme';
 import { Request } from '../types';
 
@@ -44,10 +44,12 @@ export function MakeRequestScreen({ onGoBack }: MakeRequestScreenProps) {
   const [category, setCategory] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [requestsInfo, setRequestsInfo] = useState<ActiveRequestsInfo | null>(null);
   const [requests, setRequests] = useState<Request[]>([]);
   const [filter, setFilter] = useState<FilterType>('all');
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const coupleId = userData?.activeCoupleId;
   const myUid = user?.uid;
@@ -68,9 +70,16 @@ export function MakeRequestScreen({ onGoBack }: MakeRequestScreenProps) {
     loadRequestsInfo();
   }, [loadRequestsInfo]);
 
+  const handleRetry = () => {
+    setError(null);
+    setInitialLoading(true);
+    setRefreshKey(k => k + 1);
+  };
+
   useEffect(() => {
     if (!coupleId || !myUid) return;
 
+    setError(null);
     const requestsRef = collection(db, 'couples', coupleId, 'requests');
     const q = query(
       requestsRef,
@@ -87,10 +96,14 @@ export function MakeRequestScreen({ onGoBack }: MakeRequestScreenProps) {
       })) as Request[];
       setRequests(requestsList);
       setInitialLoading(false);
+    }, (err) => {
+      console.error('Error fetching requests:', err);
+      setError(err.message || 'Failed to load requests');
+      setInitialLoading(false);
     });
 
     return unsubscribe;
-  }, [coupleId, myUid]);
+  }, [coupleId, myUid, refreshKey]);
 
   const atLimit = requestsInfo !== null && requestsInfo.remaining <= 0;
 
@@ -185,6 +198,19 @@ export function MakeRequestScreen({ onGoBack }: MakeRequestScreenProps) {
 
   if (initialLoading) {
     return <LoadingSpinner message="Loading requests..." />;
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.scrollContent}>
+          <TouchableOpacity onPress={onGoBack} style={styles.backButton}>
+            <Text style={styles.backText}>← Back</Text>
+          </TouchableOpacity>
+          <ErrorState error={error} onRetry={handleRetry} />
+        </View>
+      </SafeAreaView>
+    );
   }
 
   return (
