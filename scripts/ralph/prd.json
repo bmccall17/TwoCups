@@ -24,7 +24,7 @@
         "Different gem colors for different amounts (optional)"
       ],
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "blockedReason": null
     },

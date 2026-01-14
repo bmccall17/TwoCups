@@ -8,6 +8,7 @@ Started: 2026-01-14
 - Firestore security rules require `createdAt` field on user documents
 - Use `getDocs` + pagination (startAfter, limit) for History-style screens (not onSnapshot)
 - FlatList with onEndReached for infinite scroll pattern
+- Use GemAnimationContext's `showGemAnimation(amount, x?, y?)` to trigger gem earned animations from any screen
 
 ---
 
@@ -458,5 +459,53 @@ Added collapsible Request Stats section to the History screen showing request fu
 - Request documents have fulfilledAt timestamp when fulfilled, useful for calculating response time
 - Reused existing breakdownSection styles for consistent category list display
 - Using colors.primaryLight for request category bars to differentiate from attempt category bars
+
+---
+
+## 2026-01-14 - US-031 (Gem Earned Animation) ✅
+Thread: https://ampcode.com/threads/T-019bbd57-8ff9-7705-be91-35b30f705ab6
+
+### What was implemented
+Built animated gem particles that float upward when gems are earned:
+
+1. **GemAnimation component** - Renders animated gem particles with:
+   - Scale-in spring animation on spawn
+   - Float upward with translateY animation
+   - Fade out as gems rise
+   - Subtle rotation for visual interest
+   - "+N" badge showing gem amount
+
+2. **GemAnimationContext** - Context provider for triggering animations from anywhere in app:
+   - `showGemAnimation(amount, x?, y?)` function
+   - Renders GemAnimation as overlay on top of all content
+   - Auto-hides on animation complete
+
+3. **Integration with LogAttemptScreen** - Shows gem animation when:
+   - Logging attempt: +1 gem animation
+   - Fulfilling request: +2 gems animation
+
+4. **Integration with AcknowledgeScreen** - Shows +3 gem animation when acknowledging
+
+### Files created/changed
+- `TwoCupsApp/src/components/common/GemAnimation.tsx` (new)
+- `TwoCupsApp/src/context/GemAnimationContext.tsx` (new)
+- `TwoCupsApp/src/components/common/index.ts` - Added export
+- `TwoCupsApp/App.tsx` - Added GemAnimationProvider
+- `TwoCupsApp/src/screens/LogAttemptScreen.tsx` - Trigger gem animation on success
+- `TwoCupsApp/src/screens/AcknowledgeScreen.tsx` - Trigger gem animation on success
+
+### Acceptance Criteria Checklist
+- [x] When logging attempt: show +1 or +2 gem animation
+- [x] When acknowledging: show +3 gem animation
+- [x] Gems float upward and fade out
+- [x] Animation plays near the action that triggered it (center of screen)
+- [x] Animation duration ~1-2 seconds (1.2s float + fade)
+- [x] Different gem colors for different amounts (optional - using gem emoji)
+
+### Learnings
+- React Native Animated API works well for particle effects without needing Reanimated
+- Using a Context for animations allows triggering from anywhere without prop drilling
+- Spring animations with high tension give a nice "pop" effect on spawn
+- Stagger delays (100ms) between particles adds visual interest
 
 ---
