@@ -17,7 +17,7 @@
       "Bash(bd ready:*)",
       "Bash(bd migrate:*)",
       "Bash(wc:*)",
-      "Bash(npx firebase deploy:*)"
+      "Bash(ls:*)"
     ]
   }
 }
