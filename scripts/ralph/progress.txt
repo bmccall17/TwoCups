@@ -15,6 +15,7 @@ Started: 2026-01-14
 - ErrorBoundary is a class component (React error boundaries require getDerivedStateFromError lifecycle)
 - Use ErrorState component for screen-level Firestore errors with auto-detected error types (network, permission, generic)
 - onSnapshot accepts error callback as 2nd arg: `onSnapshot(q, onNext, onError)`
+- Use `RefreshControl` with `tintColor` (iOS) and `colors` array (Android) for consistent pull-to-refresh
 
 ---
 
@@ -905,5 +906,49 @@ Added error handling to all screens for Firestore query failures:
 - Add refreshKey state + setRefreshKey in retry handler to re-trigger useEffect listeners
 - onSnapshot accepts error callback as second argument for error handling
 - Use instanceof Error to safely extract error.message in TypeScript
+
+---
+
+## 2026-01-14 - US-054 (Loading State Improvements) ✅
+Thread: https://ampcode.com/threads/T-019bbdca-f8f8-778b-ba34-78ce3d931e7a
+
+### What was implemented
+Improved loading states across all screens with consistent patterns:
+
+1. **Enhanced LoadingSpinner component**:
+   - Added `minDisplayTime` prop (default 300ms) to prevent flash of loading state
+   - Added fade-in animation for smooth appearance
+   - Added `inline` prop for non-full-screen loading states
+   - Created `useMinLoadingTime` hook for custom loading state management
+
+2. **Pull-to-refresh on all main screens**:
+   - HomeScreen, AcknowledgeScreen, LogAttemptScreen, MakeRequestScreen, ManageSuggestionsScreen
+   - Consistent RefreshControl styling with primary color
+   - Proper refreshing state management integrated with existing data fetching
+
+3. **Context-appropriate loading messages** already in place:
+   - "Loading attempts...", "Loading suggestions...", "Loading requests...", etc.
+
+### Files changed
+- `TwoCupsApp/src/components/common/LoadingSpinner.tsx` - Enhanced with min display time, fade animation, useMinLoadingTime hook
+- `TwoCupsApp/src/components/common/index.ts` - Export useMinLoadingTime hook
+- `TwoCupsApp/src/screens/HomeScreen.tsx` - Added RefreshControl
+- `TwoCupsApp/src/screens/AcknowledgeScreen.tsx` - Added RefreshControl
+- `TwoCupsApp/src/screens/LogAttemptScreen.tsx` - Added RefreshControl
+- `TwoCupsApp/src/screens/MakeRequestScreen.tsx` - Added RefreshControl
+- `TwoCupsApp/src/screens/ManageSuggestionsScreen.tsx` - Added RefreshControl
+
+### Acceptance Criteria Checklist
+- [x] Consistent loading spinner component used everywhere
+- [x] Skeleton loaders for content-heavy screens (optional - LoadingSpinner with fade is simpler)
+- [x] Loading states don't flash if data loads quickly (min display time 300ms)
+- [x] Loading text appropriate to context ('Loading attempts...', etc.)
+- [x] Pull-to-refresh shows loading indicator
+
+### Learnings
+- Use `RefreshControl` with `tintColor` (iOS) and `colors` array (Android) for consistent styling
+- `useCallback` for refresh handlers prevents unnecessary re-renders
+- Animated.timing with useNativeDriver:true for opacity animations is performant
+- Combine refreshKey state with setRefreshing for manual refresh trigger in onSnapshot listeners
 
 ---
