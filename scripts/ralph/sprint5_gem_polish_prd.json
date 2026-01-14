@@ -1,0 +1,130 @@
+{
+  "name": "TwoCups Sprint 5 - Gem Economy Polish",
+  "branchName": "ralph/sprint-5-gems",
+  "description": "Enhance gem visuals, animations, and displays to make earning gems feel more rewarding",
+  "created": "2026-01-14",
+
+  "decisions": {
+    "D1_Animation": "Use React Native Reanimated or Animated API for smooth animations",
+    "D2_Design": "Gems should feel valuable - sparkle effects, satisfying sounds optional",
+    "D3_Scope": "Focus on visual polish, not changing gem economy rules"
+  },
+
+  "userStories": [
+    {
+      "id": "US-031",
+      "title": "Gem Earned Animation",
+      "description": "Show animated gem(s) floating up when user earns gems from logging or acknowledging.",
+      "acceptanceCriteria": [
+        "When logging attempt: show +1 or +2 gem animation",
+        "When acknowledging: show +3 gem animation",
+        "Gems float upward and fade out",
+        "Animation plays near the action that triggered it",
+        "Animation duration ~1-2 seconds",
+        "Different gem colors for different amounts (optional)"
+      ],
+      "priority": 1,
+      "passes": false,
+      "blocked": false,
+      "blockedReason": null
+    },
+    {
+      "id": "US-032",
+      "title": "Gem Counter Component Redesign",
+      "description": "Improve the gem counter display on HomeScreen to be more visually appealing.",
+      "acceptanceCriteria": [
+        "Gem icon with count displayed prominently",
+        "Counter animates when value changes (count up effect)",
+        "Shows both players' gem counts clearly",
+        "Gem icon has subtle sparkle or glow effect",
+        "Responsive sizing for different screen sizes"
+      ],
+      "priority": 2,
+      "passes": false,
+      "blocked": false,
+      "blockedReason": null
+    },
+    {
+      "id": "US-033",
+      "title": "Gem Summary in Toast Notifications",
+      "description": "Enhance toast notifications to prominently display gem rewards.",
+      "acceptanceCriteria": [
+        "Log attempt toast shows gem icon + amount earned",
+        "Request fulfillment toast shows bonus gem indicator",
+        "Acknowledge toast shows '+3 gems to you, +3 gems to partner'",
+        "Gem icon in toast matches app gem design",
+        "Toast styling emphasizes the gem reward"
+      ],
+      "priority": 3,
+      "passes": false,
+      "blocked": false,
+      "blockedReason": null
+    },
+    {
+      "id": "US-034",
+      "title": "Daily Gem Earnings Summary",
+      "description": "Show how many gems user has earned today on HomeScreen.",
+      "acceptanceCriteria": [
+        "Display 'Today: +X gems' below total gem count",
+        "Resets at midnight local time",
+        "Shows breakdown: 'X from logging, Y from acknowledgments' (optional)",
+        "Encouraging message if gems earned today (e.g., 'Great job!')",
+        "Different message if no gems yet today"
+      ],
+      "priority": 4,
+      "passes": false,
+      "blocked": false,
+      "blockedReason": null
+    },
+    {
+      "id": "US-035",
+      "title": "Gem Milestone Celebrations",
+      "description": "Celebrate when users hit gem milestones (100, 500, 1000, etc.).",
+      "acceptanceCriteria": [
+        "Detect when gem count crosses milestone threshold",
+        "Show celebration modal/overlay for milestones",
+        "Milestones: 100, 250, 500, 1000, 2500, 5000, 10000",
+        "Celebration includes milestone badge/icon",
+        "Message acknowledges achievement (e.g., '500 gems! You're crushing it!')",
+        "Only triggers once per milestone (track in user doc)"
+      ],
+      "priority": 5,
+      "passes": false,
+      "blocked": false,
+      "blockedReason": null
+    },
+    {
+      "id": "US-036",
+      "title": "Gem Leaderboard (Couple View)",
+      "description": "Fun comparison view showing gem earnings between partners.",
+      "acceptanceCriteria": [
+        "Section on HomeScreen or Settings showing both partners' gems",
+        "Visual bar chart comparing gem counts",
+        "Playful messaging (not competitive, encouraging)",
+        "Shows who's 'ahead' with fun label (e.g., 'Gem Champion this week')",
+        "Option to view weekly or all-time comparison"
+      ],
+      "priority": 6,
+      "passes": false,
+      "blocked": false,
+      "blockedReason": null
+    },
+    {
+      "id": "US-037",
+      "title": "Gem History Log",
+      "description": "Detailed log of all gem transactions for transparency.",
+      "acceptanceCriteria": [
+        "Accessible from Settings or gem counter tap",
+        "Shows each gem earning event with timestamp",
+        "Entry shows: amount, reason (logged attempt, acknowledged, request fulfilled)",
+        "Links to the relevant attempt if applicable",
+        "Paginated list (load 20 at a time)",
+        "Running total displayed"
+      ],
+      "priority": 7,
+      "passes": false,
+      "blocked": false,
+      "blockedReason": null
+    }
+  ]
+}

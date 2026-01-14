@@ -1,0 +1,145 @@
+{
+  "name": "TwoCups Sprint 4 - Push Notifications",
+  "branchName": "ralph/sprint-4-notifications",
+  "description": "Implement push notifications to alert users when their partner takes actions, keeping couples engaged",
+  "created": "2026-01-14",
+
+  "decisions": {
+    "D1_Service": "Use Firebase Cloud Messaging (FCM) - already have Firebase",
+    "D2_Triggers": "Cloud Functions to send notifications on Firestore writes",
+    "D3_Preferences": "Store notification preferences in user document"
+  },
+
+  "userStories": [
+    {
+      "id": "US-023",
+      "title": "FCM Setup and Token Registration",
+      "description": "Set up Firebase Cloud Messaging and register device tokens for push notifications.",
+      "acceptanceCriteria": [
+        "Firebase Cloud Messaging configured in project",
+        "App requests notification permission on first launch (or after pairing)",
+        "Device FCM token saved to user document in Firestore",
+        "Token refreshes handled automatically",
+        "Works on Android (iOS can be added later)"
+      ],
+      "priority": 1,
+      "passes": false,
+      "blocked": false,
+      "blockedReason": null
+    },
+    {
+      "id": "US-024",
+      "title": "Cloud Function - Attempt Logged Notification",
+      "description": "Send push notification when partner logs an attempt for you.",
+      "acceptanceCriteria": [
+        "Cloud Function triggers on new attempt document creation",
+        "Notification sent to forPlayerId (recipient)",
+        "Notification title: '{PartnerName} did something for you!'",
+        "Notification body: Shows the action text (truncated if long)",
+        "Tapping notification opens app to Acknowledge screen",
+        "Does not notify if user logged attempt for themselves (edge case)"
+      ],
+      "priority": 2,
+      "passes": false,
+      "blocked": true,
+      "blockedReason": "Depends on US-023"
+    },
+    {
+      "id": "US-025",
+      "title": "Cloud Function - Attempt Acknowledged Notification",
+      "description": "Send push notification when partner acknowledges your attempt.",
+      "acceptanceCriteria": [
+        "Cloud Function triggers on attempt document update (acknowledged: true)",
+        "Notification sent to byPlayerId (who logged the attempt)",
+        "Notification title: '{PartnerName} acknowledged your effort!'",
+        "Notification body: '+3 gems earned' or similar",
+        "Tapping notification opens app to Home screen"
+      ],
+      "priority": 3,
+      "passes": false,
+      "blocked": true,
+      "blockedReason": "Depends on US-023"
+    },
+    {
+      "id": "US-026",
+      "title": "Cloud Function - New Request Notification",
+      "description": "Send push notification when partner creates a new request.",
+      "acceptanceCriteria": [
+        "Cloud Function triggers on new request document creation",
+        "Notification sent to forPlayerId (who should fulfill it)",
+        "Notification title: '{PartnerName} made a request'",
+        "Notification body: Shows the request action text",
+        "Tapping notification opens app to Log Attempt screen"
+      ],
+      "priority": 4,
+      "passes": false,
+      "blocked": true,
+      "blockedReason": "Depends on US-023"
+    },
+    {
+      "id": "US-027",
+      "title": "Cloud Function - Request Fulfilled Notification",
+      "description": "Send push notification when your request is fulfilled by partner.",
+      "acceptanceCriteria": [
+        "Cloud Function triggers on request document update (fulfilledByAttemptId set)",
+        "Notification sent to byPlayerId (who made the request)",
+        "Notification title: '{PartnerName} fulfilled your request!'",
+        "Notification body: Shows the request action text",
+        "Tapping notification opens app to Acknowledge screen"
+      ],
+      "priority": 5,
+      "passes": false,
+      "blocked": true,
+      "blockedReason": "Depends on US-023"
+    },
+    {
+      "id": "US-028",
+      "title": "Cloud Function - Cup Overflow Notification",
+      "description": "Send push notification when a cup overflows (celebration moment).",
+      "acceptanceCriteria": [
+        "Detect cup overflow during acknowledgment (from cupOverflow flag)",
+        "Notification sent to both players",
+        "Notification title: 'Cup Overflow Celebration!'",
+        "Notification body: 'Your cup overflowed! Keep filling each other up.'",
+        "Different messages for individual vs collective cup overflow"
+      ],
+      "priority": 6,
+      "passes": false,
+      "blocked": true,
+      "blockedReason": "Depends on US-023"
+    },
+    {
+      "id": "US-029",
+      "title": "Notification Preferences Screen",
+      "description": "Allow users to control which notifications they receive.",
+      "acceptanceCriteria": [
+        "Notification settings section in Settings screen",
+        "Toggle for each notification type (attempt logged, acknowledged, requests, overflow)",
+        "Master toggle to disable all notifications",
+        "Preferences saved to user document in Firestore",
+        "Cloud Functions check preferences before sending"
+      ],
+      "priority": 7,
+      "passes": false,
+      "blocked": true,
+      "blockedReason": "Depends on US-023"
+    },
+    {
+      "id": "US-030",
+      "title": "In-App Notification Center",
+      "description": "Show notification history within the app for users who miss push notifications.",
+      "acceptanceCriteria": [
+        "Notification bell icon in header with unread count badge",
+        "Notification center screen showing recent notifications",
+        "Each notification shows: type icon, title, body, timestamp",
+        "Mark as read on view",
+        "Tapping notification navigates to relevant screen",
+        "Notifications stored in Firestore (last 50 per user)"
+      ],
+      "priority": 8,
+      "passes": false,
+      "blocked": true,
+      "blockedReason": "Depends on US-024, US-025, US-026, US-027"
+    }
+  ]
+}

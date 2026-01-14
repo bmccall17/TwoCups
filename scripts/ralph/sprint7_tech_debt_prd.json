@@ -1,0 +1,227 @@
+{
+  "name": "TwoCups Sprint 7 - Technical Debt & Polish",
+  "branchName": "ralph/sprint-7-tech-debt",
+  "description": "Address technical debt, improve reliability, add offline support, and prepare for production release",
+  "created": "2026-01-14",
+
+  "decisions": {
+    "D1_Offline": "Use Firestore persistence for offline support",
+    "D2_ErrorBoundary": "React error boundaries with fallback UI",
+    "D3_Testing": "Focus on critical path testing, not 100% coverage"
+  },
+
+  "userStories": [
+    {
+      "id": "US-050",
+      "title": "Firestore Offline Persistence",
+      "description": "Enable Firestore offline persistence so app works without internet connection.",
+      "acceptanceCriteria": [
+        "Enable Firestore persistence in firebase config",
+        "App loads cached data when offline",
+        "User can view HomeScreen, history while offline",
+        "Pending writes sync when back online",
+        "Visual indicator when app is offline",
+        "Queue actions taken offline and sync later"
+      ],
+      "priority": 1,
+      "passes": false,
+      "blocked": false,
+      "blockedReason": null
+    },
+    {
+      "id": "US-051",
+      "title": "Offline Mode Indicator",
+      "description": "Show clear indicator when app is offline and actions are queued.",
+      "acceptanceCriteria": [
+        "Banner or icon shows when device is offline",
+        "Shows count of pending actions to sync",
+        "Banner dismisses automatically when back online",
+        "Toast notification when sync completes",
+        "Non-intrusive but visible placement"
+      ],
+      "priority": 2,
+      "passes": false,
+      "blocked": true,
+      "blockedReason": "Depends on US-050"
+    },
+    {
+      "id": "US-052",
+      "title": "Global Error Boundary",
+      "description": "Add React error boundary to catch and handle crashes gracefully.",
+      "acceptanceCriteria": [
+        "Error boundary wraps main app component",
+        "Crash shows friendly error screen instead of white screen",
+        "Error screen has 'Try Again' button to reload",
+        "Error details logged (console or remote logging)",
+        "User can report issue from error screen (optional)"
+      ],
+      "priority": 3,
+      "passes": false,
+      "blocked": false,
+      "blockedReason": null
+    },
+    {
+      "id": "US-053",
+      "title": "Screen-Level Error Handling",
+      "description": "Add error handling to each screen for Firestore query failures.",
+      "acceptanceCriteria": [
+        "Each screen handles query errors gracefully",
+        "Error state shows 'Something went wrong' with retry button",
+        "Network errors show specific 'No connection' message",
+        "Permission errors show appropriate message",
+        "Retry button re-fetches data"
+      ],
+      "priority": 4,
+      "passes": false,
+      "blocked": false,
+      "blockedReason": null
+    },
+    {
+      "id": "US-054",
+      "title": "Loading State Improvements",
+      "description": "Ensure all screens have consistent, polished loading states.",
+      "acceptanceCriteria": [
+        "Consistent loading spinner component used everywhere",
+        "Skeleton loaders for content-heavy screens (optional enhancement)",
+        "Loading states don't flash if data loads quickly (min display time)",
+        "Loading text appropriate to context ('Loading attempts...', etc.)",
+        "Pull-to-refresh shows loading indicator"
+      ],
+      "priority": 5,
+      "passes": false,
+      "blocked": false,
+      "blockedReason": null
+    },
+    {
+      "id": "US-055",
+      "title": "Android Build and Testing",
+      "description": "Create production-ready Android APK and test on real devices.",
+      "acceptanceCriteria": [
+        "Android build completes without errors",
+        "APK runs on Android emulator",
+        "APK runs on at least 2 physical Android devices",
+        "All screens render correctly on different screen sizes",
+        "Navigation works correctly",
+        "Firebase auth and Firestore work on Android"
+      ],
+      "priority": 6,
+      "passes": false,
+      "blocked": false,
+      "blockedReason": null
+    },
+    {
+      "id": "US-056",
+      "title": "Performance Audit - Home Screen",
+      "description": "Profile and optimize HomeScreen rendering performance.",
+      "acceptanceCriteria": [
+        "HomeScreen renders in under 500ms on mid-range device",
+        "No unnecessary re-renders when data hasn't changed",
+        "Firestore listeners properly cleaned up on unmount",
+        "Memory usage stable (no leaks on repeated navigation)",
+        "Cup animations run at 60fps"
+      ],
+      "priority": 7,
+      "passes": false,
+      "blocked": false,
+      "blockedReason": null
+    },
+    {
+      "id": "US-057",
+      "title": "Performance Audit - Lists",
+      "description": "Optimize list rendering for screens with many items.",
+      "acceptanceCriteria": [
+        "History/Acknowledge screens use FlatList for virtualization",
+        "Smooth scrolling with 100+ items",
+        "No jank when loading more items",
+        "Proper key props on list items",
+        "Memoized list item components where appropriate"
+      ],
+      "priority": 8,
+      "passes": false,
+      "blocked": false,
+      "blockedReason": null
+    },
+    {
+      "id": "US-058",
+      "title": "Firestore Security Rules Audit",
+      "description": "Review and tighten Firestore security rules for production.",
+      "acceptanceCriteria": [
+        "Users can only read/write their own user document",
+        "Users can only access couples they belong to",
+        "Attempts can only be created by authenticated users in the couple",
+        "Requests can only be created by authenticated users in the couple",
+        "No public read/write access anywhere",
+        "Rules tested with Firebase emulator"
+      ],
+      "priority": 9,
+      "passes": false,
+      "blocked": false,
+      "blockedReason": null
+    },
+    {
+      "id": "US-059",
+      "title": "Environment Configuration",
+      "description": "Set up proper environment configuration for dev/staging/prod.",
+      "acceptanceCriteria": [
+        "Environment variables for Firebase config",
+        "Separate Firebase projects for dev and prod (or emulator for dev)",
+        "Build scripts for different environments",
+        "No hardcoded API keys in source code",
+        "Documentation for environment setup"
+      ],
+      "priority": 10,
+      "passes": false,
+      "blocked": false,
+      "blockedReason": null
+    },
+    {
+      "id": "US-060",
+      "title": "App Icon and Splash Screen",
+      "description": "Create and configure app icon and splash screen for Android.",
+      "acceptanceCriteria": [
+        "App icon designed (Two Cups theme)",
+        "Icon configured for all Android densities",
+        "Splash screen shows app logo on launch",
+        "Splash screen transitions smoothly to app",
+        "No white flash between splash and app"
+      ],
+      "priority": 11,
+      "passes": false,
+      "blocked": false,
+      "blockedReason": null
+    },
+    {
+      "id": "US-061",
+      "title": "Accessibility Audit",
+      "description": "Ensure app is accessible to users with disabilities.",
+      "acceptanceCriteria": [
+        "All interactive elements have accessible labels",
+        "Screen reader can navigate all screens",
+        "Color contrast meets WCAG AA standards",
+        "Touch targets are at least 44x44 points",
+        "Focus order is logical",
+        "No information conveyed by color alone"
+      ],
+      "priority": 12,
+      "passes": false,
+      "blocked": false,
+      "blockedReason": null
+    },
+    {
+      "id": "US-062",
+      "title": "Crashlytics / Error Reporting Setup",
+      "description": "Set up crash reporting to monitor production issues.",
+      "acceptanceCriteria": [
+        "Firebase Crashlytics integrated",
+        "Crashes automatically reported with stack traces",
+        "Non-fatal errors can be logged",
+        "User ID associated with crashes (for debugging)",
+        "Dashboard accessible in Firebase Console"
+      ],
+      "priority": 13,
+      "passes": false,
+      "blocked": false,
+      "blockedReason": null
+    }
+  ]
+}
