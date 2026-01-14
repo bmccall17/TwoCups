@@ -1038,3 +1038,40 @@ Set up Android build configuration and verified project is build-ready:
 - Package name should be set early - changing later is painful (Firebase config + app identity)
 
 ---
+
+## 2026-01-14 - US-057 (Performance Audit - Lists) ✅
+Thread: https://ampcode.com/threads/T-019bbddf-5e4d-71b3-8b4f-26116d787d02
+
+### What was implemented
+Optimized list rendering for screens with many items:
+
+1. **AcknowledgeScreen** - Replaced ScrollView with FlatList for virtualization:
+   - Extracted memoized `AttemptCard` component with React.memo()
+   - Added useCallback wrappers for `formatDate`, `getPartnerName`, `renderAttemptCard`, `keyExtractor`
+   - Added useMemo for `ListHeaderComponent` and `ListEmptyComponent`
+   - Added FlatList performance props: `initialNumToRender`, `maxToRenderPerBatch`, `windowSize`, `removeClippedSubviews`
+
+2. **HistoryScreen** - Enhanced existing FlatList with memoization:
+   - Extracted memoized `HistoryAttemptCard` component with React.memo()
+   - Added useCallback wrappers for `formatDate`, `getPlayerName`, `renderAttemptCard`, `keyExtractor`, `renderFooter`
+   - Added FlatList performance props: `initialNumToRender`, `maxToRenderPerBatch`, `windowSize`, `removeClippedSubviews`
+
+### Files changed
+- `TwoCupsApp/src/screens/AcknowledgeScreen.tsx` - Full refactor to FlatList with memoized components
+- `TwoCupsApp/src/screens/HistoryScreen.tsx` - Added memoized component and useCallback wrappers
+
+### Acceptance Criteria Checklist
+- [x] History/Acknowledge screens use FlatList for virtualization
+- [x] Smooth scrolling with 100+ items (virtualization limits rendered items)
+- [x] No jank when loading more items (proper memoization)
+- [x] Proper key props on list items (keyExtractor with stable callbacks)
+- [x] Memoized list item components where appropriate (React.memo on AttemptCard, HistoryAttemptCard)
+
+### Learnings
+- Use React.memo() for list item components to prevent unnecessary re-renders
+- Wrap render functions with useCallback to prevent FlatList from re-creating on every render
+- FlatList performance props: `initialNumToRender=10`, `maxToRenderPerBatch=10`, `windowSize=10` are good defaults
+- `removeClippedSubviews=true` helps memory usage on long lists
+- Extract ListHeaderComponent and ListEmptyComponent to useMemo to prevent re-renders
+
+---

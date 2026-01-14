@@ -137,7 +137,7 @@
         "Memoized list item components where appropriate"
       ],
       "priority": 8,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "blockedReason": null
     },
