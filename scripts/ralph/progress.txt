@@ -12,6 +12,7 @@ Started: 2026-01-14
 - Use `userData?.activeCoupleId` for couple ID (not `coupleData?.id`)
 - Use `{ includeMetadataChanges: true }` in onSnapshot to track pending writes for offline support
 - Firestore persistence enabled via `initializeFirestore` with `persistentLocalCache`
+- ErrorBoundary is a class component (React error boundaries require getDerivedStateFromError lifecycle)
 
 ---
 
@@ -817,5 +818,38 @@ Enabled Firestore offline persistence and added visual indicators for offline mo
 - `snapshot.metadata.hasPendingWrites` indicates documents with local changes not yet synced
 - Use `{ includeMetadataChanges: true }` in onSnapshot to receive metadata change events
 - Use `userData?.activeCoupleId` instead of `coupleData?.id` (Couple type doesn't include id)
+
+---
+
+## 2026-01-14 - US-052 (Global Error Boundary) ✅
+Thread: https://ampcode.com/threads/T-019bbdbe-412e-705f-9388-53a300108d29
+
+### What was implemented
+Added React Error Boundary to catch and handle crashes gracefully:
+
+1. **ErrorBoundary component** - Class component that catches JavaScript errors in component tree:
+   - Shows friendly error screen with emoji, title, and message
+   - "Try Again" button resets error state to attempt recovery
+   - In __DEV__ mode: Shows error details toggle with error message and component stack
+   - Logs errors to console in development mode
+
+2. **App integration** - ErrorBoundary wraps the entire app inside SafeAreaProvider
+
+### Files created/changed
+- `TwoCupsApp/src/components/common/ErrorBoundary.tsx` (new)
+- `TwoCupsApp/src/components/common/index.ts` - Export ErrorBoundary
+- `TwoCupsApp/App.tsx` - Wrap app with ErrorBoundary
+
+### Acceptance Criteria Checklist
+- [x] Error boundary wraps main app component
+- [x] Crash shows friendly error screen instead of white screen
+- [x] Error screen has 'Try Again' button to reload
+- [x] Error details logged (console in dev mode)
+- [x] User can report issue from error screen (optional - dev mode shows details)
+
+### Learnings
+- React error boundaries must be class components (can't use hooks for getDerivedStateFromError)
+- Use __DEV__ flag to conditionally show debug info in development
+- componentDidCatch provides errorInfo with componentStack for debugging
 
 ---

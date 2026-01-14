@@ -56,7 +56,7 @@
         "User can report issue from error screen (optional)"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "blockedReason": null
     },
