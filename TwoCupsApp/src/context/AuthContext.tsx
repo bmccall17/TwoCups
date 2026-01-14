@@ -4,6 +4,7 @@ import React, {
   useEffect,
   useState,
   ReactNode,
+  useCallback,
 } from 'react';
 import {
   User as FirebaseUser,
@@ -14,7 +15,7 @@ import {
   signOut as firebaseSignOut,
   UserCredential,
 } from 'firebase/auth';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc, getDoc, Timestamp } from 'firebase/firestore';
 import { auth, db } from '../services/firebase/config';
 import { User, Couple } from '../types';
 
@@ -76,14 +77,39 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, [userData?.activeCoupleId]);
 
   useEffect(() => {
-    // Listen for auth state changes
+    let unsubscribeUser: (() => void) | null = null;
+
     const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
 
+      // Clean up previous user listener
+      if (unsubscribeUser) {
+        unsubscribeUser();
+        unsubscribeUser = null;
+      }
+
       if (firebaseUser) {
-        // Listen for user document changes
         const userDocRef = doc(db, 'users', firebaseUser.uid);
-        const unsubscribeUser = onSnapshot(
+
+        // Check if user document exists, create if not (for anonymous auth)
+        try {
+          const userDoc = await getDoc(userDocRef);
+          if (!userDoc.exists()) {
+            // Create minimal user document for new anonymous users
+            await setDoc(userDocRef, {
+              displayName: '',
+              initial: '',
+              activeCoupleId: null,
+              createdAt: Timestamp.now(),
+            });
+            console.log('Created user document for:', firebaseUser.uid);
+          }
+        } catch (error) {
+          console.error('Error checking/creating user document:', error);
+        }
+
+        // Listen for user document changes
+        unsubscribeUser = onSnapshot(
           userDocRef,
           (docSnapshot) => {
             if (docSnapshot.exists()) {
@@ -95,7 +121,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
                 createdAt: data?.createdAt?.toDate() ?? new Date(),
               });
             } else {
-              setUserData(null);
+              // Document doesn't exist yet - set empty userData (not null)
+              // This prevents the loading state from getting stuck
+              setUserData({
+                displayName: '',
+                initial: '',
+                activeCoupleId: null,
+                createdAt: new Date(),
+              });
             }
             setLoading(false);
           },
@@ -104,8 +137,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
             setLoading(false);
           }
         );
-
-        return () => unsubscribeUser();
       } else {
         setUserData(null);
         setCoupleData(null);
@@ -113,7 +144,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
     });
 
-    return () => unsubscribeAuth();
+    return () => {
+      unsubscribeAuth();
+      if (unsubscribeUser) {
+        unsubscribeUser();
+      }
+    };
   }, []);
 
   const signUp = async (email: string, password: string) => {

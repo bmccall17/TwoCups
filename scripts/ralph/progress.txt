@@ -1,0 +1,45 @@
+# Ralph Progress Log
+Started: 2026-01-14
+
+## Codebase Patterns
+- Firebase JS SDK used (not @react-native-firebase) for web compatibility
+- User documents auto-created on anonymous auth in AuthContext
+- Use `writeBatch()` for atomic multi-document operations
+- Firestore security rules require `createdAt` field on user documents
+
+---
+
+## 2026-01-14 - US-001 (Fix Auth Flow)
+Thread: https://ampcode.com/threads/T-019bbae3-4db0-7208-aa9f-ea7393030e39
+
+### What was implemented
+Fixed anonymous auth flow that was failing due to race condition:
+1. AuthContext now auto-creates user document on anonymous sign-in
+2. Added proper cleanup of Firestore listeners on auth state change
+3. Fixed loading state getting stuck when user doc doesn't exist
+
+### Files changed
+- `TwoCupsApp/src/context/AuthContext.tsx`
+  - Added `getDoc`, `setDoc`, `Timestamp` imports
+  - Auto-create user doc if it doesn't exist after auth
+  - Set empty userData (not null) when doc missing to prevent stuck state
+  - Fixed listener cleanup pattern
+
+### Verification Required
+**Manual testing needed in browser:**
+1. Open https://twocups-2026.web.app (or localhost)
+2. Click "Continue as Guest" 
+3. Verify: No errors, reaches Pairing screen
+4. Create couple with name + initial
+5. Verify: Invite code displayed
+6. In incognito/different browser:
+   - Continue as Guest
+   - Join with invite code
+7. Verify: Both users see "Home" screen (couple active)
+
+### Learnings for future iterations
+- Anonymous auth doesn't auto-create user documents - must do it manually
+- Firestore onSnapshot fires immediately, even before document exists
+- Setting userData to empty object (not null) prevents navigation issues
+
+---
