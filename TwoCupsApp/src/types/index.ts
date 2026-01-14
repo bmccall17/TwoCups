@@ -52,6 +52,16 @@ export interface Request {
   fulfilledByAttemptId?: string;
 }
 
+// Suggestion document in /couples/{coupleId}/suggestions/{suggestionId}
+export interface Suggestion {
+  id: string;
+  byPlayerId: string;
+  action: string;
+  description?: string;
+  category?: string;
+  createdAt: Date;
+}
+
 // Function response types
 export interface CreateCoupleResponse {
   coupleId: string;

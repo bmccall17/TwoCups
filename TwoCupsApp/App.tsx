@@ -11,6 +11,7 @@ import { HomeScreen } from './src/screens/HomeScreen';
 import { LogAttemptScreen } from './src/screens/LogAttemptScreen';
 import { AcknowledgeScreen } from './src/screens/AcknowledgeScreen';
 import { MakeRequestScreen } from './src/screens/MakeRequestScreen';
+import { ManageSuggestionsScreen } from './src/screens/ManageSuggestionsScreen';
 import { colors } from './src/theme';
 
 type AuthStackParamList = {
@@ -24,6 +25,7 @@ type AppStackParamList = {
   LogAttempt: undefined;
   Acknowledge: undefined;
   MakeRequest: undefined;
+  ManageSuggestions: undefined;
 };
 
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
@@ -72,6 +74,7 @@ function AppNavigator() {
                 onNavigateToLogAttempt={() => props.navigation.navigate('LogAttempt')}
                 onNavigateToAcknowledge={() => props.navigation.navigate('Acknowledge')}
                 onNavigateToMakeRequest={() => props.navigation.navigate('MakeRequest')}
+                onNavigateToManageSuggestions={() => props.navigation.navigate('ManageSuggestions')}
               />
             )}
           </AppStack.Screen>
@@ -92,6 +95,13 @@ function AppNavigator() {
           <AppStack.Screen name="MakeRequest">
             {(props) => (
               <MakeRequestScreen
+                onGoBack={() => props.navigation.goBack()}
+              />
+            )}
+          </AppStack.Screen>
+          <AppStack.Screen name="ManageSuggestions">
+            {(props) => (
+              <ManageSuggestionsScreen
                 onGoBack={() => props.navigation.goBack()}
               />
             )}

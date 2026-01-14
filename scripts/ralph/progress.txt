@@ -132,3 +132,41 @@ Built the Make Request screen where users can request specific actions from thei
 - LogAttemptScreen already queries for partner's active requests, so new requests auto-appear
 
 ---
+
+## 2026-01-14 - US-006 (Manage Suggestions & Requests Screen) ✅
+Thread: https://ampcode.com/threads/T-019bbb5b-58a3-700e-a0b4-8e549f443a96
+
+### What was implemented
+Built the Manage Suggestions screen where users can add and manage suggestions for ways their partner can fill their cup:
+
+1. **Suggestion type** added to types/index.ts
+2. **API functions** for `createSuggestion` and `deleteSuggestion` in actions.ts
+3. **ManageSuggestionsScreen** with:
+   - Add suggestion form (action, description, category)
+   - View suggestions grouped by category
+   - Delete functionality with confirmation
+   - Real-time Firestore updates
+4. **LogAttemptScreen** updated to show partner's suggestions (ways to fill partner's cup)
+5. **HomeScreen** updated with navigation button to ManageSuggestions
+
+### Files created/changed
+- `TwoCupsApp/src/types/index.ts` - Added Suggestion interface
+- `TwoCupsApp/src/services/api/actions.ts` - Added createSuggestion, deleteSuggestion
+- `TwoCupsApp/src/services/api/index.ts` - Export new functions
+- `TwoCupsApp/src/screens/ManageSuggestionsScreen.tsx` (new)
+- `TwoCupsApp/src/screens/LogAttemptScreen.tsx` - Show partner suggestions
+- `TwoCupsApp/src/screens/HomeScreen.tsx` - Add navigation prop/button
+- `TwoCupsApp/App.tsx` - Wire up ManageSuggestions route
+
+### Acceptance Criteria Checklist
+- [x] User can add new suggestions
+- [x] User can view their suggestions grouped by category
+- [x] User can delete suggestions
+- [x] Suggestions appear in partner's Log Attempt screen
+
+### Learnings
+- Suggestions are stored at `/couples/{coupleId}/suggestions/{suggestionId}`
+- Partner's suggestions queried by `byPlayerId == partnerId` in LogAttemptScreen
+- Grouped display using reduce() to bucket by category
+
+---

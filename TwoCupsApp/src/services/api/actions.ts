@@ -4,6 +4,7 @@ import {
   getDocs,
   setDoc,
   updateDoc,
+  deleteDoc,
   writeBatch,
   collection,
   query,
@@ -267,4 +268,73 @@ export async function createRequest(params: {
   });
 
   return { requestId: requestDocRef.id };
+}
+
+/**
+ * Create a suggestion (a way partner can fill your cup)
+ */
+export async function createSuggestion(params: {
+  coupleId: string;
+  action: string;
+  description?: string;
+  category?: string;
+}): Promise<{ suggestionId: string }> {
+  const uid = getCurrentUserId();
+  if (!uid) {
+    throw new Error('Must be logged in');
+  }
+
+  const { coupleId, action, description, category } = params;
+
+  if (!action || action.trim().length === 0) {
+    throw new Error('Action is required');
+  }
+
+  const now = Timestamp.now();
+  const suggestionDocRef = doc(collection(db, 'couples', coupleId, 'suggestions'));
+
+  await setDoc(suggestionDocRef, {
+    byPlayerId: uid,
+    action: action.trim(),
+    description: description?.trim() || null,
+    category: category || null,
+    createdAt: now,
+  });
+
+  return { suggestionId: suggestionDocRef.id };
+}
+
+/**
+ * Delete a suggestion
+ */
+export async function deleteSuggestion(params: {
+  coupleId: string;
+  suggestionId: string;
+}): Promise<{ success: boolean }> {
+  const uid = getCurrentUserId();
+  if (!uid) {
+    throw new Error('Must be logged in');
+  }
+
+  const { coupleId, suggestionId } = params;
+
+  if (!suggestionId) {
+    throw new Error('Suggestion ID is required');
+  }
+
+  const suggestionDocRef = doc(db, 'couples', coupleId, 'suggestions', suggestionId);
+  const suggestionDoc = await getDoc(suggestionDocRef);
+
+  if (!suggestionDoc.exists()) {
+    throw new Error('Suggestion not found');
+  }
+
+  const suggestionData = suggestionDoc.data();
+  if (suggestionData.byPlayerId !== uid) {
+    throw new Error('Only the creator can delete this suggestion');
+  }
+
+  await deleteDoc(suggestionDocRef);
+
+  return { success: true };
 }

@@ -110,7 +110,7 @@
         "Suggestions appear in partner's Log Attempt screen"
       ],
       "priority": 6,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "blockedReason": null
     },

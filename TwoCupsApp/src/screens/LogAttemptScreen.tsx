@@ -14,7 +14,7 @@ import { useAuth } from '../context/AuthContext';
 import { logAttempt } from '../services/api';
 import { Button, TextInput } from '../components/common';
 import { colors, spacing, typography, borderRadius } from '../theme';
-import { Request } from '../types';
+import { Request, Suggestion } from '../types';
 
 const CATEGORIES = [
   'Words of Affirmation',
@@ -39,6 +39,7 @@ export function LogAttemptScreen({ onGoBack }: LogAttemptScreenProps) {
   const [category, setCategory] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [partnerRequests, setPartnerRequests] = useState<Request[]>([]);
+  const [partnerSuggestions, setPartnerSuggestions] = useState<Suggestion[]>([]);
 
   const coupleId = userData?.activeCoupleId;
   const myUid = user?.uid;
@@ -68,10 +69,38 @@ export function LogAttemptScreen({ onGoBack }: LogAttemptScreenProps) {
     return unsubscribe;
   }, [coupleId, myUid]);
 
+  // Fetch partner's suggestions (ways to fill their cup)
+  useEffect(() => {
+    if (!coupleId || !partnerId) return;
+
+    const suggestionsRef = collection(db, 'couples', coupleId, 'suggestions');
+    const q = query(
+      suggestionsRef,
+      where('byPlayerId', '==', partnerId)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const suggestions: Suggestion[] = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate() ?? new Date(),
+      })) as Suggestion[];
+      setPartnerSuggestions(suggestions);
+    });
+
+    return unsubscribe;
+  }, [coupleId, partnerId]);
+
   const handleSelectRequest = (request: Request) => {
     setAction(request.action);
     setDescription(request.description || '');
     setCategory(request.category || null);
+  };
+
+  const handleSelectSuggestion = (suggestion: Suggestion) => {
+    setAction(suggestion.action);
+    setDescription(suggestion.description || '');
+    setCategory(suggestion.category || null);
   };
 
   const handleSubmit = async () => {
@@ -135,6 +164,26 @@ export function LogAttemptScreen({ onGoBack }: LogAttemptScreenProps) {
                 <Text style={styles.requestAction}>{request.action}</Text>
                 {request.category && (
                   <Text style={styles.requestCategory}>{request.category}</Text>
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
+        {/* Partner's Suggestions */}
+        {partnerSuggestions.length > 0 && (
+          <View style={styles.suggestionsSection}>
+            <Text style={styles.sectionTitle}>Partner's Suggestions</Text>
+            <Text style={styles.suggestionHint}>Ways to fill your partner's cup</Text>
+            {partnerSuggestions.map((suggestion) => (
+              <TouchableOpacity
+                key={suggestion.id}
+                style={styles.suggestionCard}
+                onPress={() => handleSelectSuggestion(suggestion)}
+              >
+                <Text style={styles.suggestionAction}>{suggestion.action}</Text>
+                {suggestion.category && (
+                  <Text style={styles.suggestionCategory}>{suggestion.category}</Text>
                 )}
               </TouchableOpacity>
             ))}
@@ -252,6 +301,31 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   requestCategory: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    marginTop: spacing.xs,
+  },
+  suggestionsSection: {
+    marginBottom: spacing.xl,
+  },
+  suggestionHint: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    marginBottom: spacing.md,
+  },
+  suggestionCard: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  suggestionAction: {
+    ...typography.body,
+    color: colors.textPrimary,
+  },
+  suggestionCategory: {
     ...typography.caption,
     color: colors.textSecondary,
     marginTop: spacing.xs,

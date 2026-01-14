@@ -10,12 +10,14 @@ interface HomeScreenProps {
   onNavigateToLogAttempt?: () => void;
   onNavigateToAcknowledge?: () => void;
   onNavigateToMakeRequest?: () => void;
+  onNavigateToManageSuggestions?: () => void;
 }
 
 export function HomeScreen({
   onNavigateToLogAttempt,
   onNavigateToAcknowledge,
   onNavigateToMakeRequest,
+  onNavigateToManageSuggestions,
 }: HomeScreenProps) {
   const { userData, coupleData, signOut } = useAuth();
   const { myPlayer, partnerPlayer, partnerName, loading } = usePlayerData();
@@ -90,6 +92,13 @@ export function HomeScreen({
             onPress={onNavigateToAcknowledge ?? (() => {})}
             style={styles.actionButton}
             variant="secondary"
+          />
+
+          <Button
+            title="💡 Manage My Suggestions"
+            onPress={onNavigateToManageSuggestions ?? (() => {})}
+            style={styles.actionButton}
+            variant="outline"
           />
         </View>
 
