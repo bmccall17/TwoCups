@@ -30,8 +30,21 @@ import { Attempt } from '../types';
 
 const PAGE_SIZE = 20;
 
+const CATEGORIES = [
+  'Words of Affirmation',
+  'Acts of Service',
+  'Quality Time',
+  'Physical Touch',
+  'Gifts',
+  'Support & Encouragement',
+  'Listening & Presence',
+  'Shared Activities',
+  'Surprises & Thoughtfulness',
+];
+
 type PlayerFilterType = 'all' | 'byMe' | 'forMe' | 'byPartner' | 'forPartner';
 type StatusFilterType = 'all' | 'pending' | 'acknowledged';
+type CategoryFilterType = 'all' | string;
 
 export function HistoryScreen() {
   const { user, userData, coupleData } = useAuth();
@@ -44,6 +57,7 @@ export function HistoryScreen() {
   const [playerNames, setPlayerNames] = useState<Record<string, string>>({});
   const [playerFilter, setPlayerFilter] = useState<PlayerFilterType>('all');
   const [statusFilter, setStatusFilter] = useState<StatusFilterType>('all');
+  const [categoryFilter, setCategoryFilter] = useState<CategoryFilterType>('all');
 
   const coupleId = userData?.activeCoupleId;
   const myUid = user?.uid;
@@ -167,7 +181,7 @@ export function HistoryScreen() {
     return playerNames[playerId] || 'Partner';
   };
 
-  // Filter attempts by player and status
+  // Filter attempts by player, status, and category
   const filteredAttempts = useMemo(() => {
     return attempts.filter(attempt => {
       // Player filter
@@ -189,52 +203,96 @@ export function HistoryScreen() {
       if (!matchesPlayer) return false;
 
       // Status filter
+      let matchesStatus = true;
       switch (statusFilter) {
         case 'pending':
-          return !attempt.acknowledged;
+          matchesStatus = !attempt.acknowledged;
+          break;
         case 'acknowledged':
-          return attempt.acknowledged === true;
-        default:
-          return true;
+          matchesStatus = attempt.acknowledged === true;
+          break;
+      }
+      if (!matchesStatus) return false;
+
+      // Category filter
+      if (categoryFilter !== 'all') {
+        return attempt.category === categoryFilter;
+      }
+
+      return true;
+    });
+  }, [attempts, playerFilter, statusFilter, categoryFilter, myUid, partnerId]);
+
+  // Helper functions for filtering
+  const applyPlayerFilter = (a: Attempt, filter: PlayerFilterType) => {
+    switch (filter) {
+      case 'byMe': return a.byPlayerId === myUid;
+      case 'forMe': return a.forPlayerId === myUid;
+      case 'byPartner': return a.byPlayerId === partnerId;
+      case 'forPartner': return a.forPlayerId === partnerId;
+      default: return true;
+    }
+  };
+
+  const applyStatusFilter = (a: Attempt, filter: StatusFilterType) => {
+    switch (filter) {
+      case 'pending': return !a.acknowledged;
+      case 'acknowledged': return a.acknowledged === true;
+      default: return true;
+    }
+  };
+
+  const applyCategoryFilter = (a: Attempt, filter: CategoryFilterType) => {
+    if (filter === 'all') return true;
+    return a.category === filter;
+  };
+
+  // Calculate counts for each filter (respecting other filters)
+  const playerFilterCounts = useMemo(() => {
+    const applyOthers = (a: Attempt) =>
+      applyStatusFilter(a, statusFilter) && applyCategoryFilter(a, categoryFilter);
+    return {
+      all: attempts.filter(applyOthers).length,
+      byMe: attempts.filter(a => a.byPlayerId === myUid && applyOthers(a)).length,
+      forMe: attempts.filter(a => a.forPlayerId === myUid && applyOthers(a)).length,
+      byPartner: attempts.filter(a => a.byPlayerId === partnerId && applyOthers(a)).length,
+      forPartner: attempts.filter(a => a.forPlayerId === partnerId && applyOthers(a)).length,
+    };
+  }, [attempts, statusFilter, categoryFilter, myUid, partnerId]);
+
+  // Calculate status counts (respecting other filters)
+  const statusFilterCounts = useMemo(() => {
+    const applyOthers = (a: Attempt) =>
+      applyPlayerFilter(a, playerFilter) && applyCategoryFilter(a, categoryFilter);
+    return {
+      all: attempts.filter(applyOthers).length,
+      pending: attempts.filter(a => !a.acknowledged && applyOthers(a)).length,
+      acknowledged: attempts.filter(a => a.acknowledged === true && applyOthers(a)).length,
+    };
+  }, [attempts, playerFilter, categoryFilter, myUid, partnerId]);
+
+  // Calculate category counts (respecting other filters) - only categories with attempts
+  const categoryFilterData = useMemo(() => {
+    const applyOthers = (a: Attempt) =>
+      applyPlayerFilter(a, playerFilter) && applyStatusFilter(a, statusFilter);
+    
+    const counts: Record<string, number> = {};
+    attempts.filter(applyOthers).forEach(a => {
+      if (a.category) {
+        counts[a.category] = (counts[a.category] || 0) + 1;
       }
     });
+
+    // Only include categories that have attempts
+    const categoriesWithAttempts = CATEGORIES.filter(cat => counts[cat] > 0);
+    const totalCount = attempts.filter(applyOthers).length;
+
+    return {
+      categories: categoriesWithAttempts,
+      counts,
+      totalCount,
+    };
   }, [attempts, playerFilter, statusFilter, myUid, partnerId]);
-
-  // Calculate counts for each filter (respecting the other filter)
-  const playerFilterCounts = useMemo(() => {
-    const applyStatus = (a: Attempt) => {
-      switch (statusFilter) {
-        case 'pending': return !a.acknowledged;
-        case 'acknowledged': return a.acknowledged === true;
-        default: return true;
-      }
-    };
-    return {
-      all: attempts.filter(applyStatus).length,
-      byMe: attempts.filter(a => a.byPlayerId === myUid && applyStatus(a)).length,
-      forMe: attempts.filter(a => a.forPlayerId === myUid && applyStatus(a)).length,
-      byPartner: attempts.filter(a => a.byPlayerId === partnerId && applyStatus(a)).length,
-      forPartner: attempts.filter(a => a.forPlayerId === partnerId && applyStatus(a)).length,
-    };
-  }, [attempts, statusFilter, myUid, partnerId]);
-
-  // Calculate status counts (respecting player filter)
-  const statusFilterCounts = useMemo(() => {
-    const applyPlayer = (a: Attempt) => {
-      switch (playerFilter) {
-        case 'byMe': return a.byPlayerId === myUid;
-        case 'forMe': return a.forPlayerId === myUid;
-        case 'byPartner': return a.byPlayerId === partnerId;
-        case 'forPartner': return a.forPlayerId === partnerId;
-        default: return true;
-      }
-    };
-    return {
-      all: attempts.filter(applyPlayer).length,
-      pending: attempts.filter(a => !a.acknowledged && applyPlayer(a)).length,
-      acknowledged: attempts.filter(a => a.acknowledged === true && applyPlayer(a)).length,
-    };
-  }, [attempts, playerFilter, myUid, partnerId]);
 
   const playerFilterOptions: { key: PlayerFilterType; label: string }[] = [
     { key: 'all', label: 'All' },
@@ -391,12 +449,60 @@ export function HistoryScreen() {
         ))}
       </ScrollView>
 
+      {/* Category Filter Chips - only show if there are categories with attempts */}
+      {categoryFilterData.categories.length > 0 && (
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filterScrollContent}
+          style={styles.filterScroll}
+        >
+          <TouchableOpacity
+            style={[
+              styles.filterChip,
+              categoryFilter === 'all' && styles.filterChipActive,
+            ]}
+            onPress={() => setCategoryFilter('all')}
+          >
+            <Text
+              style={[
+                styles.filterChipText,
+                categoryFilter === 'all' && styles.filterChipTextActive,
+              ]}
+            >
+              All Categories ({categoryFilterData.totalCount})
+            </Text>
+          </TouchableOpacity>
+          {categoryFilterData.categories.map(cat => (
+            <TouchableOpacity
+              key={cat}
+              style={[
+                styles.filterChip,
+                styles.filterChipCategory,
+                categoryFilter === cat && styles.filterChipActive,
+              ]}
+              onPress={() => setCategoryFilter(categoryFilter === cat ? 'all' : cat)}
+            >
+              <Text
+                style={[
+                  styles.filterChipText,
+                  styles.filterChipTextCategory,
+                  categoryFilter === cat && styles.filterChipTextActive,
+                ]}
+              >
+                {cat} ({categoryFilterData.counts[cat]})
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      )}
+
       {filteredAttempts.length === 0 ? (
         <EmptyState
           icon="📜"
-          title={playerFilter === 'all' && statusFilter === 'all' ? 'No history yet' : 'No matching attempts'}
+          title={playerFilter === 'all' && statusFilter === 'all' && categoryFilter === 'all' ? 'No history yet' : 'No matching attempts'}
           subtitle={
-            playerFilter === 'all' && statusFilter === 'all'
+            playerFilter === 'all' && statusFilter === 'all' && categoryFilter === 'all'
               ? 'Start logging attempts to see your relationship timeline!'
               : 'Try a different filter to see more attempts.'
           }
@@ -477,6 +583,13 @@ const styles = StyleSheet.create({
   filterChipTextPending: {
     color: colors.warning,
     fontWeight: '600',
+  },
+  filterChipCategory: {
+    backgroundColor: colors.card,
+    borderColor: colors.primary + '40',
+  },
+  filterChipTextCategory: {
+    color: colors.primary,
   },
   listContent: {
     paddingHorizontal: spacing.lg,
