@@ -1,142 +1,145 @@
 {
-  "name": "TwoCups Sprint 3 - History & Analytics",
-  "branchName": "ralph/sprint-3-history",
-  "description": "Add history timeline view and basic analytics to help players review past attempts and see relationship insights",
+  "name": "TwoCups Sprint 4 - Push Notifications",
+  "branchName": "ralph/sprint-4-notifications",
+  "description": "Implement push notifications to alert users when their partner takes actions, keeping couples engaged",
   "created": "2026-01-14",
 
   "decisions": {
-    "D1_DateRange": "Default to last 7 days, allow 30-day and all-time views",
-    "D2_Storage": "All data already in Firestore, just need query views",
-    "D3_Charts": "Keep simple - text stats first, charts can come later"
+    "D1_Service": "Use Firebase Cloud Messaging (FCM) - already have Firebase",
+    "D2_Triggers": "Cloud Functions to send notifications on Firestore writes",
+    "D3_Preferences": "Store notification preferences in user document"
   },
 
   "userStories": [
     {
-      "id": "US-015",
-      "title": "History Screen with Timeline View",
-      "description": "Create a new History screen accessible from Settings or a new tab showing all attempts in chronological order.",
+      "id": "US-023",
+      "title": "FCM Setup and Token Registration",
+      "description": "Set up Firebase Cloud Messaging and register device tokens for push notifications.",
       "acceptanceCriteria": [
-        "New History screen added to navigation (tab or settings link)",
-        "Displays all attempts for the couple in reverse chronological order",
-        "Each attempt card shows: action, description, who logged it, for whom, timestamp",
-        "Shows acknowledged status with visual indicator (checkmark or badge)",
-        "Paginated or infinite scroll for large datasets (load 20 at a time)",
-        "Pull-to-refresh functionality"
+        "Firebase Cloud Messaging configured in project",
+        "App requests notification permission on first launch (or after pairing)",
+        "Device FCM token saved to user document in Firestore",
+        "Token refreshes handled automatically",
+        "Works on Android (iOS can be added later)"
       ],
       "priority": 1,
-      "passes": true,
+      "passes": false,
       "blocked": false,
       "blockedReason": null
     },
     {
-      "id": "US-016",
-      "title": "History Filters - By Player",
-      "description": "Add filter controls to view attempts logged by specific player or for specific player.",
+      "id": "US-024",
+      "title": "Cloud Function - Attempt Logged Notification",
+      "description": "Send push notification when partner logs an attempt for you.",
       "acceptanceCriteria": [
-        "Filter chips/tabs: All, By Me, For Me, By Partner, For Partner",
-        "Filters update the query in real-time",
-        "Show count of matching attempts",
-        "Filters persist during session (reset on screen exit is OK)",
-        "Clear visual indication of active filter"
+        "Cloud Function triggers on new attempt document creation",
+        "Notification sent to forPlayerId (recipient)",
+        "Notification title: '{PartnerName} did something for you!'",
+        "Notification body: Shows the action text (truncated if long)",
+        "Tapping notification opens app to Acknowledge screen",
+        "Does not notify if user logged attempt for themselves (edge case)"
       ],
       "priority": 2,
-      "passes": true,
-      "blocked": false,
-      "blockedReason": null
+      "passes": false,
+      "blocked": true,
+      "blockedReason": "Depends on US-023"
     },
     {
-      "id": "US-017",
-      "title": "History Filters - By Status",
-      "description": "Add filter to show only pending or only acknowledged attempts.",
+      "id": "US-025",
+      "title": "Cloud Function - Attempt Acknowledged Notification",
+      "description": "Send push notification when partner acknowledges your attempt.",
       "acceptanceCriteria": [
-        "Filter options: All, Pending, Acknowledged",
-        "Can combine with player filters (e.g., 'For Me' + 'Pending')",
-        "Show count for each status",
-        "Pending attempts highlighted or styled differently"
+        "Cloud Function triggers on attempt document update (acknowledged: true)",
+        "Notification sent to byPlayerId (who logged the attempt)",
+        "Notification title: '{PartnerName} acknowledged your effort!'",
+        "Notification body: '+3 gems earned' or similar",
+        "Tapping notification opens app to Home screen"
       ],
       "priority": 3,
-      "passes": true,
-      "blocked": false,
-      "blockedReason": null
+      "passes": false,
+      "blocked": true,
+      "blockedReason": "Depends on US-023"
     },
     {
-      "id": "US-018",
-      "title": "History Filters - By Category",
-      "description": "Add category filter to view attempts by love language category.",
+      "id": "US-026",
+      "title": "Cloud Function - New Request Notification",
+      "description": "Send push notification when partner creates a new request.",
       "acceptanceCriteria": [
-        "Category filter dropdown or chip selector",
-        "Shows all 9 categories plus 'All' option",
-        "Only shows categories that have attempts (hide empty categories)",
-        "Can combine with other filters"
+        "Cloud Function triggers on new request document creation",
+        "Notification sent to forPlayerId (who should fulfill it)",
+        "Notification title: '{PartnerName} made a request'",
+        "Notification body: Shows the request action text",
+        "Tapping notification opens app to Log Attempt screen"
       ],
       "priority": 4,
-      "passes": true,
-      "blocked": false,
-      "blockedReason": null
+      "passes": false,
+      "blocked": true,
+      "blockedReason": "Depends on US-023"
     },
     {
-      "id": "US-019",
-      "title": "History Filters - By Date Range",
-      "description": "Add date range filter to view attempts from specific time periods.",
+      "id": "US-027",
+      "title": "Cloud Function - Request Fulfilled Notification",
+      "description": "Send push notification when your request is fulfilled by partner.",
       "acceptanceCriteria": [
-        "Quick filters: Today, Last 7 Days, Last 30 Days, All Time",
-        "Default to Last 7 Days",
-        "Shows date range in header",
-        "Efficient Firestore query using timestamp index"
+        "Cloud Function triggers on request document update (fulfilledByAttemptId set)",
+        "Notification sent to byPlayerId (who made the request)",
+        "Notification title: '{PartnerName} fulfilled your request!'",
+        "Notification body: Shows the request action text",
+        "Tapping notification opens app to Acknowledge screen"
       ],
       "priority": 5,
-      "passes": true,
-      "blocked": false,
-      "blockedReason": null
+      "passes": false,
+      "blocked": true,
+      "blockedReason": "Depends on US-023"
     },
     {
-      "id": "US-020",
-      "title": "Analytics Dashboard - Basic Stats",
-      "description": "Create analytics section showing key relationship metrics.",
+      "id": "US-028",
+      "title": "Cloud Function - Cup Overflow Notification",
+      "description": "Send push notification when a cup overflows (celebration moment).",
       "acceptanceCriteria": [
-        "Analytics section on History screen or separate Analytics screen",
-        "Shows total attempts logged (by each player)",
-        "Shows total attempts acknowledged",
-        "Shows acknowledgment rate (acknowledged / total as percentage)",
-        "Shows total gems earned (each player)",
-        "Stats update based on active date range filter"
+        "Detect cup overflow during acknowledgment (from cupOverflow flag)",
+        "Notification sent to both players",
+        "Notification title: 'Cup Overflow Celebration!'",
+        "Notification body: 'Your cup overflowed! Keep filling each other up.'",
+        "Different messages for individual vs collective cup overflow"
       ],
       "priority": 6,
-      "passes": true,
-      "blocked": false,
-      "blockedReason": null
+      "passes": false,
+      "blocked": true,
+      "blockedReason": "Depends on US-023"
     },
     {
-      "id": "US-021",
-      "title": "Analytics - Category Breakdown",
-      "description": "Show which love language categories are used most frequently.",
+      "id": "US-029",
+      "title": "Notification Preferences Screen",
+      "description": "Allow users to control which notifications they receive.",
       "acceptanceCriteria": [
-        "List of categories with attempt counts",
-        "Sorted by frequency (most used first)",
-        "Shows percentage of total for each category",
-        "Visual bar or indicator showing relative usage",
-        "Separate breakdown for 'attempts I logged' vs 'attempts for me'"
+        "Notification settings section in Settings screen",
+        "Toggle for each notification type (attempt logged, acknowledged, requests, overflow)",
+        "Master toggle to disable all notifications",
+        "Preferences saved to user document in Firestore",
+        "Cloud Functions check preferences before sending"
       ],
       "priority": 7,
-      "passes": true,
-      "blocked": false,
-      "blockedReason": null
+      "passes": false,
+      "blocked": true,
+      "blockedReason": "Depends on US-023"
     },
     {
-      "id": "US-022",
-      "title": "Analytics - Request Stats",
-      "description": "Show request fulfillment statistics.",
+      "id": "US-030",
+      "title": "In-App Notification Center",
+      "description": "Show notification history within the app for users who miss push notifications.",
       "acceptanceCriteria": [
-        "Total requests made (each player)",
-        "Total requests fulfilled",
-        "Fulfillment rate percentage",
-        "Average time to fulfill request (if data available)",
-        "Most requested categories"
+        "Notification bell icon in header with unread count badge",
+        "Notification center screen showing recent notifications",
+        "Each notification shows: type icon, title, body, timestamp",
+        "Mark as read on view",
+        "Tapping notification navigates to relevant screen",
+        "Notifications stored in Firestore (last 50 per user)"
       ],
       "priority": 8,
-      "passes": true,
-      "blocked": false,
-      "blockedReason": null
+      "passes": false,
+      "blocked": true,
+      "blockedReason": "Depends on US-024, US-025, US-026, US-027"
     }
   ]
 }
