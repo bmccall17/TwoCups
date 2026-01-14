@@ -9,6 +9,7 @@ import { LoadingSpinner } from './src/components/common';
 import { LoginScreen, SignUpScreen, PairingScreen } from './src/screens/auth';
 import { HomeScreen } from './src/screens/HomeScreen';
 import { LogAttemptScreen } from './src/screens/LogAttemptScreen';
+import { AcknowledgeScreen } from './src/screens/AcknowledgeScreen';
 import { colors } from './src/theme';
 
 type AuthStackParamList = {
@@ -20,6 +21,7 @@ type AppStackParamList = {
   Pairing: undefined;
   Home: undefined;
   LogAttempt: undefined;
+  Acknowledge: undefined;
 };
 
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
@@ -66,7 +68,7 @@ function AppNavigator() {
             {(props) => (
               <HomeScreen
                 onNavigateToLogAttempt={() => props.navigation.navigate('LogAttempt')}
-                onNavigateToAcknowledge={() => {}}
+                onNavigateToAcknowledge={() => props.navigation.navigate('Acknowledge')}
                 onNavigateToMakeRequest={() => {}}
               />
             )}
@@ -74,6 +76,13 @@ function AppNavigator() {
           <AppStack.Screen name="LogAttempt">
             {(props) => (
               <LogAttemptScreen
+                onGoBack={() => props.navigation.goBack()}
+              />
+            )}
+          </AppStack.Screen>
+          <AppStack.Screen name="Acknowledge">
+            {(props) => (
+              <AcknowledgeScreen
                 onGoBack={() => props.navigation.goBack()}
               />
             )}

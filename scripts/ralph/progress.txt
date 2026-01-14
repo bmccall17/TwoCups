@@ -45,7 +45,7 @@ Thread: https://ampcode.com/threads/T-019bbae3-4db0-7208-aa9f-ea7393030e39
 
 ---
 
-## 2026-01-14 - US-003 (Log Attempt Screen) 🔄 IN PROGRESS
+## 2026-01-14 - US-003 (Log Attempt Screen) ✅
 Thread: https://ampcode.com/threads/T-019bbae3-4db0-7208-aa9f-ea7393030e39
 
 ### What was implemented
@@ -58,6 +58,46 @@ Thread: https://ampcode.com/threads/T-019bbae3-4db0-7208-aa9f-ea7393030e39
 - `src/screens/LogAttemptScreen.tsx`
 
 ### Status
-Deployed, needs user testing to verify.
+Deployed, and works.
+
+---
+
+## 2026-01-14 - US-004 (Acknowledge Attempts Screen) ✅
+
+### What was implemented
+Built the Acknowledge Attempts screen where users can review and acknowledge attempts their partner logged for them:
+
+1. **Real-time attempts list**: Fetches attempts where `forPlayerId` equals current user, ordered by `createdAt` desc
+2. **Attempt cards show**: action, description, timestamp (relative), who logged it, category badge, fulfilled-request badge
+3. **Filter tabs**: Pending / Done / All with counts
+4. **Acknowledge button**: Calls existing `acknowledgeAttempt` API which updates:
+   - `attempt.acknowledged = true`
+   - Awards gems to both players (actor gets +3, recipient gets +3)
+   - Updates recipient cup level (with overflow detection)
+   - Updates collective cup level
+5. **Visual feedback**: Alert on successful acknowledgment with gem count and cup overflow message
+6. **Partner name resolution**: Fetches partner displayName from `/users/{uid}` for display
+
+### Files created/changed
+- `TwoCupsApp/src/screens/AcknowledgeScreen.tsx` (new)
+- `TwoCupsApp/App.tsx`
+  - Added import for AcknowledgeScreen
+  - Added 'Acknowledge' to AppStackParamList
+  - Wired up onNavigateToAcknowledge in HomeScreen
+  - Added AppStack.Screen for Acknowledge route
+
+### API already existed
+- `acknowledgeAttempt()` in `src/services/api/actions.ts` was already implemented
+
+### Acceptance Criteria Checklist
+- [x] Shows list of pending attempts (for current user)
+- [x] Each attempt shows: action, description, timestamp, who logged it
+- [x] User can tap to acknowledge
+- [x] Acknowledging updates: attempt.acknowledged, both gem counts, cups
+- [x] Visual feedback on acknowledgment
+- [x] Can filter by pending/acknowledged
+
+### Also updated
+- Unblocked US-005, US-006, US-007 in prd.json (dependencies now satisfied)
 
 ---

@@ -96,11 +96,12 @@ service cloud.firestore {
           && request.resource.data.acknowledged == false
           && request.resource.data.keys().hasAll(['byPlayerId', 'forPlayerId', 'action', 'createdAt', 'acknowledged']);
 
-        // Only recipient can acknowledge (update acknowledged field)
+        // Only recipient can acknowledge (update acknowledged + acknowledgedAt fields)
         allow update: if isPartnerInCouple(coupleId)
           && resource.data.forPlayerId == request.auth.uid
           && resource.data.acknowledged == false
-          && request.resource.data.acknowledged == true;
+          && request.resource.data.acknowledged == true
+          && request.resource.data.acknowledgedAt is timestamp;
       }
 
       // ----------------------------------------

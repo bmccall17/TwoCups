@@ -49,7 +49,7 @@
       "blockedReason": null
     },
     {
-      "id": "US-003", 
+      "id": "US-003",
       "title": "Log Attempt Screen",
       "description": "Build screen where user can log an action they did for their partner. Should show partner's active requests and suggestions.",
       "acceptanceCriteria": [
@@ -62,7 +62,7 @@
         "Request auto-fulfillment detection works"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "blockedReason": null
     },
@@ -79,7 +79,7 @@
         "Can filter by pending/acknowledged"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "blockedReason": null
     },
@@ -96,8 +96,8 @@
       ],
       "priority": 5,
       "passes": false,
-      "blocked": true,
-      "blockedReason": "Requires US-003 (Log Attempt for full flow)"
+      "blocked": false,
+      "blockedReason": null
     },
     {
       "id": "US-006",
@@ -111,8 +111,8 @@
       ],
       "priority": 6,
       "passes": false,
-      "blocked": true,
-      "blockedReason": "Requires US-003 (Log Attempt to see suggestions used)"
+      "blocked": false,
+      "blockedReason": null
     },
     {
       "id": "US-007",
@@ -126,8 +126,8 @@
       ],
       "priority": 7,
       "passes": false,
-      "blocked": true,
-      "blockedReason": "Requires US-002, US-003, US-004 (screens to navigate to)"
+      "blocked": false,
+      "blockedReason": null
     }
   ]
 }
