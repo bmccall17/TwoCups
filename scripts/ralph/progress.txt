@@ -592,3 +592,42 @@ Enhanced toast notifications to prominently display gem rewards:
 - Optional parameters with default undefined allow backward compatibility
 
 ---
+
+## 2026-01-14 - US-034 (Daily Gem Earnings Summary) ✅
+Thread: https://ampcode.com/threads/T-019bbd62-cd97-7344-b4ec-b3d83e4b748a
+
+### What was implemented
+Added daily gem earnings summary to the GemCounter component on HomeScreen:
+
+1. **getDailyGemEarnings API** - Queries today's attempts and acknowledgments to calculate gems earned:
+   - Logging gems: base 1 per attempt + 2 bonus for fulfilled requests
+   - Acknowledgment gems: 3 when partner acknowledges your attempts + 3 when you acknowledge partner's attempts
+
+2. **GemCounter updates**:
+   - "Today: +X gems" display below total gem count
+   - Breakdown showing "X from logging, Y from acknowledgments" when gems earned
+   - Encouraging messages based on daily progress:
+     - 0 gems: "Log an attempt or acknowledge your partner to earn gems!"
+     - 1-4 gems: "Nice start! Every gem counts!"
+     - 5-9 gems: "Great job! You're building something special!"
+     - 10-19 gems: "Fantastic progress! Keep it up!"
+     - 20+ gems: "Amazing day! You're on fire!"
+   - Auto-refreshes every 30 seconds and when myGems changes
+
+### Files created/changed
+- `TwoCupsApp/src/services/api/actions.ts` - Added DailyGemEarnings type and getDailyGemEarnings function
+- `TwoCupsApp/src/services/api/index.ts` - Exported new function and type
+- `TwoCupsApp/src/components/common/GemCounter.tsx` - Added daily earnings section with breakdown and encouraging messages
+
+### Acceptance Criteria Checklist
+- [x] Display 'Today: +X gems' below total gem count
+- [x] Resets at midnight local time (uses startOfDay in query)
+- [x] Shows breakdown: 'X from logging, Y from acknowledgments' (when gems > 0)
+- [x] Encouraging message if gems earned today (tiered messages)
+- [x] Different message if no gems yet today
+
+### Learnings
+- Use userData.activeCoupleId instead of coupleData.id (Couple type doesn't include id field)
+- Querying acknowledgedAt >= startOfDay captures both given and received acknowledgment gems
+
+---
