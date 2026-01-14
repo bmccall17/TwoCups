@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
 import { useAuth } from '../context/AuthContext';
+import { useMilestoneCelebration } from '../context/MilestoneCelebrationContext';
 import { usePlayerData } from '../hooks';
 import { Button, LoadingSpinner, GemCounter } from '../components/common';
 import { CupVisualization } from '../components/cups';
@@ -21,6 +22,19 @@ export function HomeScreen({
 }: HomeScreenProps) {
   const { userData, coupleData } = useAuth();
   const { myPlayer, partnerPlayer, partnerName, loading } = usePlayerData();
+  const { checkMilestone } = useMilestoneCelebration();
+  const previousGemCount = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (myPlayer && previousGemCount.current !== null) {
+      if (myPlayer.gemCount > previousGemCount.current) {
+        checkMilestone(myPlayer.gemCount, myPlayer.achievedMilestones);
+      }
+    }
+    if (myPlayer) {
+      previousGemCount.current = myPlayer.gemCount;
+    }
+  }, [myPlayer?.gemCount, myPlayer?.achievedMilestones, checkMilestone]);
 
   if (loading) {
     return <LoadingSpinner message="Loading..." />;

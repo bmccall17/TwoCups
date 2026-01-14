@@ -22,6 +22,7 @@ export interface Player {
   cupLevel: number;
   gemCount: number;
   joinedAt: Date;
+  achievedMilestones?: number[];
 }
 
 // Attempt document in /couples/{coupleId}/attempts/{attemptId}

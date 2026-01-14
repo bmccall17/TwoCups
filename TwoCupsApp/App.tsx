@@ -9,6 +9,7 @@ import { Text, View, StyleSheet } from 'react-native';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { ToastProvider } from './src/context/ToastContext';
 import { GemAnimationProvider } from './src/context/GemAnimationContext';
+import { MilestoneCelebrationProvider } from './src/context/MilestoneCelebrationContext';
 import { LoadingSpinner, InstallAppModal, ToastContainer } from './src/components/common';
 import { useInstallPrompt } from './src/hooks';
 import { LoginScreen, SignUpScreen, PairingScreen } from './src/screens/auth';
@@ -242,10 +243,12 @@ export default function App() {
       <ToastProvider>
         <GemAnimationProvider>
           <AuthProvider>
-            <NavigationContainer>
-              <RootNavigator />
-            </NavigationContainer>
-            <ToastContainer />
+            <MilestoneCelebrationProvider>
+              <NavigationContainer>
+                <RootNavigator />
+              </NavigationContainer>
+              <ToastContainer />
+            </MilestoneCelebrationProvider>
           </AuthProvider>
         </GemAnimationProvider>
       </ToastProvider>

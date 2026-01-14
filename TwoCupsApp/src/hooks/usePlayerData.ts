@@ -6,6 +6,7 @@ import { Player } from '../types';
 
 interface PlayerWithId extends Player {
   odI: string;
+  achievedMilestones: number[];
 }
 
 interface UsePlayerDataResult {
@@ -48,6 +49,7 @@ export function usePlayerData(): UsePlayerDataResult {
             cupLevel: data?.cupLevel ?? 0,
             gemCount: data?.gemCount ?? 0,
             joinedAt: data?.joinedAt?.toDate() ?? new Date(),
+            achievedMilestones: data?.achievedMilestones ?? [],
           });
         }
         setLoading(false);
@@ -73,6 +75,7 @@ export function usePlayerData(): UsePlayerDataResult {
               cupLevel: data?.cupLevel ?? 0,
               gemCount: data?.gemCount ?? 0,
               joinedAt: data?.joinedAt?.toDate() ?? new Date(),
+              achievedMilestones: data?.achievedMilestones ?? [],
             });
           }
         },
