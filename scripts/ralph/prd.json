@@ -24,7 +24,7 @@
         "Pull-to-refresh functionality"
       ],
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "blockedReason": null
     },
@@ -41,8 +41,8 @@
       ],
       "priority": 2,
       "passes": false,
-      "blocked": true,
-      "blockedReason": "Depends on US-015"
+      "blocked": false,
+      "blockedReason": null
     },
     {
       "id": "US-017",
@@ -56,8 +56,8 @@
       ],
       "priority": 3,
       "passes": false,
-      "blocked": true,
-      "blockedReason": "Depends on US-015"
+      "blocked": false,
+      "blockedReason": null
     },
     {
       "id": "US-018",
@@ -71,8 +71,8 @@
       ],
       "priority": 4,
       "passes": false,
-      "blocked": true,
-      "blockedReason": "Depends on US-015"
+      "blocked": false,
+      "blockedReason": null
     },
     {
       "id": "US-019",
@@ -86,8 +86,8 @@
       ],
       "priority": 5,
       "passes": false,
-      "blocked": true,
-      "blockedReason": "Depends on US-015"
+      "blocked": false,
+      "blockedReason": null
     },
     {
       "id": "US-020",
@@ -103,8 +103,8 @@
       ],
       "priority": 6,
       "passes": false,
-      "blocked": true,
-      "blockedReason": "Depends on US-015"
+      "blocked": false,
+      "blockedReason": null
     },
     {
       "id": "US-021",

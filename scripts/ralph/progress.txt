@@ -6,6 +6,8 @@ Started: 2026-01-14
 - User documents auto-created on anonymous auth in AuthContext
 - Use `writeBatch()` for atomic multi-document operations
 - Firestore security rules require `createdAt` field on user documents
+- Use `getDocs` + pagination (startAfter, limit) for History-style screens (not onSnapshot)
+- FlatList with onEndReached for infinite scroll pattern
 
 ---
 
@@ -232,5 +234,36 @@ Enforced the 20 attempts/day limit with clear UI feedback:
 - Use `Timestamp.fromDate()` to convert JS Date to Firestore Timestamp for queries
 - Client-side validation + server-side validation provides best UX
 - Style concatenation with opacity (e.g., `colors.error + '20'`) works for semi-transparent backgrounds
+
+---
+
+## 2026-01-14 - US-015 (History Screen with Timeline View) ✅
+Thread: https://ampcode.com/threads/T-019bbd14-8aee-751b-bfc6-59b8e59a7c94
+
+### What was implemented
+Built the History screen showing all attempts in reverse chronological order:
+
+1. **HistoryScreen component** - Full timeline of all attempts for the couple
+2. **Attempt cards show**: action, description, who logged it (by → for), timestamp, category badge, acknowledged/pending status
+3. **Pagination** - Uses Firestore getDocs with startAfter for infinite scroll (20 items per page)
+4. **Pull-to-refresh** - RefreshControl for manual refresh
+5. **Navigation** - Added as new "History" tab in bottom navigation (between Acknowledge and Settings)
+
+### Files created/changed
+- `TwoCupsApp/src/screens/HistoryScreen.tsx` (new)
+- `TwoCupsApp/App.tsx` - Added HistoryScreen import, HistoryTab to MainTabParamList, and tab configuration
+
+### Acceptance Criteria Checklist
+- [x] New History screen added to navigation (tab)
+- [x] Displays all attempts in reverse chronological order
+- [x] Each attempt card shows: action, description, who logged it, for whom, timestamp
+- [x] Shows acknowledged status with visual indicator (✓ badge or pending badge)
+- [x] Paginated with infinite scroll (load 20 at a time)
+- [x] Pull-to-refresh functionality
+
+### Learnings
+- For timeline/history views, use `getDocs` with pagination rather than `onSnapshot` for better control
+- FlatList's `onEndReached` + `onEndReachedThreshold` handles infinite scroll nicely
+- Player name resolution pattern: fetch all partner names once on mount, display "You" for current user
 
 ---
