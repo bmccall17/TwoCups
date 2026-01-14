@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, SafeAreaView, ScrollView, RefreshControl } from
 import { useAuth } from '../context/AuthContext';
 import { useMilestoneCelebration } from '../context/MilestoneCelebrationContext';
 import { usePlayerData } from '../hooks';
-import { Button, LoadingSpinner, ErrorState, GemCounter, GemLeaderboard } from '../components/common';
+import { Button, LoadingSpinner, ErrorState, GemCounter } from '../components/common';
 import { CupVisualization } from '../components/cups';
 import { colors, spacing, typography, borderRadius } from '../theme';
 
@@ -92,18 +92,6 @@ export function HomeScreen({
           partnerName={partnerName}
           onPress={onNavigateToGemHistory}
         />
-
-        {/* Gem Leaderboard Section */}
-        {myPlayer && partnerPlayer && (
-          <GemLeaderboard
-            myGems={myGemCount}
-            partnerGems={partnerGemCount}
-            myPlayerId={myPlayer.odI}
-            partnerPlayerId={partnerPlayer.odI}
-            myName={myName}
-            partnerName={partnerName}
-          />
-        )}
 
         {/* Cups Section */}
         <View style={styles.cupsSection}>
