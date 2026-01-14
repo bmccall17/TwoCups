@@ -109,20 +109,26 @@ export function AcknowledgeScreen() {
 
       showGemAnimation(result.gemsAwarded, undefined, SCREEN_HEIGHT / 3);
 
+      const gemsPerPlayer = result.gemsAwarded / 2;
+
       if (result.collectiveCupOverflow) {
         setCelebration({
           visible: true,
           message: 'Collective Cup Overflowed!',
-          subMessage: `+${result.gemsAwarded} gems! You both reached 100 together!`,
+          subMessage: `+${gemsPerPlayer} gems each! You both reached 100 together!`,
         });
       } else if (result.cupOverflow) {
         setCelebration({
           visible: true,
           message: 'Your Cup Overflowed!',
-          subMessage: `+${result.gemsAwarded} gems! Amazing work!`,
+          subMessage: `+${gemsPerPlayer} gems each! Amazing work!`,
         });
       } else {
-        showSuccess(`+${result.gemsAwarded} gems! Thank you for acknowledging.`);
+        showSuccess(
+          `Thank you for acknowledging!`,
+          undefined,
+          { amount: gemsPerPlayer, partnerAmount: gemsPerPlayer }
+        );
       }
     } catch (error: any) {
       showError(error.message || 'Failed to acknowledge');

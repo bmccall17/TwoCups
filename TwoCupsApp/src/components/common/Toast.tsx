@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useToast, ToastMessage, ToastType } from '../../context/ToastContext';
+import { useToast, ToastMessage, ToastType, GemReward } from '../../context/ToastContext';
 import { colors, spacing, typography, borderRadius, shadows } from '../../theme';
 
 const TOAST_ICONS: Record<ToastType, string> = {
@@ -84,6 +84,7 @@ function ToastItem({ toast, onHide }: ToastItemProps) {
 
   const toastColors = TOAST_COLORS[toast.type];
   const icon = TOAST_ICONS[toast.type];
+  const hasGemReward = toast.gemReward && toast.gemReward.amount > 0;
 
   return (
     <Animated.View
@@ -95,6 +96,7 @@ function ToastItem({ toast, onHide }: ToastItemProps) {
           backgroundColor: toastColors.background,
           borderColor: toastColors.border,
         },
+        hasGemReward && styles.toastItemWithGems,
       ]}
     >
       <TouchableOpacity
@@ -102,14 +104,50 @@ function ToastItem({ toast, onHide }: ToastItemProps) {
         onPress={handleDismiss}
         activeOpacity={0.8}
       >
-        <View style={[styles.iconContainer, { backgroundColor: toastColors.border }]}>
-          <Text style={styles.icon}>{icon}</Text>
+        {hasGemReward ? (
+          <View style={styles.gemIconContainer}>
+            <Text style={styles.gemIcon}>💎</Text>
+          </View>
+        ) : (
+          <View style={[styles.iconContainer, { backgroundColor: toastColors.border }]}>
+            <Text style={styles.icon}>{icon}</Text>
+          </View>
+        )}
+        <View style={styles.messageContainer}>
+          <Text style={[styles.message, { color: colors.textPrimary }]} numberOfLines={2}>
+            {toast.message}
+          </Text>
+          {hasGemReward && (
+            <GemRewardDisplay gemReward={toast.gemReward!} />
+          )}
         </View>
-        <Text style={[styles.message, { color: colors.textPrimary }]} numberOfLines={3}>
-          {toast.message}
-        </Text>
       </TouchableOpacity>
     </Animated.View>
+  );
+}
+
+function GemRewardDisplay({ gemReward }: { gemReward: GemReward }) {
+  const { amount, isBonus, partnerAmount } = gemReward;
+  
+  return (
+    <View style={styles.gemRewardContainer}>
+      <View style={styles.gemRewardRow}>
+        <Text style={styles.gemRewardIcon}>💎</Text>
+        <Text style={styles.gemRewardAmount}>+{amount}</Text>
+        {isBonus && (
+          <View style={styles.bonusBadge}>
+            <Text style={styles.bonusText}>BONUS</Text>
+          </View>
+        )}
+      </View>
+      {partnerAmount !== undefined && partnerAmount > 0 && (
+        <View style={styles.partnerGemsRow}>
+          <Text style={styles.partnerGemsText}>
+            💎 +{partnerAmount} to partner
+          </Text>
+        </View>
+      )}
+    </View>
   );
 }
 
@@ -144,6 +182,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     ...shadows.md,
   },
+  toastItemWithGems: {
+    borderColor: colors.gem,
+    backgroundColor: colors.gem + '25',
+  },
   toastContent: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -157,14 +199,64 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: spacing.sm,
   },
+  gemIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: borderRadius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.sm,
+    backgroundColor: colors.gem + '30',
+  },
+  gemIcon: {
+    fontSize: 20,
+  },
   icon: {
     fontSize: 14,
     color: colors.textOnPrimary,
     fontWeight: '700',
   },
+  messageContainer: {
+    flex: 1,
+  },
   message: {
     ...typography.body,
-    flex: 1,
     fontWeight: '500',
+  },
+  gemRewardContainer: {
+    marginTop: spacing.xs,
+  },
+  gemRewardRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  gemRewardIcon: {
+    fontSize: 16,
+    marginRight: spacing.xs,
+  },
+  gemRewardAmount: {
+    ...typography.h3,
+    color: colors.gem,
+    fontWeight: '700',
+  },
+  bonusBadge: {
+    backgroundColor: colors.success,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: borderRadius.sm,
+    marginLeft: spacing.sm,
+  },
+  bonusText: {
+    ...typography.caption,
+    color: colors.textOnPrimary,
+    fontWeight: '700',
+    fontSize: 10,
+  },
+  partnerGemsRow: {
+    marginTop: spacing.xs,
+  },
+  partnerGemsText: {
+    ...typography.caption,
+    color: colors.textSecondary,
   },
 });

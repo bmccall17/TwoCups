@@ -177,9 +177,17 @@ export function LogAttemptScreen({ onGoBack }: LogAttemptScreenProps) {
       showGemAnimation(result.gemsAwarded, undefined, SCREEN_HEIGHT / 3);
 
       if (result.fulfilledRequestId) {
-        showCelebration(`+${result.gemsAwarded} gems! Request fulfilled!${remainingMessage}`);
+        showCelebration(
+          `Request fulfilled!${remainingMessage}`,
+          undefined,
+          { amount: result.gemsAwarded, isBonus: true }
+        );
       } else {
-        showSuccess(`+${result.gemsAwarded} gem!${remainingMessage}`);
+        showSuccess(
+          `Attempt logged!${remainingMessage}`,
+          undefined,
+          { amount: result.gemsAwarded }
+        );
       }
 
       if (dailyAttemptsInfo) {
