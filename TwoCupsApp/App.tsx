@@ -10,6 +10,7 @@ import { LoginScreen, SignUpScreen, PairingScreen } from './src/screens/auth';
 import { HomeScreen } from './src/screens/HomeScreen';
 import { LogAttemptScreen } from './src/screens/LogAttemptScreen';
 import { AcknowledgeScreen } from './src/screens/AcknowledgeScreen';
+import { MakeRequestScreen } from './src/screens/MakeRequestScreen';
 import { colors } from './src/theme';
 
 type AuthStackParamList = {
@@ -22,6 +23,7 @@ type AppStackParamList = {
   Home: undefined;
   LogAttempt: undefined;
   Acknowledge: undefined;
+  MakeRequest: undefined;
 };
 
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
@@ -69,7 +71,7 @@ function AppNavigator() {
               <HomeScreen
                 onNavigateToLogAttempt={() => props.navigation.navigate('LogAttempt')}
                 onNavigateToAcknowledge={() => props.navigation.navigate('Acknowledge')}
-                onNavigateToMakeRequest={() => {}}
+                onNavigateToMakeRequest={() => props.navigation.navigate('MakeRequest')}
               />
             )}
           </AppStack.Screen>
@@ -83,6 +85,13 @@ function AppNavigator() {
           <AppStack.Screen name="Acknowledge">
             {(props) => (
               <AcknowledgeScreen
+                onGoBack={() => props.navigation.goBack()}
+              />
+            )}
+          </AppStack.Screen>
+          <AppStack.Screen name="MakeRequest">
+            {(props) => (
+              <MakeRequestScreen
                 onGoBack={() => props.navigation.goBack()}
               />
             )}

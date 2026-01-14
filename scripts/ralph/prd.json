@@ -95,7 +95,7 @@
         "Request appears in partner's Log Attempt screen"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "blockedReason": null
     },

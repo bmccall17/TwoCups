@@ -101,3 +101,34 @@ Built the Acknowledge Attempts screen where users can review and acknowledge att
 - Unblocked US-005, US-006, US-007 in prd.json (dependencies now satisfied)
 
 ---
+
+## 2026-01-14 - US-005 (Make Request Screen) ✅
+Thread: https://ampcode.com/threads/T-019bbb59-6af9-755a-9257-b2d828861d5a
+
+### What was implemented
+Built the Make Request screen where users can request specific actions from their partner:
+
+1. **MakeRequestScreen component** - Form with action, description, and category inputs
+2. **Uses existing `createRequest` API** - Already implemented in actions.ts
+3. **Navigation wiring** - Added route to App.tsx and connected from HomeScreen
+
+### Files created/changed
+- `TwoCupsApp/src/screens/MakeRequestScreen.tsx` (new)
+- `TwoCupsApp/App.tsx`
+  - Added import for MakeRequestScreen
+  - Added 'MakeRequest' to AppStackParamList
+  - Wired up onNavigateToMakeRequest in HomeScreen
+  - Added AppStack.Screen for MakeRequest route
+
+### Acceptance Criteria Checklist
+- [x] User can enter request action text
+- [x] User can add optional description
+- [x] User can select category
+- [x] Submitting creates request doc in Firestore (uses existing createRequest API)
+- [x] Request appears in partner's Log Attempt screen (already implemented in US-003)
+
+### Learnings
+- The `createRequest` API was already implemented in actions.ts
+- LogAttemptScreen already queries for partner's active requests, so new requests auto-appear
+
+---
