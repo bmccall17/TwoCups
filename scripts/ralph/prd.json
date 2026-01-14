@@ -55,7 +55,7 @@
         "Pending attempts highlighted or styled differently"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "blockedReason": null
     },

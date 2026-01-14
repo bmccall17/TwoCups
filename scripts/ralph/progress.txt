@@ -296,3 +296,30 @@ Added player filter chips to the History screen:
 - partnerId derived from coupleData.partnerIds by excluding current user
 
 ---
+
+## 2026-01-14 - US-017 (History Filters - By Status) ✅
+Thread: https://ampcode.com/threads/T-019bbd1b-4968-7420-80ee-9b2b5a2fe5af
+
+### What was implemented
+Added status filter chips to the History screen that can be combined with player filters:
+
+1. **StatusFilterType** - Type for filter options: all, pending, acknowledged
+2. **Status filter chips UI** - Second row of filter chips below player filters
+3. **Combined filtering** - useMemo filters by both player and status simultaneously
+4. **Cross-filter counts** - Each filter row shows counts respecting the other filter's selection
+5. **Pending highlight** - Pending chip has warning color styling when not active
+
+### Files changed
+- `TwoCupsApp/src/screens/HistoryScreen.tsx` - Added status filter state, filtering logic, status filter chips UI, and pending styling
+
+### Acceptance Criteria Checklist
+- [x] Filter options: All, Pending, Acknowledged
+- [x] Can combine with player filters (e.g., 'For Me' + 'Pending')
+- [x] Show count for each status
+- [x] Pending attempts highlighted or styled differently (pending chip has warning color)
+
+### Learnings
+- When combining multiple filters, calculate counts for each filter row respecting the other filter's current state
+- Using separate useMemo hooks for each filter's counts makes the logic cleaner
+
+---
