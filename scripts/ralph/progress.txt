@@ -425,3 +425,38 @@ Added collapsible category breakdown section to the History screen:
 - Nested type definitions inside useMemo keep types local and readable
 
 ---
+
+## 2026-01-14 - US-022 (Analytics - Request Stats) ✅
+Thread: https://ampcode.com/threads/T-019bbd34-a6ec-73ab-ade8-098c3070740f
+
+### What was implemented
+Added collapsible Request Stats section to the History screen showing request fulfillment analytics:
+
+1. **Fetch requests data** - New useEffect fetches all requests from Firestore with date range filter
+2. **Request counts by player** - Shows My Requests, Partner's Requests, and Total
+3. **Fulfillment stats** - Shows Fulfilled count, Active count, and Fulfillment rate %
+4. **Average time to fulfill** - Calculates and displays avg time (in hours or days) for fulfilled requests
+5. **Most requested categories** - Bar chart showing top 5 most requested categories with counts and percentages
+6. **Date range aware** - Stats recalculate based on selected date range filter
+
+### Files changed
+- `TwoCupsApp/src/screens/HistoryScreen.tsx`
+  - Added Request import from types
+  - Added showRequestStats and requests state
+  - Added fetchRequests useEffect with date range filtering
+  - Added requestStats useMemo for calculating stats
+  - Added Request Stats UI section with 3 stat rows and category breakdown
+
+### Acceptance Criteria Checklist
+- [x] Total requests made (each player)
+- [x] Total requests fulfilled
+- [x] Fulfillment rate percentage
+- [x] Average time to fulfill request (if data available)
+- [x] Most requested categories
+
+### Learnings
+- Request documents have fulfilledAt timestamp when fulfilled, useful for calculating response time
+- Reused existing breakdownSection styles for consistent category list display
+- Using colors.primaryLight for request category bars to differentiate from attempt category bars
+
+---

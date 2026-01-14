@@ -134,7 +134,7 @@
         "Most requested categories"
       ],
       "priority": 8,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "blockedReason": null
     }
