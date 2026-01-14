@@ -17,7 +17,8 @@
       "Bash(bd ready:*)",
       "Bash(bd migrate:*)",
       "Bash(wc:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(git stash:*)"
     ]
   }
 }

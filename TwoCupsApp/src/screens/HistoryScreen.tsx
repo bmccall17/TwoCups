@@ -27,11 +27,10 @@ import {
 } from 'firebase/firestore';
 import { db } from '../services/firebase/config';
 import { useAuth } from '../context/AuthContext';
-import { LoadingSpinner, EmptyState } from '../components/common';
+import { LoadingSpinner, EmptyState, GemLeaderboard } from '../components/common';
 import { colors, spacing, typography, borderRadius } from '../theme';
-import { Attempt } from '../types';
+import { Attempt, Request } from '../types';
 import { usePlayerData } from '../hooks/usePlayerData';
-import { Request } from '../types';
 
 const PAGE_SIZE = 20;
 
@@ -106,6 +105,7 @@ export function HistoryScreen() {
   const [statusFilter, setStatusFilter] = useState<StatusFilterType>('all');
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilterType>('all');
   const [dateRangeFilter, setDateRangeFilter] = useState<DateRangeFilterType>('last7days');
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(true);
   const [showCategoryBreakdown, setShowCategoryBreakdown] = useState(false);
   const [showRequestStats, setShowRequestStats] = useState(false);
@@ -596,140 +596,172 @@ export function HistoryScreen() {
         <Text style={styles.dateRangeText}>{formatDateRange(dateRangeFilter)}</Text>
       </View>
 
-      {/* Date Range Filter Chips */}
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.filterScrollContent}
-        style={styles.filterScroll}
-      >
-        {dateRangeFilterOptions.map(option => (
-          <TouchableOpacity
-            key={option.key}
-            style={[
-              styles.filterChip,
-              styles.filterChipDate,
-              dateRangeFilter === option.key && styles.filterChipActive,
-            ]}
-            onPress={() => setDateRangeFilter(option.key)}
+      {/* Filters Container */}
+      <View style={styles.filtersContainer}>
+        {/* Date Range Filter */}
+        <View style={styles.filterRow}>
+          <Text style={styles.filterLabel}>📅 Period</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.filterChipsRow}
           >
-            <Text
-              style={[
-                styles.filterChipText,
-                styles.filterChipTextDate,
-                dateRangeFilter === option.key && styles.filterChipTextActive,
-              ]}
-            >
-              {option.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-
-      {/* Player Filter Chips */}
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.filterScrollContent}
-        style={styles.filterScroll}
-      >
-        {playerFilterOptions.map(option => (
-          <TouchableOpacity
-            key={option.key}
-            style={[
-              styles.filterChip,
-              playerFilter === option.key && styles.filterChipActive,
-            ]}
-            onPress={() => setPlayerFilter(option.key)}
-          >
-            <Text
-              style={[
-                styles.filterChipText,
-                playerFilter === option.key && styles.filterChipTextActive,
-              ]}
-            >
-              {option.label} ({playerFilterCounts[option.key]})
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-
-      {/* Status Filter Chips */}
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.filterScrollContent}
-        style={styles.filterScroll}
-      >
-        {statusFilterOptions.map(option => (
-          <TouchableOpacity
-            key={option.key}
-            style={[
-              styles.filterChip,
-              statusFilter === option.key && styles.filterChipActive,
-              option.key === 'pending' && statusFilter !== option.key && styles.filterChipPending,
-            ]}
-            onPress={() => setStatusFilter(option.key)}
-          >
-            <Text
-              style={[
-                styles.filterChipText,
-                statusFilter === option.key && styles.filterChipTextActive,
-                option.key === 'pending' && statusFilter !== option.key && styles.filterChipTextPending,
-              ]}
-            >
-              {option.label} ({statusFilterCounts[option.key]})
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-
-      {/* Category Filter Chips - only show if there are categories with attempts */}
-      {categoryFilterData.categories.length > 0 && (
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filterScrollContent}
-          style={styles.filterScroll}
-        >
-          <TouchableOpacity
-            style={[
-              styles.filterChip,
-              categoryFilter === 'all' && styles.filterChipActive,
-            ]}
-            onPress={() => setCategoryFilter('all')}
-          >
-            <Text
-              style={[
-                styles.filterChipText,
-                categoryFilter === 'all' && styles.filterChipTextActive,
-              ]}
-            >
-              All Categories ({categoryFilterData.totalCount})
-            </Text>
-          </TouchableOpacity>
-          {categoryFilterData.categories.map(cat => (
-            <TouchableOpacity
-              key={cat}
-              style={[
-                styles.filterChip,
-                styles.filterChipCategory,
-                categoryFilter === cat && styles.filterChipActive,
-              ]}
-              onPress={() => setCategoryFilter(categoryFilter === cat ? 'all' : cat)}
-            >
-              <Text
+            {dateRangeFilterOptions.map(option => (
+              <TouchableOpacity
+                key={option.key}
                 style={[
-                  styles.filterChipText,
-                  styles.filterChipTextCategory,
-                  categoryFilter === cat && styles.filterChipTextActive,
+                  styles.filterChip,
+                  dateRangeFilter === option.key && styles.filterChipActiveDate,
                 ]}
+                onPress={() => setDateRangeFilter(option.key)}
               >
-                {cat} ({categoryFilterData.counts[cat]})
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+                <Text
+                  style={[
+                    styles.filterChipText,
+                    dateRangeFilter === option.key && styles.filterChipTextActiveDate,
+                  ]}
+                >
+                  {option.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* Player Filter */}
+        <View style={styles.filterRow}>
+          <Text style={styles.filterLabel}>👤 Who</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.filterChipsRow}
+          >
+            {playerFilterOptions.map(option => (
+              <TouchableOpacity
+                key={option.key}
+                style={[
+                  styles.filterChip,
+                  playerFilter === option.key && styles.filterChipActivePlayer,
+                ]}
+                onPress={() => setPlayerFilter(option.key)}
+              >
+                <Text
+                  style={[
+                    styles.filterChipText,
+                    playerFilter === option.key && styles.filterChipTextActivePlayer,
+                  ]}
+                >
+                  {option.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* Status Filter */}
+        <View style={styles.filterRow}>
+          <Text style={styles.filterLabel}>📊 Status</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.filterChipsRow}
+          >
+            {statusFilterOptions.map(option => (
+              <TouchableOpacity
+                key={option.key}
+                style={[
+                  styles.filterChip,
+                  statusFilter === option.key && (
+                    option.key === 'pending' ? styles.filterChipActivePending :
+                    option.key === 'acknowledged' ? styles.filterChipActiveAcknowledged :
+                    styles.filterChipActiveStatus
+                  ),
+                ]}
+                onPress={() => setStatusFilter(option.key)}
+              >
+                <Text
+                  style={[
+                    styles.filterChipText,
+                    statusFilter === option.key && styles.filterChipTextActiveStatus,
+                  ]}
+                >
+                  {option.label} ({statusFilterCounts[option.key]})
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* Category Filter - only show if there are categories with attempts */}
+        {categoryFilterData.categories.length > 0 && (
+          <View style={styles.filterRow}>
+            <Text style={styles.filterLabel}>🏷️ Category</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.filterChipsRow}
+            >
+              <TouchableOpacity
+                style={[
+                  styles.filterChip,
+                  categoryFilter === 'all' && styles.filterChipActiveCategory,
+                ]}
+                onPress={() => setCategoryFilter('all')}
+              >
+                <Text
+                  style={[
+                    styles.filterChipText,
+                    categoryFilter === 'all' && styles.filterChipTextActiveCategory,
+                  ]}
+                >
+                  All
+                </Text>
+              </TouchableOpacity>
+              {categoryFilterData.categories.map(cat => (
+                <TouchableOpacity
+                  key={cat}
+                  style={[
+                    styles.filterChip,
+                    categoryFilter === cat && styles.filterChipActiveCategory,
+                  ]}
+                  onPress={() => setCategoryFilter(categoryFilter === cat ? 'all' : cat)}
+                >
+                  <Text
+                    style={[
+                      styles.filterChipText,
+                      categoryFilter === cat && styles.filterChipTextActiveCategory,
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {cat.split(' ')[0]}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+      </View>
+
+      {/* Leaderboard Drawer */}
+      <TouchableOpacity
+        style={styles.analyticsHeader}
+        onPress={() => setShowLeaderboard(!showLeaderboard)}
+      >
+        <Text style={styles.analyticsTitle}>🏆 Leaderboard</Text>
+        <Text style={styles.analyticsToggle}>{showLeaderboard ? '▼' : '▶'}</Text>
+      </TouchableOpacity>
+
+      {showLeaderboard && myUid && partnerId && (
+        <View style={styles.leaderboardContainer}>
+          <GemLeaderboard
+            myGems={myPlayer?.gemCount ?? 0}
+            partnerGems={partnerPlayer?.gemCount ?? 0}
+            myPlayerId={myUid}
+            partnerPlayerId={partnerId}
+            myName="Me"
+            partnerName={partnerName}
+          />
+        </View>
       )}
 
       {/* Analytics Section */}
@@ -1019,55 +1051,90 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     marginTop: spacing.xs,
   },
-  filterScroll: {
-    maxHeight: 50,
+  filtersContainer: {
+    backgroundColor: colors.surface,
+    marginHorizontal: spacing.lg,
     marginBottom: spacing.md,
+    borderRadius: borderRadius.md,
+    padding: spacing.sm,
   },
-  filterScrollContent: {
-    paddingHorizontal: spacing.lg,
-    gap: spacing.sm,
+  filterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.xs,
+  },
+  filterLabel: {
+    ...typography.caption,
+    color: colors.textPrimary,
+    fontWeight: '600',
+    width: 70,
+    marginRight: spacing.xs,
+  },
+  filterChipsRow: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+    paddingRight: spacing.sm,
   },
   filterChip: {
-    backgroundColor: colors.surface,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: borderRadius.full,
+    backgroundColor: colors.card,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.sm,
     borderWidth: 1,
     borderColor: colors.border,
   },
-  filterChipActive: {
+  filterChipText: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    fontWeight: '500',
+  },
+  // Date filter active state
+  filterChipActiveDate: {
     backgroundColor: colors.primary,
     borderColor: colors.primary,
   },
-  filterChipText: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-  },
-  filterChipTextActive: {
+  filterChipTextActiveDate: {
     color: colors.textOnPrimary,
     fontWeight: '600',
   },
-  filterChipPending: {
-    backgroundColor: colors.warning + '20',
-    borderColor: colors.warning,
+  // Player filter active state
+  filterChipActivePlayer: {
+    backgroundColor: colors.primaryLight,
+    borderColor: colors.primaryLight,
   },
-  filterChipTextPending: {
-    color: colors.warning,
+  filterChipTextActivePlayer: {
+    color: colors.textOnPrimary,
     fontWeight: '600',
   },
-  filterChipCategory: {
-    backgroundColor: colors.card,
-    borderColor: colors.primary + '40',
+  // Status filter active states
+  filterChipActiveStatus: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
-  filterChipDate: {
-    backgroundColor: colors.surface,
-    borderColor: colors.primary + '60',
+  filterChipActivePending: {
+    backgroundColor: colors.warning,
+    borderColor: colors.warning,
   },
-  filterChipTextDate: {
-    color: colors.primary,
+  filterChipActiveAcknowledged: {
+    backgroundColor: colors.success,
+    borderColor: colors.success,
   },
-  filterChipTextCategory: {
-    color: colors.primary,
+  filterChipTextActiveStatus: {
+    color: colors.textOnPrimary,
+    fontWeight: '600',
+  },
+  // Category filter active state
+  filterChipActiveCategory: {
+    backgroundColor: colors.gem,
+    borderColor: colors.gem,
+  },
+  filterChipTextActiveCategory: {
+    color: colors.textOnPrimary,
+    fontWeight: '600',
+  },
+  leaderboardContainer: {
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.md,
   },
   listContent: {
     paddingHorizontal: spacing.lg,
