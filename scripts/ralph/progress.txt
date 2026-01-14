@@ -323,3 +323,38 @@ Added status filter chips to the History screen that can be combined with player
 - Using separate useMemo hooks for each filter's counts makes the logic cleaner
 
 ---
+
+## 2026-01-14 - US-019 (History Filters - By Date Range) ✅
+Thread: https://ampcode.com/threads/T-019bbd2a-d60e-70cd-8111-15ad5ce2246b
+
+### What was implemented
+Added date range filter to the History screen:
+
+1. **DateRangeFilterType** - Type for filter options: today, last7days, last30days, alltime
+2. **getDateRangeStart helper** - Calculates the start date for each filter option
+3. **formatDateRange helper** - Formats the current date range for display in header
+4. **Server-side Firestore query filtering** - Uses `where('createdAt', '>=', ...)` for efficient queries with timestamp index
+5. **Date range filter chips UI** - Horizontal scrollable row at top of filters
+6. **Date range in header** - Shows the current date range below subtitle
+7. **Default to Last 7 Days** - State initialized to `last7days`
+
+### Files changed
+- `TwoCupsApp/src/screens/HistoryScreen.tsx`
+  - Added DateRangeFilterType and helper functions
+  - Added dateRangeFilter state (default: 'last7days')
+  - Updated fetchAttempts and loadMore to use date range in Firestore query with QueryConstraint typing
+  - Added date range filter options and UI chips
+  - Added dateRangeText style and filterChipDate styles
+  - Updated empty state to consider date range filter
+
+### Acceptance Criteria Checklist
+- [x] Quick filters: Today, Last 7 Days, Last 30 Days, All Time
+- [x] Default to Last 7 Days
+- [x] Shows date range in header
+- [x] Efficient Firestore query using timestamp index (uses where clause with createdAt)
+
+### Learnings
+- When building query constraints array dynamically, use `QueryConstraint[]` type annotation to allow heterogeneous constraint types (where, orderBy, limit, startAfter)
+- Single field inequality + orderBy on same field doesn't require composite index in Firestore
+
+---

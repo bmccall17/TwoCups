@@ -19,8 +19,11 @@ import {
   getDocs,
   doc,
   getDoc,
+  where,
+  Timestamp,
   QueryDocumentSnapshot,
   DocumentData,
+  QueryConstraint,
 } from 'firebase/firestore';
 import { db } from '../services/firebase/config';
 import { useAuth } from '../context/AuthContext';
@@ -45,6 +48,47 @@ const CATEGORIES = [
 type PlayerFilterType = 'all' | 'byMe' | 'forMe' | 'byPartner' | 'forPartner';
 type StatusFilterType = 'all' | 'pending' | 'acknowledged';
 type CategoryFilterType = 'all' | string;
+type DateRangeFilterType = 'today' | 'last7days' | 'last30days' | 'alltime';
+
+const getDateRangeStart = (filter: DateRangeFilterType): Date | null => {
+  const now = new Date();
+  switch (filter) {
+    case 'today':
+      const today = new Date(now);
+      today.setHours(0, 0, 0, 0);
+      return today;
+    case 'last7days':
+      const sevenDaysAgo = new Date(now);
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      sevenDaysAgo.setHours(0, 0, 0, 0);
+      return sevenDaysAgo;
+    case 'last30days':
+      const thirtyDaysAgo = new Date(now);
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      thirtyDaysAgo.setHours(0, 0, 0, 0);
+      return thirtyDaysAgo;
+    case 'alltime':
+      return null;
+  }
+};
+
+const formatDateRange = (filter: DateRangeFilterType): string => {
+  const now = new Date();
+  switch (filter) {
+    case 'today':
+      return `Today (${now.toLocaleDateString()})`;
+    case 'last7days':
+      const sevenDaysAgo = new Date(now);
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      return `${sevenDaysAgo.toLocaleDateString()} – ${now.toLocaleDateString()}`;
+    case 'last30days':
+      const thirtyDaysAgo = new Date(now);
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      return `${thirtyDaysAgo.toLocaleDateString()} – ${now.toLocaleDateString()}`;
+    case 'alltime':
+      return 'All Time';
+  }
+};
 
 export function HistoryScreen() {
   const { user, userData, coupleData } = useAuth();
@@ -58,6 +102,7 @@ export function HistoryScreen() {
   const [playerFilter, setPlayerFilter] = useState<PlayerFilterType>('all');
   const [statusFilter, setStatusFilter] = useState<StatusFilterType>('all');
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilterType>('all');
+  const [dateRangeFilter, setDateRangeFilter] = useState<DateRangeFilterType>('last7days');
 
   const coupleId = userData?.activeCoupleId;
   const myUid = user?.uid;
@@ -91,11 +136,14 @@ export function HistoryScreen() {
 
     try {
       const attemptsRef = collection(db, 'couples', coupleId, 'attempts');
-      const q = query(
-        attemptsRef,
-        orderBy('createdAt', 'desc'),
-        limit(PAGE_SIZE)
-      );
+      const dateStart = getDateRangeStart(dateRangeFilter);
+      
+      const constraints: QueryConstraint[] = [orderBy('createdAt', 'desc'), limit(PAGE_SIZE)];
+      if (dateStart) {
+        constraints.unshift(where('createdAt', '>=', Timestamp.fromDate(dateStart)));
+      }
+      
+      const q = query(attemptsRef, ...constraints);
 
       const snapshot = await getDocs(q);
       const attemptsList: Attempt[] = snapshot.docs.map(doc => ({
@@ -114,7 +162,7 @@ export function HistoryScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [coupleId]);
+  }, [coupleId, dateRangeFilter]);
 
   const loadMore = useCallback(async () => {
     if (!coupleId || loadingMore || !hasMore || !lastDoc) return;
@@ -123,12 +171,18 @@ export function HistoryScreen() {
 
     try {
       const attemptsRef = collection(db, 'couples', coupleId, 'attempts');
-      const q = query(
-        attemptsRef,
+      const dateStart = getDateRangeStart(dateRangeFilter);
+      
+      const constraints: QueryConstraint[] = [
         orderBy('createdAt', 'desc'),
         startAfter(lastDoc),
-        limit(PAGE_SIZE)
-      );
+        limit(PAGE_SIZE),
+      ];
+      if (dateStart) {
+        constraints.unshift(where('createdAt', '>=', Timestamp.fromDate(dateStart)));
+      }
+      
+      const q = query(attemptsRef, ...constraints);
 
       const snapshot = await getDocs(q);
       const newAttempts: Attempt[] = snapshot.docs.map(doc => ({
@@ -146,7 +200,7 @@ export function HistoryScreen() {
     } finally {
       setLoadingMore(false);
     }
-  }, [coupleId, loadingMore, hasMore, lastDoc]);
+  }, [coupleId, loadingMore, hasMore, lastDoc, dateRangeFilter]);
 
   useEffect(() => {
     fetchAttempts();
@@ -308,6 +362,13 @@ export function HistoryScreen() {
     { key: 'acknowledged', label: 'Acknowledged' },
   ];
 
+  const dateRangeFilterOptions: { key: DateRangeFilterType; label: string }[] = [
+    { key: 'today', label: 'Today' },
+    { key: 'last7days', label: 'Last 7 Days' },
+    { key: 'last30days', label: 'Last 30 Days' },
+    { key: 'alltime', label: 'All Time' },
+  ];
+
   const renderAttemptCard = ({ item: attempt }: { item: Attempt }) => (
     <View
       style={[
@@ -389,7 +450,38 @@ export function HistoryScreen() {
             ? `${filteredAttempts.length}${hasMore && playerFilter === 'all' ? '+' : ''} attempts`
             : 'No attempts yet'}
         </Text>
+        <Text style={styles.dateRangeText}>{formatDateRange(dateRangeFilter)}</Text>
       </View>
+
+      {/* Date Range Filter Chips */}
+      <ScrollView 
+        horizontal 
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.filterScrollContent}
+        style={styles.filterScroll}
+      >
+        {dateRangeFilterOptions.map(option => (
+          <TouchableOpacity
+            key={option.key}
+            style={[
+              styles.filterChip,
+              styles.filterChipDate,
+              dateRangeFilter === option.key && styles.filterChipActive,
+            ]}
+            onPress={() => setDateRangeFilter(option.key)}
+          >
+            <Text
+              style={[
+                styles.filterChipText,
+                styles.filterChipTextDate,
+                dateRangeFilter === option.key && styles.filterChipTextActive,
+              ]}
+            >
+              {option.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
 
       {/* Player Filter Chips */}
       <ScrollView 
@@ -500,11 +592,11 @@ export function HistoryScreen() {
       {filteredAttempts.length === 0 ? (
         <EmptyState
           icon="📜"
-          title={playerFilter === 'all' && statusFilter === 'all' && categoryFilter === 'all' ? 'No history yet' : 'No matching attempts'}
+          title={playerFilter === 'all' && statusFilter === 'all' && categoryFilter === 'all' && dateRangeFilter === 'alltime' ? 'No history yet' : 'No matching attempts'}
           subtitle={
-            playerFilter === 'all' && statusFilter === 'all' && categoryFilter === 'all'
+            playerFilter === 'all' && statusFilter === 'all' && categoryFilter === 'all' && dateRangeFilter === 'alltime'
               ? 'Start logging attempts to see your relationship timeline!'
-              : 'Try a different filter to see more attempts.'
+              : 'Try a different filter or date range to see more attempts.'
           }
         />
       ) : (
@@ -548,6 +640,11 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.textSecondary,
   },
+  dateRangeText: {
+    ...typography.caption,
+    color: colors.textMuted,
+    marginTop: spacing.xs,
+  },
   filterScroll: {
     maxHeight: 50,
     marginBottom: spacing.md,
@@ -587,6 +684,13 @@ const styles = StyleSheet.create({
   filterChipCategory: {
     backgroundColor: colors.card,
     borderColor: colors.primary + '40',
+  },
+  filterChipDate: {
+    backgroundColor: colors.surface,
+    borderColor: colors.primary + '60',
+  },
+  filterChipTextDate: {
+    color: colors.primary,
   },
   filterChipTextCategory: {
     color: colors.primary,

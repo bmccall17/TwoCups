@@ -70,7 +70,7 @@
         "Can combine with other filters"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "blockedReason": null
     },
@@ -85,7 +85,7 @@
         "Efficient Firestore query using timestamp index"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "blockedReason": null
     },
