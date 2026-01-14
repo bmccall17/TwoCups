@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, memo, useMemo, useRef, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated, Easing } from 'react-native';
 import { colors, spacing, typography, borderRadius, shadows } from '../../theme';
 import { getWeeklyGemStats, WeeklyGemStats } from '../../services/api';
@@ -42,7 +42,7 @@ function getLeaderLabel(isLeading: boolean, isTied: boolean): string | null {
   return isLeading ? '👑 Gem Champion' : null;
 }
 
-export function GemLeaderboard({
+export const GemLeaderboard = memo(function GemLeaderboard({
   myGems,
   partnerGems,
   myPlayerId,
@@ -57,7 +57,7 @@ export function GemLeaderboard({
   const [weeklyStats, setWeeklyStats] = useState<WeeklyGemStats | null>(null);
   const [loading, setLoading] = useState(false);
   
-  const barAnim = React.useRef(new Animated.Value(0)).current;
+  const barAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.timing(barAnim, {
@@ -187,7 +187,7 @@ export function GemLeaderboard({
       </View>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {

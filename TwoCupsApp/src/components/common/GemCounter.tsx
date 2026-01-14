@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, memo, useMemo, useCallback } from 'react';
 import { View, Text, StyleSheet, Animated, Easing, Dimensions, TouchableOpacity } from 'react-native';
 import { colors, spacing, typography, borderRadius, shadows } from '../../theme';
 import { getDailyGemEarnings, DailyGemEarnings } from '../../services/api';
@@ -179,7 +179,7 @@ function getEncouragingMessage(total: number, fromLogging: number, fromAcknowled
   return "Nice start! Every gem counts! ✨";
 }
 
-export function GemCounter({ myGems, partnerGems, myName = 'Me', partnerName = 'Partner', onPress }: GemCounterProps) {
+export const GemCounter = memo(function GemCounter({ myGems, partnerGems, myName = 'Me', partnerName = 'Partner', onPress }: GemCounterProps) {
   const { width } = Dimensions.get('window');
   const isSmallScreen = width < 360;
   const { userData } = useAuth();
@@ -265,7 +265,7 @@ export function GemCounter({ myGems, partnerGems, myName = 'Me', partnerName = '
       )}
     </Wrapper>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {

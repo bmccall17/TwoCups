@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, RefreshControl } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { useMilestoneCelebration } from '../context/MilestoneCelebrationContext';
@@ -34,6 +34,14 @@ export function HomeScreen({
     setTimeout(() => setRefreshing(false), 500);
   }, [refresh]);
 
+  const myName = useMemo(() => userData?.displayName || 'Me', [userData?.displayName]);
+  const collectiveLevel = useMemo(() => coupleData?.collectiveCupLevel ?? 0, [coupleData?.collectiveCupLevel]);
+  
+  const myCupLevel = useMemo(() => myPlayer?.cupLevel ?? 0, [myPlayer?.cupLevel]);
+  const partnerCupLevel = useMemo(() => partnerPlayer?.cupLevel ?? 0, [partnerPlayer?.cupLevel]);
+  const myGemCount = useMemo(() => myPlayer?.gemCount ?? 0, [myPlayer?.gemCount]);
+  const partnerGemCount = useMemo(() => partnerPlayer?.gemCount ?? 0, [partnerPlayer?.gemCount]);
+
   useEffect(() => {
     if (myPlayer && previousGemCount.current !== null) {
       if (myPlayer.gemCount > previousGemCount.current) {
@@ -57,9 +65,6 @@ export function HomeScreen({
     );
   }
 
-  const myName = userData?.displayName || 'Me';
-  const collectiveLevel = coupleData?.collectiveCupLevel ?? 0;
-
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
@@ -81,8 +86,8 @@ export function HomeScreen({
 
         {/* Gem Counter Section */}
         <GemCounter
-          myGems={myPlayer?.gemCount ?? 0}
-          partnerGems={partnerPlayer?.gemCount ?? 0}
+          myGems={myGemCount}
+          partnerGems={partnerGemCount}
           myName={myName}
           partnerName={partnerName}
           onPress={onNavigateToGemHistory}
@@ -91,8 +96,8 @@ export function HomeScreen({
         {/* Gem Leaderboard Section */}
         {myPlayer && partnerPlayer && (
           <GemLeaderboard
-            myGems={myPlayer.gemCount}
-            partnerGems={partnerPlayer.gemCount}
+            myGems={myGemCount}
+            partnerGems={partnerGemCount}
             myPlayerId={myPlayer.odI}
             partnerPlayerId={partnerPlayer.odI}
             myName={myName}
@@ -105,13 +110,13 @@ export function HomeScreen({
           {/* Individual Cups Row */}
           <View style={styles.individualCups}>
             <CupVisualization
-              level={myPlayer?.cupLevel ?? 0}
+              level={myCupLevel}
               label="My Cup"
               sublabel={myName}
               size="large"
             />
             <CupVisualization
-              level={partnerPlayer?.cupLevel ?? 0}
+              level={partnerCupLevel}
               label="Partner's Cup"
               sublabel={partnerName}
               size="large"

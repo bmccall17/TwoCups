@@ -71,6 +71,8 @@ export function usePlayerData(): UsePlayerDataResult {
 
     // Listen to partner player document
     let unsubscribePartner: (() => void) | null = null;
+    let unsubscribePartnerUser: (() => void) | null = null;
+    
     if (partnerId) {
       const partnerPlayerRef = doc(db, 'couples', coupleId, 'players', partnerId);
       unsubscribePartner = onSnapshot(
@@ -94,7 +96,7 @@ export function usePlayerData(): UsePlayerDataResult {
 
       // Get partner's display name from users collection
       const partnerUserRef = doc(db, 'users', partnerId);
-      onSnapshot(partnerUserRef, (snapshot) => {
+      unsubscribePartnerUser = onSnapshot(partnerUserRef, (snapshot) => {
         if (snapshot.exists()) {
           setPartnerName(snapshot.data()?.displayName || 'Partner');
         }
@@ -104,6 +106,7 @@ export function usePlayerData(): UsePlayerDataResult {
     return () => {
       unsubscribeMy();
       if (unsubscribePartner) unsubscribePartner();
+      if (unsubscribePartnerUser) unsubscribePartnerUser();
     };
   }, [coupleId, myUid, partnerIds.join(','), refreshKey]);
 

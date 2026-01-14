@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { memo, useMemo, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
 import { colors, spacing, typography, borderRadius } from '../../theme';
 
 interface CupVisualizationProps {
@@ -11,7 +11,7 @@ interface CupVisualizationProps {
   size?: 'small' | 'large';
 }
 
-export function CupVisualization({
+export const CupVisualization = memo(function CupVisualization({
   level,
   label,
   sublabel,
@@ -20,24 +20,46 @@ export function CupVisualization({
   size = 'large',
 }: CupVisualizationProps) {
   const clampedLevel = Math.min(100, Math.max(0, level));
-  const fillColor = variant === 'collective' ? colors.primary : colors.cupFilled;
-  const cupHeight = size === 'large' ? 120 : 80;
-  const cupWidth = size === 'large' ? 80 : 60;
+  const fillAnim = useRef(new Animated.Value(0)).current;
+  
+  const fillColor = useMemo(() => 
+    variant === 'collective' ? colors.primary : colors.cupFilled,
+    [variant]
+  );
+  
+  const dimensions = useMemo(() => ({
+    cupHeight: size === 'large' ? 120 : 80,
+    cupWidth: size === 'large' ? 80 : 60,
+  }), [size]);
+
+  useEffect(() => {
+    Animated.timing(fillAnim, {
+      toValue: clampedLevel,
+      duration: 600,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    }).start();
+  }, [clampedLevel, fillAnim]);
+
+  const animatedHeight = fillAnim.interpolate({
+    inputRange: [0, 100],
+    outputRange: ['0%', '100%'],
+  });
 
   return (
     <View style={styles.container}>
       <Text style={[styles.label, size === 'small' && styles.labelSmall]}>{label}</Text>
       {sublabel && <Text style={styles.sublabel}>{sublabel}</Text>}
       
-      <View style={[styles.cupContainer, { height: cupHeight, width: cupWidth }]}>
+      <View style={[styles.cupContainer, { height: dimensions.cupHeight, width: dimensions.cupWidth }]}>
         {/* Cup outline */}
-        <View style={[styles.cup, { height: cupHeight, width: cupWidth }]}>
-          {/* Fill level */}
-          <View
+        <View style={[styles.cup, { height: dimensions.cupHeight, width: dimensions.cupWidth }]}>
+          {/* Fill level - animated */}
+          <Animated.View
             style={[
               styles.fill,
               {
-                height: `${clampedLevel}%`,
+                height: animatedHeight,
                 backgroundColor: fillColor,
               },
             ]}
@@ -57,7 +79,7 @@ export function CupVisualization({
       )}
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {

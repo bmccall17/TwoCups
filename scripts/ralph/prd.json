@@ -121,7 +121,7 @@
         "Cup animations run at 60fps"
       ],
       "priority": 7,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "blockedReason": null
     },
