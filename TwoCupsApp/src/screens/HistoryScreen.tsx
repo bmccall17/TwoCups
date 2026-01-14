@@ -31,6 +31,7 @@ import { Attempt } from '../types';
 const PAGE_SIZE = 20;
 
 type PlayerFilterType = 'all' | 'byMe' | 'forMe' | 'byPartner' | 'forPartner';
+type StatusFilterType = 'all' | 'pending' | 'acknowledged';
 
 export function HistoryScreen() {
   const { user, userData, coupleData } = useAuth();
@@ -42,6 +43,7 @@ export function HistoryScreen() {
   const [lastDoc, setLastDoc] = useState<QueryDocumentSnapshot<DocumentData> | null>(null);
   const [playerNames, setPlayerNames] = useState<Record<string, string>>({});
   const [playerFilter, setPlayerFilter] = useState<PlayerFilterType>('all');
+  const [statusFilter, setStatusFilter] = useState<StatusFilterType>('all');
 
   const coupleId = userData?.activeCoupleId;
   const myUid = user?.uid;
@@ -165,32 +167,74 @@ export function HistoryScreen() {
     return playerNames[playerId] || 'Partner';
   };
 
-  // Filter attempts by player
+  // Filter attempts by player and status
   const filteredAttempts = useMemo(() => {
     return attempts.filter(attempt => {
+      // Player filter
+      let matchesPlayer = true;
       switch (playerFilter) {
         case 'byMe':
-          return attempt.byPlayerId === myUid;
+          matchesPlayer = attempt.byPlayerId === myUid;
+          break;
         case 'forMe':
-          return attempt.forPlayerId === myUid;
+          matchesPlayer = attempt.forPlayerId === myUid;
+          break;
         case 'byPartner':
-          return attempt.byPlayerId === partnerId;
+          matchesPlayer = attempt.byPlayerId === partnerId;
+          break;
         case 'forPartner':
-          return attempt.forPlayerId === partnerId;
+          matchesPlayer = attempt.forPlayerId === partnerId;
+          break;
+      }
+      if (!matchesPlayer) return false;
+
+      // Status filter
+      switch (statusFilter) {
+        case 'pending':
+          return !attempt.acknowledged;
+        case 'acknowledged':
+          return attempt.acknowledged === true;
         default:
           return true;
       }
     });
-  }, [attempts, playerFilter, myUid, partnerId]);
+  }, [attempts, playerFilter, statusFilter, myUid, partnerId]);
 
-  // Calculate counts for each filter
-  const filterCounts = useMemo(() => ({
-    all: attempts.length,
-    byMe: attempts.filter(a => a.byPlayerId === myUid).length,
-    forMe: attempts.filter(a => a.forPlayerId === myUid).length,
-    byPartner: attempts.filter(a => a.byPlayerId === partnerId).length,
-    forPartner: attempts.filter(a => a.forPlayerId === partnerId).length,
-  }), [attempts, myUid, partnerId]);
+  // Calculate counts for each filter (respecting the other filter)
+  const playerFilterCounts = useMemo(() => {
+    const applyStatus = (a: Attempt) => {
+      switch (statusFilter) {
+        case 'pending': return !a.acknowledged;
+        case 'acknowledged': return a.acknowledged === true;
+        default: return true;
+      }
+    };
+    return {
+      all: attempts.filter(applyStatus).length,
+      byMe: attempts.filter(a => a.byPlayerId === myUid && applyStatus(a)).length,
+      forMe: attempts.filter(a => a.forPlayerId === myUid && applyStatus(a)).length,
+      byPartner: attempts.filter(a => a.byPlayerId === partnerId && applyStatus(a)).length,
+      forPartner: attempts.filter(a => a.forPlayerId === partnerId && applyStatus(a)).length,
+    };
+  }, [attempts, statusFilter, myUid, partnerId]);
+
+  // Calculate status counts (respecting player filter)
+  const statusFilterCounts = useMemo(() => {
+    const applyPlayer = (a: Attempt) => {
+      switch (playerFilter) {
+        case 'byMe': return a.byPlayerId === myUid;
+        case 'forMe': return a.forPlayerId === myUid;
+        case 'byPartner': return a.byPlayerId === partnerId;
+        case 'forPartner': return a.forPlayerId === partnerId;
+        default: return true;
+      }
+    };
+    return {
+      all: attempts.filter(applyPlayer).length,
+      pending: attempts.filter(a => !a.acknowledged && applyPlayer(a)).length,
+      acknowledged: attempts.filter(a => a.acknowledged === true && applyPlayer(a)).length,
+    };
+  }, [attempts, playerFilter, myUid, partnerId]);
 
   const playerFilterOptions: { key: PlayerFilterType; label: string }[] = [
     { key: 'all', label: 'All' },
@@ -198,6 +242,12 @@ export function HistoryScreen() {
     { key: 'forMe', label: 'For Me' },
     { key: 'byPartner', label: 'By Partner' },
     { key: 'forPartner', label: 'For Partner' },
+  ];
+
+  const statusFilterOptions: { key: StatusFilterType; label: string }[] = [
+    { key: 'all', label: 'All' },
+    { key: 'pending', label: 'Pending' },
+    { key: 'acknowledged', label: 'Acknowledged' },
   ];
 
   const renderAttemptCard = ({ item: attempt }: { item: Attempt }) => (
@@ -305,7 +355,37 @@ export function HistoryScreen() {
                 playerFilter === option.key && styles.filterChipTextActive,
               ]}
             >
-              {option.label} ({filterCounts[option.key]})
+              {option.label} ({playerFilterCounts[option.key]})
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+
+      {/* Status Filter Chips */}
+      <ScrollView 
+        horizontal 
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.filterScrollContent}
+        style={styles.filterScroll}
+      >
+        {statusFilterOptions.map(option => (
+          <TouchableOpacity
+            key={option.key}
+            style={[
+              styles.filterChip,
+              statusFilter === option.key && styles.filterChipActive,
+              option.key === 'pending' && statusFilter !== option.key && styles.filterChipPending,
+            ]}
+            onPress={() => setStatusFilter(option.key)}
+          >
+            <Text
+              style={[
+                styles.filterChipText,
+                statusFilter === option.key && styles.filterChipTextActive,
+                option.key === 'pending' && statusFilter !== option.key && styles.filterChipTextPending,
+              ]}
+            >
+              {option.label} ({statusFilterCounts[option.key]})
             </Text>
           </TouchableOpacity>
         ))}
@@ -314,9 +394,9 @@ export function HistoryScreen() {
       {filteredAttempts.length === 0 ? (
         <EmptyState
           icon="📜"
-          title={playerFilter === 'all' ? 'No history yet' : 'No matching attempts'}
+          title={playerFilter === 'all' && statusFilter === 'all' ? 'No history yet' : 'No matching attempts'}
           subtitle={
-            playerFilter === 'all'
+            playerFilter === 'all' && statusFilter === 'all'
               ? 'Start logging attempts to see your relationship timeline!'
               : 'Try a different filter to see more attempts.'
           }
@@ -388,6 +468,14 @@ const styles = StyleSheet.create({
   },
   filterChipTextActive: {
     color: colors.textOnPrimary,
+    fontWeight: '600',
+  },
+  filterChipPending: {
+    backgroundColor: colors.warning + '20',
+    borderColor: colors.warning,
+  },
+  filterChipTextPending: {
+    color: colors.warning,
     fontWeight: '600',
   },
   listContent: {
