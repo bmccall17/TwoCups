@@ -170,3 +170,35 @@ Built the Manage Suggestions screen where users can add and manage suggestions f
 - Grouped display using reduce() to bucket by category
 
 ---
+
+## 2026-01-14 - US-007 (Bottom Navigation) ✅
+Thread: https://ampcode.com/threads/T-019bbb5f-b428-77ed-8a92-53cac22a2d72
+
+### What was implemented
+Added bottom tab navigation bar to switch between main screens:
+
+1. **Installed @react-navigation/bottom-tabs** - Tab navigation package
+2. **Created SettingsScreen** - Displays profile info, couple invite code, quick actions, and sign out
+3. **Refactored App.tsx** - Changed from stack-only navigation to nested tabs + stack:
+   - MainTabNavigator with 4 tabs: Home, Log, Acknowledge, Settings
+   - MakeRequest and ManageSuggestions remain as stack screens (modal-style)
+4. **Cleaned up HomeScreen** - Removed redundant Log/Acknowledge buttons since now in tabs
+
+### Files created/changed
+- `TwoCupsApp/src/screens/SettingsScreen.tsx` (new)
+- `TwoCupsApp/App.tsx` - Refactored to use bottom tabs
+- `TwoCupsApp/src/screens/HomeScreen.tsx` - Removed redundant navigation buttons
+- `TwoCupsApp/package.json` - Added @react-navigation/bottom-tabs dependency
+
+### Acceptance Criteria Checklist
+- [x] Tab bar at bottom of screen
+- [x] Tabs: Home, Log, Acknowledge, Settings
+- [x] Active tab highlighted (uses primary color)
+- [x] Navigation works between all screens
+
+### Learnings
+- Bottom tabs work well with nested stack navigation for modal-style screens
+- Tab icons using emoji work on both web and mobile
+- MakeRequest and ManageSuggestions kept as stack screens since they're not primary tabs
+
+---
