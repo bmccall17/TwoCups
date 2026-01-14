@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Animated, Easing, Dimensions } from 'react-native';
 import { colors, spacing, typography, borderRadius, shadows } from '../../theme';
+import { getDailyGemEarnings, DailyGemEarnings } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 
 interface GemCounterProps {
   myGems: number;
@@ -160,9 +162,47 @@ function AnimatedGemDisplay({ count, label, isLeft = true }: AnimatedGemDisplayP
   );
 }
 
+function getEncouragingMessage(total: number, fromLogging: number, fromAcknowledgments: number): string {
+  if (total === 0) {
+    return "Log an attempt or acknowledge your partner to earn gems! 💪";
+  }
+  if (total >= 20) {
+    return "Amazing day! You're on fire! 🔥";
+  }
+  if (total >= 10) {
+    return "Fantastic progress! Keep it up! ⭐";
+  }
+  if (total >= 5) {
+    return "Great job! You're building something special! 💜";
+  }
+  return "Nice start! Every gem counts! ✨";
+}
+
 export function GemCounter({ myGems, partnerGems, myName = 'Me', partnerName = 'Partner' }: GemCounterProps) {
   const { width } = Dimensions.get('window');
   const isSmallScreen = width < 360;
+  const { userData } = useAuth();
+  const coupleId = userData?.activeCoupleId;
+  const [dailyEarnings, setDailyEarnings] = useState<DailyGemEarnings | null>(null);
+
+  useEffect(() => {
+    if (!coupleId) return;
+
+    const fetchDailyEarnings = async () => {
+      try {
+        const earnings = await getDailyGemEarnings(coupleId);
+        setDailyEarnings(earnings);
+      } catch {
+        // Silently fail - not critical
+      }
+    };
+
+    fetchDailyEarnings();
+
+    // Refresh every 30 seconds to stay updated
+    const interval = setInterval(fetchDailyEarnings, 30000);
+    return () => clearInterval(interval);
+  }, [coupleId, myGems]); // Re-fetch when myGems changes (indicates new activity)
 
   return (
     <View style={[styles.container, isSmallScreen && styles.containerSmall]}>
@@ -184,6 +224,36 @@ export function GemCounter({ myGems, partnerGems, myName = 'Me', partnerName = '
         <Text style={styles.totalLabel}>Together:</Text>
         <Text style={styles.totalIcon}>💎</Text>
         <Text style={styles.totalCount}>{(myGems + partnerGems).toLocaleString()}</Text>
+      </View>
+
+      {/* Daily Gem Earnings Summary */}
+      <View style={styles.dailyEarningsContainer}>
+        <View style={styles.dailyEarningsRow}>
+          <Text style={styles.dailyEarningsLabel}>Today:</Text>
+          <Text style={styles.dailyEarningsIcon}>💎</Text>
+          <Text style={[
+            styles.dailyEarningsCount,
+            dailyEarnings && dailyEarnings.total > 0 && styles.dailyEarningsCountPositive
+          ]}>
+            +{dailyEarnings?.total ?? 0}
+          </Text>
+        </View>
+        
+        {dailyEarnings && dailyEarnings.total > 0 && (
+          <Text style={styles.dailyBreakdown}>
+            {dailyEarnings.fromLogging > 0 && `${dailyEarnings.fromLogging} from logging`}
+            {dailyEarnings.fromLogging > 0 && dailyEarnings.fromAcknowledgments > 0 && ', '}
+            {dailyEarnings.fromAcknowledgments > 0 && `${dailyEarnings.fromAcknowledgments} from acknowledgments`}
+          </Text>
+        )}
+        
+        <Text style={styles.encouragingMessage}>
+          {getEncouragingMessage(
+            dailyEarnings?.total ?? 0,
+            dailyEarnings?.fromLogging ?? 0,
+            dailyEarnings?.fromAcknowledgments ?? 0
+          )}
+        </Text>
       </View>
     </View>
   );
@@ -302,5 +372,46 @@ const styles = StyleSheet.create({
     ...typography.h3,
     color: colors.gem,
     fontWeight: '700',
+  },
+  dailyEarningsContainer: {
+    marginTop: spacing.md,
+    paddingTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    alignItems: 'center',
+  },
+  dailyEarningsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.xs,
+  },
+  dailyEarningsLabel: {
+    ...typography.bodySmall,
+    color: colors.textSecondary,
+    marginRight: spacing.sm,
+  },
+  dailyEarningsIcon: {
+    fontSize: 14,
+    marginRight: spacing.xs,
+  },
+  dailyEarningsCount: {
+    ...typography.body,
+    color: colors.textSecondary,
+    fontWeight: '600',
+  },
+  dailyEarningsCountPositive: {
+    color: colors.success,
+  },
+  dailyBreakdown: {
+    ...typography.caption,
+    color: colors.textMuted,
+    marginBottom: spacing.xs,
+    textAlign: 'center',
+  },
+  encouragingMessage: {
+    ...typography.bodySmall,
+    color: colors.primaryLight,
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
 });
