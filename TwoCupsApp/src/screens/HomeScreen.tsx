@@ -1,43 +1,108 @@
 import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
 import { useAuth } from '../context/AuthContext';
-import { Button } from '../components/common';
-import { colors, spacing, typography } from '../theme';
+import { usePlayerData } from '../hooks';
+import { Button, LoadingSpinner } from '../components/common';
+import { CupVisualization } from '../components/cups';
+import { colors, spacing, typography, borderRadius } from '../theme';
 
-export function HomeScreen() {
-  const { user, userData, signOut } = useAuth();
+interface HomeScreenProps {
+  onNavigateToLogAttempt?: () => void;
+  onNavigateToAcknowledge?: () => void;
+  onNavigateToMakeRequest?: () => void;
+}
+
+export function HomeScreen({
+  onNavigateToLogAttempt,
+  onNavigateToAcknowledge,
+  onNavigateToMakeRequest,
+}: HomeScreenProps) {
+  const { userData, coupleData, signOut } = useAuth();
+  const { myPlayer, partnerPlayer, partnerName, loading } = usePlayerData();
+
+  if (loading) {
+    return <LoadingSpinner message="Loading..." />;
+  }
+
+  const myName = userData?.displayName || 'Me';
+  const collectiveLevel = coupleData?.collectiveCupLevel ?? 0;
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        <Text style={styles.title}>Two Cups</Text>
-        <Text style={styles.subtitle}>Welcome, {userData?.displayName || 'Player'}!</Text>
-
-        <View style={styles.infoCard}>
-          <Text style={styles.infoLabel}>User ID</Text>
-          <Text style={styles.infoValue}>{user?.uid?.slice(0, 8)}...</Text>
-
-          {userData?.activeCoupleId && (
-            <>
-              <Text style={styles.infoLabel}>Couple ID</Text>
-              <Text style={styles.infoValue}>
-                {userData.activeCoupleId.slice(0, 8)}...
-              </Text>
-            </>
-          )}
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.title}>Two Cups</Text>
+          <Text style={styles.subtitle}>Welcome, {myName}!</Text>
         </View>
 
-        <Text style={styles.placeholder}>
-          Home dashboard coming soon...
-        </Text>
+        {/* Cups Section */}
+        <View style={styles.cupsSection}>
+          {/* Individual Cups Row */}
+          <View style={styles.individualCups}>
+            <CupVisualization
+              level={myPlayer?.cupLevel ?? 0}
+              label="My Cup"
+              sublabel={myName}
+              gemCount={myPlayer?.gemCount ?? 0}
+              size="large"
+            />
+            <CupVisualization
+              level={partnerPlayer?.cupLevel ?? 0}
+              label="Partner's Cup"
+              sublabel={partnerName}
+              gemCount={partnerPlayer?.gemCount ?? 0}
+              size="large"
+            />
+          </View>
 
-        <Button
-          title="Sign Out"
-          onPress={signOut}
-          variant="outline"
-          style={styles.signOutButton}
-        />
-      </View>
+          {/* Collective Cup */}
+          <View style={styles.collectiveCupContainer}>
+            <CupVisualization
+              level={collectiveLevel}
+              label="Our Cup"
+              sublabel="Collective Progress"
+              variant="collective"
+              size="large"
+            />
+          </View>
+        </View>
+
+        {/* Action Buttons */}
+        <View style={styles.actionsSection}>
+          <Text style={styles.sectionTitle}>Actions</Text>
+          
+          <Button
+            title="📝 Make a Request"
+            onPress={onNavigateToMakeRequest ?? (() => {})}
+            style={styles.actionButton}
+            variant="outline"
+          />
+          
+          <Button
+            title="💝 Log an Attempt"
+            onPress={onNavigateToLogAttempt ?? (() => {})}
+            style={styles.actionButton}
+          />
+          
+          <Button
+            title="✅ Acknowledge Attempts"
+            onPress={onNavigateToAcknowledge ?? (() => {})}
+            style={styles.actionButton}
+            variant="secondary"
+          />
+        </View>
+
+        {/* Sign Out */}
+        <View style={styles.footer}>
+          <Button
+            title="Sign Out"
+            onPress={signOut}
+            variant="outline"
+            style={styles.signOutButton}
+          />
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -47,11 +112,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  content: {
-    flex: 1,
+  scrollContent: {
+    flexGrow: 1,
     padding: spacing.lg,
+  },
+  header: {
     alignItems: 'center',
-    justifyContent: 'center',
+    marginBottom: spacing.xl,
   },
   title: {
     ...typography.h1,
@@ -59,34 +126,39 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   subtitle: {
-    ...typography.h3,
-    color: colors.textSecondary,
-    marginBottom: spacing.xl,
-  },
-  infoCard: {
-    backgroundColor: colors.surface,
-    padding: spacing.lg,
-    borderRadius: 12,
-    width: '100%',
-    marginBottom: spacing.xl,
-  },
-  infoLabel: {
-    ...typography.caption,
-    color: colors.textMuted,
-    marginBottom: spacing.xs,
-  },
-  infoValue: {
     ...typography.body,
+    color: colors.textSecondary,
+  },
+  cupsSection: {
+    marginBottom: spacing.xl,
+  },
+  individualCups: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: spacing.lg,
+  },
+  collectiveCupContainer: {
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+  },
+  actionsSection: {
+    marginBottom: spacing.xl,
+  },
+  sectionTitle: {
+    ...typography.h3,
     color: colors.textPrimary,
     marginBottom: spacing.md,
   },
-  placeholder: {
-    ...typography.body,
-    color: colors.textMuted,
-    textAlign: 'center',
-    marginBottom: spacing.xl,
+  actionButton: {
+    marginBottom: spacing.sm,
+  },
+  footer: {
+    marginTop: 'auto',
+    paddingTop: spacing.lg,
   },
   signOutButton: {
-    width: '100%',
+    opacity: 0.7,
   },
 });

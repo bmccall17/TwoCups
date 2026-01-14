@@ -39,12 +39,12 @@
         "Shows 'Collective Cup' with liquid fill level",
         "Shows gem count for current user",
         "Updates in real-time when data changes",
-        "has navigation for Make a Request screen"
+        "Has navigation to Make a Request screen",
         "Has navigation to Log Attempt screen",
         "Has navigation to Acknowledge screen"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "blockedReason": null
     },
