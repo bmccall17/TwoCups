@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { usePlayerData } from '../hooks';
-import { Button, LoadingSpinner } from '../components/common';
+import { Button, LoadingSpinner, GemCounter } from '../components/common';
 import { CupVisualization } from '../components/cups';
 import { colors, spacing, typography, borderRadius } from '../theme';
 
@@ -38,6 +38,14 @@ export function HomeScreen({
           <Text style={styles.subtitle}>Welcome, {myName}!</Text>
         </View>
 
+        {/* Gem Counter Section */}
+        <GemCounter
+          myGems={myPlayer?.gemCount ?? 0}
+          partnerGems={partnerPlayer?.gemCount ?? 0}
+          myName={myName}
+          partnerName={partnerName}
+        />
+
         {/* Cups Section */}
         <View style={styles.cupsSection}>
           {/* Individual Cups Row */}
@@ -46,14 +54,12 @@ export function HomeScreen({
               level={myPlayer?.cupLevel ?? 0}
               label="My Cup"
               sublabel={myName}
-              gemCount={myPlayer?.gemCount ?? 0}
               size="large"
             />
             <CupVisualization
               level={partnerPlayer?.cupLevel ?? 0}
               label="Partner's Cup"
               sublabel={partnerName}
-              gemCount={partnerPlayer?.gemCount ?? 0}
               size="large"
             />
           </View>

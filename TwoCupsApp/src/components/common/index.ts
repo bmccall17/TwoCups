@@ -6,3 +6,4 @@ export { InstallAppModal } from './InstallAppModal';
 export { ToastContainer } from './Toast';
 export { CelebrationOverlay } from './CelebrationOverlay';
 export { GemAnimation } from './GemAnimation';
+export { GemCounter } from './GemCounter';
