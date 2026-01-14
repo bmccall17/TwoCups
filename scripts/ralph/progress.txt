@@ -13,6 +13,8 @@ Started: 2026-01-14
 - Use `{ includeMetadataChanges: true }` in onSnapshot to track pending writes for offline support
 - Firestore persistence enabled via `initializeFirestore` with `persistentLocalCache`
 - ErrorBoundary is a class component (React error boundaries require getDerivedStateFromError lifecycle)
+- Use ErrorState component for screen-level Firestore errors with auto-detected error types (network, permission, generic)
+- onSnapshot accepts error callback as 2nd arg: `onSnapshot(q, onNext, onError)`
 
 ---
 
@@ -851,5 +853,57 @@ Added React Error Boundary to catch and handle crashes gracefully:
 - React error boundaries must be class components (can't use hooks for getDerivedStateFromError)
 - Use __DEV__ flag to conditionally show debug info in development
 - componentDidCatch provides errorInfo with componentStack for debugging
+
+---
+
+## 2026-01-14 - US-053 (Screen-Level Error Handling) ✅
+Thread: https://ampcode.com/threads/T-019bbdc0-78d8-72a6-bc13-76e4f90441a5
+
+### What was implemented
+Added error handling to all screens for Firestore query failures:
+
+1. **ErrorState component** - Reusable error display component that:
+   - Auto-detects error type (network, permission, generic) from error message
+   - Shows appropriate icon, title, and subtitle for each type
+   - Includes "Try Again" button that triggers retry callback
+   - Consistent styling with the app theme
+
+2. **Updated all screens** to handle Firestore errors gracefully:
+   - HomeScreen - Uses usePlayerData hook error + refresh
+   - AcknowledgeScreen - Added error state for attempts query
+   - HistoryScreen - Added error state for attempts query
+   - GemHistoryScreen - Added error state for gem history query
+   - LogAttemptScreen - Added error state for suggestions query
+   - MakeRequestScreen - Added error state for requests query
+   - ManageSuggestionsScreen - Added error state for suggestions query
+   - SettingsScreen - Uses usePlayerData hook error + refresh
+
+3. **Updated usePlayerData hook** - Added `refresh` function for retry capability
+
+### Files created/changed
+- `TwoCupsApp/src/components/common/ErrorState.tsx` (new)
+- `TwoCupsApp/src/components/common/index.ts` - Export ErrorState
+- `TwoCupsApp/src/hooks/usePlayerData.ts` - Added refresh function
+- `TwoCupsApp/src/screens/HomeScreen.tsx` - Error handling
+- `TwoCupsApp/src/screens/AcknowledgeScreen.tsx` - Error handling
+- `TwoCupsApp/src/screens/HistoryScreen.tsx` - Error handling
+- `TwoCupsApp/src/screens/GemHistoryScreen.tsx` - Error handling
+- `TwoCupsApp/src/screens/LogAttemptScreen.tsx` - Error handling
+- `TwoCupsApp/src/screens/MakeRequestScreen.tsx` - Error handling
+- `TwoCupsApp/src/screens/ManageSuggestionsScreen.tsx` - Error handling
+- `TwoCupsApp/src/screens/SettingsScreen.tsx` - Error handling
+
+### Acceptance Criteria Checklist
+- [x] Each screen handles query errors gracefully
+- [x] Error state shows 'Something went wrong' with retry button
+- [x] Network errors show specific 'No connection' message
+- [x] Permission errors show appropriate message
+- [x] Retry button re-fetches data
+
+### Learnings
+- Auto-detect error type by checking keywords in error message (network, offline, permission, denied, etc.)
+- Add refreshKey state + setRefreshKey in retry handler to re-trigger useEffect listeners
+- onSnapshot accepts error callback as second argument for error handling
+- Use instanceof Error to safely extract error.message in TypeScript
 
 ---
