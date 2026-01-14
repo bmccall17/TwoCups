@@ -202,3 +202,35 @@ Added bottom tab navigation bar to switch between main screens:
 - MakeRequest and ManageSuggestions kept as stack screens since they're not primary tabs
 
 ---
+
+## 2026-01-14 - US-008 (Enforce Daily Attempt Limit) ✅
+Thread: https://ampcode.com/threads/T-019bbbb6-a8c2-77bd-bb9e-5144ce28f671
+
+### What was implemented
+Enforced the 20 attempts/day limit with clear UI feedback:
+
+1. **getDailyAttemptsInfo API** - Queries attempts created today by current user
+2. **logAttempt limit check** - Throws error if limit reached before creating attempt
+3. **LogAttemptScreen UI updates**:
+   - Displays remaining attempts counter below header
+   - Counter shows red styling when limit reached
+   - Submit button disabled and text changes when at limit
+   - Success alert shows remaining attempts after logging
+
+### Files changed
+- `TwoCupsApp/src/services/api/actions.ts` - Added getDailyAttemptsInfo function, added limit check to logAttempt
+- `TwoCupsApp/src/services/api/index.ts` - Exported new function and type
+- `TwoCupsApp/src/screens/LogAttemptScreen.tsx` - Added attempts counter UI and limit enforcement
+
+### Acceptance Criteria Checklist
+- [x] Query today's attempts by current user before allowing log
+- [x] If >= 20 attempts today, show error message
+- [x] Display remaining attempts count on Log Attempt screen
+- [x] Counter resets at midnight (local time)
+
+### Learnings
+- Use `Timestamp.fromDate()` to convert JS Date to Firestore Timestamp for queries
+- Client-side validation + server-side validation provides best UX
+- Style concatenation with opacity (e.g., `colors.error + '20'`) works for semi-transparent backgrounds
+
+---
