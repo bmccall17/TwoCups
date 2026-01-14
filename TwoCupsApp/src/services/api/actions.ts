@@ -21,6 +21,7 @@ const ACK_GEM_AWARD = 3;
 const ACK_COLLECTIVE_CUP_AWARD = 3;
 const DEFAULT_POINTS_PER_ACK = 5;
 const DAILY_ATTEMPT_LIMIT = 20;
+const ACTIVE_REQUEST_LIMIT = 5;
 
 export interface LogAttemptParams {
   coupleId: string;
@@ -37,6 +38,12 @@ export interface LogAttemptResult {
 }
 
 export interface DailyAttemptsInfo {
+  count: number;
+  remaining: number;
+  limit: number;
+}
+
+export interface ActiveRequestsInfo {
   count: number;
   remaining: number;
   limit: number;
@@ -81,6 +88,32 @@ export async function getDailyAttemptsInfo(coupleId: string): Promise<DailyAttem
     count,
     remaining: Math.max(0, DAILY_ATTEMPT_LIMIT - count),
     limit: DAILY_ATTEMPT_LIMIT,
+  };
+}
+
+/**
+ * Get active requests count for the current user (requests they created that are still active)
+ */
+export async function getActiveRequestsInfo(coupleId: string): Promise<ActiveRequestsInfo> {
+  const uid = getCurrentUserId();
+  if (!uid) {
+    throw new Error('Must be logged in');
+  }
+
+  const requestsRef = collection(db, 'couples', coupleId, 'requests');
+  const q = query(
+    requestsRef,
+    where('byPlayerId', '==', uid),
+    where('status', '==', 'active')
+  );
+
+  const snapshot = await getDocs(q);
+  const count = snapshot.size;
+
+  return {
+    count,
+    remaining: Math.max(0, ACTIVE_REQUEST_LIMIT - count),
+    limit: ACTIVE_REQUEST_LIMIT,
   };
 }
 
@@ -299,6 +332,12 @@ export async function createRequest(params: {
 
   if (!action || action.trim().length === 0) {
     throw new Error('Action is required');
+  }
+
+  // Check active request limit
+  const activeInfo = await getActiveRequestsInfo(coupleId);
+  if (activeInfo.remaining <= 0) {
+    throw new Error(`Request limit reached (${ACTIVE_REQUEST_LIMIT} active requests). Complete or delete some requests first.`);
   }
 
   const now = Timestamp.now();

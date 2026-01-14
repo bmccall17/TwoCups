@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,8 @@ import {
   Alert,
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
-import { createRequest } from '../services/api';
+import { createRequest, getActiveRequestsInfo } from '../services/api';
+import type { ActiveRequestsInfo } from '../services/api';
 import { Button, TextInput } from '../components/common';
 import { colors, spacing, typography, borderRadius } from '../theme';
 
@@ -35,11 +36,28 @@ export function MakeRequestScreen({ onGoBack }: MakeRequestScreenProps) {
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [requestsInfo, setRequestsInfo] = useState<ActiveRequestsInfo | null>(null);
 
   const coupleId = userData?.activeCoupleId;
   const myUid = user?.uid;
   const partnerIds = coupleData?.partnerIds ?? [];
   const partnerId = partnerIds.find(id => id !== myUid);
+
+  const loadRequestsInfo = useCallback(async () => {
+    if (!coupleId) return;
+    try {
+      const info = await getActiveRequestsInfo(coupleId);
+      setRequestsInfo(info);
+    } catch (error) {
+      console.error('Failed to load active requests info:', error);
+    }
+  }, [coupleId]);
+
+  useEffect(() => {
+    loadRequestsInfo();
+  }, [loadRequestsInfo]);
+
+  const atLimit = requestsInfo !== null && requestsInfo.remaining <= 0;
 
   const handleSubmit = async () => {
     if (!action.trim()) {
@@ -62,7 +80,8 @@ export function MakeRequestScreen({ onGoBack }: MakeRequestScreenProps) {
         category: category || undefined,
       });
 
-      Alert.alert('Success', 'Request sent to your partner!', [
+      await loadRequestsInfo();
+      Alert.alert('Success', `Request sent to your partner! (${requestsInfo ? requestsInfo.count + 1 : 1}/${requestsInfo?.limit || 5} active)`, [
         { text: 'OK', onPress: onGoBack }
       ]);
     } catch (error: any) {
@@ -82,6 +101,17 @@ export function MakeRequestScreen({ onGoBack }: MakeRequestScreenProps) {
           </TouchableOpacity>
           <Text style={styles.title}>Make a Request</Text>
           <Text style={styles.subtitle}>Ask your partner for something specific</Text>
+          
+          {/* Active Requests Counter */}
+          {requestsInfo && (
+            <View style={[styles.counterContainer, atLimit && styles.counterContainerLimit]}>
+              <Text style={[styles.counterText, atLimit && styles.counterTextLimit]}>
+                {atLimit 
+                  ? `⚠️ Limit reached (${requestsInfo.count}/${requestsInfo.limit} active requests)`
+                  : `📋 ${requestsInfo.count}/${requestsInfo.limit} active requests`}
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* Form */}
@@ -136,10 +166,10 @@ export function MakeRequestScreen({ onGoBack }: MakeRequestScreenProps) {
 
         {/* Submit Button */}
         <Button
-          title="Send Request 💌"
+          title={atLimit ? "Request Limit Reached" : "Send Request 💌"}
           onPress={handleSubmit}
           loading={loading}
-          disabled={!action.trim()}
+          disabled={!action.trim() || atLimit}
           style={styles.submitButton}
         />
       </ScrollView>
@@ -174,6 +204,25 @@ const styles = StyleSheet.create({
   subtitle: {
     ...typography.body,
     color: colors.textSecondary,
+  },
+  counterContainer: {
+    marginTop: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    alignSelf: 'flex-start',
+  },
+  counterContainerLimit: {
+    backgroundColor: colors.error + '20',
+  },
+  counterText: {
+    ...typography.bodySmall,
+    color: colors.textSecondary,
+  },
+  counterTextLimit: {
+    color: colors.error,
+    fontWeight: '600',
   },
   formSection: {
     marginBottom: spacing.xl,
