@@ -393,3 +393,35 @@ Added collapsible analytics section to the History screen showing key relationsh
 - Collapsible sections improve UX when there's a lot of information
 
 ---
+
+## 2026-01-14 - US-021 (Analytics - Category Breakdown) ✅
+Thread: https://ampcode.com/threads/T-019bbd31-d552-76be-9efe-9a47e450d312
+
+### What was implemented
+Added collapsible category breakdown section to the History screen:
+
+1. **Separate collapsible section** - "📊 Category Breakdown" below main analytics, collapsed by default
+2. **Two breakdowns** - "Attempts I Logged" and "Attempts For Me" with separate stats
+3. **Category list sorted by frequency** - Most used categories appear first
+4. **Count and percentage** - Each category shows count and percentage of total
+5. **Visual progress bars** - Horizontal bars showing relative usage (primary color for "by me", success color for "for me")
+
+### Files changed
+- `TwoCupsApp/src/screens/HistoryScreen.tsx`
+  - Added showCategoryBreakdown state
+  - Added categoryBreakdownStats useMemo with calculateBreakdown helper
+  - Added Category Breakdown UI section with two subsections
+  - Added styles: categoryBreakdownContainer, breakdownSection, breakdownSectionTitle, breakdownEmpty, breakdownRow, breakdownLabelContainer, breakdownLabel, breakdownCount, breakdownBarContainer, breakdownBar
+
+### Acceptance Criteria Checklist
+- [x] List of categories with attempt counts
+- [x] Sorted by frequency (most used first)
+- [x] Shows percentage of total for each category
+- [x] Visual bar or indicator showing relative usage
+- [x] Separate breakdown for 'attempts I logged' vs 'attempts for me'
+
+### Learnings
+- Using Object.entries() with sort() is clean pattern for frequency-sorted lists
+- Nested type definitions inside useMemo keep types local and readable
+
+---
