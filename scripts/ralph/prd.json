@@ -1,26 +1,27 @@
 {
-  "name": "TwoCups Sprint 4 - Push Notifications",
-  "branchName": "ralph/sprint-4-notifications",
-  "description": "Implement push notifications to alert users when their partner takes actions, keeping couples engaged",
+  "name": "TwoCups Sprint 5 - Gem Economy Polish",
+  "branchName": "ralph/sprint-5-gems",
+  "description": "Enhance gem visuals, animations, and displays to make earning gems feel more rewarding",
   "created": "2026-01-14",
 
   "decisions": {
-    "D1_Service": "Use Firebase Cloud Messaging (FCM) - already have Firebase",
-    "D2_Triggers": "Cloud Functions to send notifications on Firestore writes",
-    "D3_Preferences": "Store notification preferences in user document"
+    "D1_Animation": "Use React Native Reanimated or Animated API for smooth animations",
+    "D2_Design": "Gems should feel valuable - sparkle effects, satisfying sounds optional",
+    "D3_Scope": "Focus on visual polish, not changing gem economy rules"
   },
 
   "userStories": [
     {
-      "id": "US-023",
-      "title": "FCM Setup and Token Registration",
-      "description": "Set up Firebase Cloud Messaging and register device tokens for push notifications.",
+      "id": "US-031",
+      "title": "Gem Earned Animation",
+      "description": "Show animated gem(s) floating up when user earns gems from logging or acknowledging.",
       "acceptanceCriteria": [
-        "Firebase Cloud Messaging configured in project",
-        "App requests notification permission on first launch (or after pairing)",
-        "Device FCM token saved to user document in Firestore",
-        "Token refreshes handled automatically",
-        "Works on Android (iOS can be added later)"
+        "When logging attempt: show +1 or +2 gem animation",
+        "When acknowledging: show +3 gem animation",
+        "Gems float upward and fade out",
+        "Animation plays near the action that triggered it",
+        "Animation duration ~1-2 seconds",
+        "Different gem colors for different amounts (optional)"
       ],
       "priority": 1,
       "passes": false,
@@ -28,118 +29,102 @@
       "blockedReason": null
     },
     {
-      "id": "US-024",
-      "title": "Cloud Function - Attempt Logged Notification",
-      "description": "Send push notification when partner logs an attempt for you.",
+      "id": "US-032",
+      "title": "Gem Counter Component Redesign",
+      "description": "Improve the gem counter display on HomeScreen to be more visually appealing.",
       "acceptanceCriteria": [
-        "Cloud Function triggers on new attempt document creation",
-        "Notification sent to forPlayerId (recipient)",
-        "Notification title: '{PartnerName} did something for you!'",
-        "Notification body: Shows the action text (truncated if long)",
-        "Tapping notification opens app to Acknowledge screen",
-        "Does not notify if user logged attempt for themselves (edge case)"
+        "Gem icon with count displayed prominently",
+        "Counter animates when value changes (count up effect)",
+        "Shows both players' gem counts clearly",
+        "Gem icon has subtle sparkle or glow effect",
+        "Responsive sizing for different screen sizes"
       ],
       "priority": 2,
       "passes": false,
-      "blocked": true,
-      "blockedReason": "Depends on US-023"
+      "blocked": false,
+      "blockedReason": null
     },
     {
-      "id": "US-025",
-      "title": "Cloud Function - Attempt Acknowledged Notification",
-      "description": "Send push notification when partner acknowledges your attempt.",
+      "id": "US-033",
+      "title": "Gem Summary in Toast Notifications",
+      "description": "Enhance toast notifications to prominently display gem rewards.",
       "acceptanceCriteria": [
-        "Cloud Function triggers on attempt document update (acknowledged: true)",
-        "Notification sent to byPlayerId (who logged the attempt)",
-        "Notification title: '{PartnerName} acknowledged your effort!'",
-        "Notification body: '+3 gems earned' or similar",
-        "Tapping notification opens app to Home screen"
+        "Log attempt toast shows gem icon + amount earned",
+        "Request fulfillment toast shows bonus gem indicator",
+        "Acknowledge toast shows '+3 gems to you, +3 gems to partner'",
+        "Gem icon in toast matches app gem design",
+        "Toast styling emphasizes the gem reward"
       ],
       "priority": 3,
       "passes": false,
-      "blocked": true,
-      "blockedReason": "Depends on US-023"
+      "blocked": false,
+      "blockedReason": null
     },
     {
-      "id": "US-026",
-      "title": "Cloud Function - New Request Notification",
-      "description": "Send push notification when partner creates a new request.",
+      "id": "US-034",
+      "title": "Daily Gem Earnings Summary",
+      "description": "Show how many gems user has earned today on HomeScreen.",
       "acceptanceCriteria": [
-        "Cloud Function triggers on new request document creation",
-        "Notification sent to forPlayerId (who should fulfill it)",
-        "Notification title: '{PartnerName} made a request'",
-        "Notification body: Shows the request action text",
-        "Tapping notification opens app to Log Attempt screen"
+        "Display 'Today: +X gems' below total gem count",
+        "Resets at midnight local time",
+        "Shows breakdown: 'X from logging, Y from acknowledgments' (optional)",
+        "Encouraging message if gems earned today (e.g., 'Great job!')",
+        "Different message if no gems yet today"
       ],
       "priority": 4,
       "passes": false,
-      "blocked": true,
-      "blockedReason": "Depends on US-023"
+      "blocked": false,
+      "blockedReason": null
     },
     {
-      "id": "US-027",
-      "title": "Cloud Function - Request Fulfilled Notification",
-      "description": "Send push notification when your request is fulfilled by partner.",
+      "id": "US-035",
+      "title": "Gem Milestone Celebrations",
+      "description": "Celebrate when users hit gem milestones (100, 500, 1000, etc.).",
       "acceptanceCriteria": [
-        "Cloud Function triggers on request document update (fulfilledByAttemptId set)",
-        "Notification sent to byPlayerId (who made the request)",
-        "Notification title: '{PartnerName} fulfilled your request!'",
-        "Notification body: Shows the request action text",
-        "Tapping notification opens app to Acknowledge screen"
+        "Detect when gem count crosses milestone threshold",
+        "Show celebration modal/overlay for milestones",
+        "Milestones: 100, 250, 500, 1000, 2500, 5000, 10000",
+        "Celebration includes milestone badge/icon",
+        "Message acknowledges achievement (e.g., '500 gems! You're crushing it!')",
+        "Only triggers once per milestone (track in user doc)"
       ],
       "priority": 5,
       "passes": false,
-      "blocked": true,
-      "blockedReason": "Depends on US-023"
+      "blocked": false,
+      "blockedReason": null
     },
     {
-      "id": "US-028",
-      "title": "Cloud Function - Cup Overflow Notification",
-      "description": "Send push notification when a cup overflows (celebration moment).",
+      "id": "US-036",
+      "title": "Gem Leaderboard (Couple View)",
+      "description": "Fun comparison view showing gem earnings between partners.",
       "acceptanceCriteria": [
-        "Detect cup overflow during acknowledgment (from cupOverflow flag)",
-        "Notification sent to both players",
-        "Notification title: 'Cup Overflow Celebration!'",
-        "Notification body: 'Your cup overflowed! Keep filling each other up.'",
-        "Different messages for individual vs collective cup overflow"
+        "Section on HomeScreen or Settings showing both partners' gems",
+        "Visual bar chart comparing gem counts",
+        "Playful messaging (not competitive, encouraging)",
+        "Shows who's 'ahead' with fun label (e.g., 'Gem Champion this week')",
+        "Option to view weekly or all-time comparison"
       ],
       "priority": 6,
       "passes": false,
-      "blocked": true,
-      "blockedReason": "Depends on US-023"
+      "blocked": false,
+      "blockedReason": null
     },
     {
-      "id": "US-029",
-      "title": "Notification Preferences Screen",
-      "description": "Allow users to control which notifications they receive.",
+      "id": "US-037",
+      "title": "Gem History Log",
+      "description": "Detailed log of all gem transactions for transparency.",
       "acceptanceCriteria": [
-        "Notification settings section in Settings screen",
-        "Toggle for each notification type (attempt logged, acknowledged, requests, overflow)",
-        "Master toggle to disable all notifications",
-        "Preferences saved to user document in Firestore",
-        "Cloud Functions check preferences before sending"
+        "Accessible from Settings or gem counter tap",
+        "Shows each gem earning event with timestamp",
+        "Entry shows: amount, reason (logged attempt, acknowledged, request fulfilled)",
+        "Links to the relevant attempt if applicable",
+        "Paginated list (load 20 at a time)",
+        "Running total displayed"
       ],
       "priority": 7,
       "passes": false,
-      "blocked": true,
-      "blockedReason": "Depends on US-023"
-    },
-    {
-      "id": "US-030",
-      "title": "In-App Notification Center",
-      "description": "Show notification history within the app for users who miss push notifications.",
-      "acceptanceCriteria": [
-        "Notification bell icon in header with unread count badge",
-        "Notification center screen showing recent notifications",
-        "Each notification shows: type icon, title, body, timestamp",
-        "Mark as read on view",
-        "Tapping notification navigates to relevant screen",
-        "Notifications stored in Firestore (last 50 per user)"
-      ],
-      "priority": 8,
-      "passes": false,
-      "blocked": true,
-      "blockedReason": "Depends on US-024, US-025, US-026, US-027"
+      "blocked": false,
+      "blockedReason": null
     }
   ]
 }

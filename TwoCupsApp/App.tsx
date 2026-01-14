@@ -8,6 +8,7 @@ import { Text, View, StyleSheet } from 'react-native';
 
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { ToastProvider } from './src/context/ToastContext';
+import { GemAnimationProvider } from './src/context/GemAnimationContext';
 import { LoadingSpinner, InstallAppModal, ToastContainer } from './src/components/common';
 import { useInstallPrompt } from './src/hooks';
 import { LoginScreen, SignUpScreen, PairingScreen } from './src/screens/auth';
@@ -239,12 +240,14 @@ export default function App() {
     <SafeAreaProvider>
       <StatusBar style="light" backgroundColor={colors.background} />
       <ToastProvider>
-        <AuthProvider>
-          <NavigationContainer>
-            <RootNavigator />
-          </NavigationContainer>
-          <ToastContainer />
-        </AuthProvider>
+        <GemAnimationProvider>
+          <AuthProvider>
+            <NavigationContainer>
+              <RootNavigator />
+            </NavigationContainer>
+            <ToastContainer />
+          </AuthProvider>
+        </GemAnimationProvider>
       </ToastProvider>
     </SafeAreaProvider>
   );

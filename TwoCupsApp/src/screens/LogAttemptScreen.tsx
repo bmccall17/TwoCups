@@ -6,15 +6,19 @@ import {
   SafeAreaView,
   ScrollView,
   TouchableOpacity,
+  Dimensions,
 } from 'react-native';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../services/firebase/config';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useGemAnimation } from '../context/GemAnimationContext';
 import { logAttempt, getDailyAttemptsInfo, DailyAttemptsInfo } from '../services/api';
 import { Button, TextInput, LoadingSpinner, EmptyState } from '../components/common';
 import { colors, spacing, typography, borderRadius } from '../theme';
 import { Request, Suggestion } from '../types';
+
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const CATEGORIES = [
   'Words of Affirmation',
@@ -35,6 +39,7 @@ interface LogAttemptScreenProps {
 export function LogAttemptScreen({ onGoBack }: LogAttemptScreenProps) {
   const { user, userData, coupleData } = useAuth();
   const { showSuccess, showError, showCelebration } = useToast();
+  const { showGemAnimation } = useGemAnimation();
   const [action, setAction] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<string | null>(null);
@@ -168,6 +173,8 @@ export function LogAttemptScreen({ onGoBack }: LogAttemptScreenProps) {
 
       const remainingAfter = dailyAttemptsInfo ? dailyAttemptsInfo.remaining - 1 : null;
       const remainingMessage = remainingAfter !== null ? ` (${remainingAfter} remaining today)` : '';
+
+      showGemAnimation(result.gemsAwarded, undefined, SCREEN_HEIGHT / 3);
 
       if (result.fulfilledRequestId) {
         showCelebration(`+${result.gemsAwarded} gems! Request fulfilled!${remainingMessage}`);
