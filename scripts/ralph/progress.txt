@@ -631,3 +631,48 @@ Added daily gem earnings summary to the GemCounter component on HomeScreen:
 - Querying acknowledgedAt >= startOfDay captures both given and received acknowledgment gems
 
 ---
+
+## 2026-01-14 - US-035 (Gem Milestone Celebrations) ✅
+Thread: https://ampcode.com/threads/T-019bbd66-85b1-7286-98ab-91eb9008c143
+
+### What was implemented
+Built milestone celebration system that shows a modal when users reach gem milestones:
+
+1. **MilestoneCelebrationContext** - Context provider for detecting and displaying milestone celebrations:
+   - Checks when gem count crosses milestone thresholds (100, 250, 500, 1000, 2500, 5000, 10000)
+   - Tracks achieved milestones in player document to prevent re-triggering
+   - Uses Firestore `arrayUnion` to persist achieved milestones
+
+2. **CelebrationModal component** - Animated celebration overlay:
+   - Spring animation on modal appearance
+   - Pulsing sparkle animations around the modal
+   - Milestone-specific badge emoji (💎, ✨, 🏆, 👑, 🌟, 💫, 🎆)
+   - Milestone-specific congratulation messages
+   - Purple gem-themed styling with glow effects
+
+3. **Player type updated** - Added optional `achievedMilestones: number[]` field
+
+4. **HomeScreen integration** - Monitors gem count changes and triggers milestone check
+
+### Files created/changed
+- `TwoCupsApp/src/context/MilestoneCelebrationContext.tsx` (new)
+- `TwoCupsApp/src/types/index.ts` - Added achievedMilestones to Player interface
+- `TwoCupsApp/src/hooks/usePlayerData.ts` - Include achievedMilestones in PlayerWithId
+- `TwoCupsApp/src/screens/HomeScreen.tsx` - Added milestone checking on gem changes
+- `TwoCupsApp/App.tsx` - Added MilestoneCelebrationProvider
+
+### Acceptance Criteria Checklist
+- [x] Detect when gem count crosses milestone threshold
+- [x] Show celebration modal/overlay for milestones
+- [x] Milestones: 100, 250, 500, 1000, 2500, 5000, 10000
+- [x] Celebration includes milestone badge/icon
+- [x] Message acknowledges achievement (e.g., '500 gems! You're crushing it!')
+- [x] Only triggers once per milestone (track in user doc via achievedMilestones array)
+
+### Learnings
+- Use `arrayUnion` from Firestore to atomically add milestones without read-modify-write
+- Track previous gem count with useRef to only trigger on increases
+- Spring animations with high tension give satisfying "pop" effects for celebrations
+- Modal z-index handled automatically by React Native Modal component
+
+---

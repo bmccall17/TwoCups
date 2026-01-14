@@ -89,7 +89,7 @@
         "Only triggers once per milestone (track in user doc)"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "blockedReason": null
     },
