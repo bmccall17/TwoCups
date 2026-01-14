@@ -6,12 +6,12 @@ import {
   SafeAreaView,
   ScrollView,
   TouchableOpacity,
-  Alert,
   ActivityIndicator,
 } from 'react-native';
 import { collection, query, where, onSnapshot, orderBy, doc, getDoc } from 'firebase/firestore';
 import { db } from '../services/firebase/config';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { acknowledgeAttempt } from '../services/api';
 import { Button } from '../components/common';
 import { colors, spacing, typography, borderRadius } from '../theme';
@@ -21,6 +21,7 @@ type FilterType = 'pending' | 'acknowledged' | 'all';
 
 export function AcknowledgeScreen() {
   const { user, userData, coupleData } = useAuth();
+  const { showSuccess, showError, showCelebration } = useToast();
   const [attempts, setAttempts] = useState<Attempt[]>([]);
   const [loading, setLoading] = useState(true);
   const [acknowledging, setAcknowledging] = useState<string | null>(null);
@@ -88,13 +89,13 @@ export function AcknowledgeScreen() {
         attemptId: attempt.id,
       });
 
-      const message = result.cupOverflow
-        ? `+${result.gemsAwarded} gems! Your cup overflowed!`
-        : `+${result.gemsAwarded} gems! Thank you for acknowledging.`;
-
-      Alert.alert('Acknowledged!', message);
+      if (result.cupOverflow) {
+        showCelebration(`+${result.gemsAwarded} gems! Your cup overflowed!`);
+      } else {
+        showSuccess(`+${result.gemsAwarded} gems! Thank you for acknowledging.`);
+      }
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to acknowledge');
+      showError(error.message || 'Failed to acknowledge');
     } finally {
       setAcknowledging(null);
     }

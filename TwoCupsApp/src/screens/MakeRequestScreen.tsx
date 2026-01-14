@@ -6,9 +6,9 @@ import {
   SafeAreaView,
   ScrollView,
   TouchableOpacity,
-  Alert,
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { createRequest, getActiveRequestsInfo } from '../services/api';
 import type { ActiveRequestsInfo } from '../services/api';
 import { Button, TextInput } from '../components/common';
@@ -32,6 +32,7 @@ interface MakeRequestScreenProps {
 
 export function MakeRequestScreen({ onGoBack }: MakeRequestScreenProps) {
   const { user, userData, coupleData } = useAuth();
+  const { showSuccess, showError } = useToast();
   const [action, setAction] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<string | null>(null);
@@ -61,12 +62,12 @@ export function MakeRequestScreen({ onGoBack }: MakeRequestScreenProps) {
 
   const handleSubmit = async () => {
     if (!action.trim()) {
-      Alert.alert('Error', 'Please enter what you would like');
+      showError('Please enter what you would like');
       return;
     }
 
     if (!coupleId || !partnerId) {
-      Alert.alert('Error', 'No couple found');
+      showError('No couple found');
       return;
     }
 
@@ -81,11 +82,10 @@ export function MakeRequestScreen({ onGoBack }: MakeRequestScreenProps) {
       });
 
       await loadRequestsInfo();
-      Alert.alert('Success', `Request sent to your partner! (${requestsInfo ? requestsInfo.count + 1 : 1}/${requestsInfo?.limit || 5} active)`, [
-        { text: 'OK', onPress: onGoBack }
-      ]);
+      showSuccess(`Request sent! (${requestsInfo ? requestsInfo.count + 1 : 1}/${requestsInfo?.limit || 5} active)`);
+      setTimeout(() => onGoBack(), 1500);
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to create request');
+      showError(error.message || 'Failed to create request');
     } finally {
       setLoading(false);
     }

@@ -6,11 +6,11 @@ import {
   SafeAreaView,
   ScrollView,
   TouchableOpacity,
-  Alert,
 } from 'react-native';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../services/firebase/config';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { logAttempt, getDailyAttemptsInfo, DailyAttemptsInfo } from '../services/api';
 import { Button, TextInput } from '../components/common';
 import { colors, spacing, typography, borderRadius } from '../theme';
@@ -34,6 +34,7 @@ interface LogAttemptScreenProps {
 
 export function LogAttemptScreen({ onGoBack }: LogAttemptScreenProps) {
   const { user, userData, coupleData } = useAuth();
+  const { showSuccess, showError, showCelebration } = useToast();
   const [action, setAction] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<string | null>(null);
@@ -122,17 +123,17 @@ export function LogAttemptScreen({ onGoBack }: LogAttemptScreenProps) {
 
   const handleSubmit = async () => {
     if (!action.trim()) {
-      Alert.alert('Error', 'Please enter an action');
+      showError('Please enter an action');
       return;
     }
 
     if (!coupleId || !partnerId) {
-      Alert.alert('Error', 'No couple found');
+      showError('No couple found');
       return;
     }
 
     if (dailyAttemptsInfo && dailyAttemptsInfo.remaining <= 0) {
-      Alert.alert('Daily Limit Reached', `You've logged ${dailyAttemptsInfo.limit} attempts today. Try again tomorrow!`);
+      showError(`You've logged ${dailyAttemptsInfo.limit} attempts today. Try again tomorrow!`);
       return;
     }
 
@@ -147,17 +148,14 @@ export function LogAttemptScreen({ onGoBack }: LogAttemptScreenProps) {
       });
 
       const remainingAfter = dailyAttemptsInfo ? dailyAttemptsInfo.remaining - 1 : null;
-      const gemMessage = result.fulfilledRequestId
-        ? `+${result.gemsAwarded} gems! 🎉 Request fulfilled!`
-        : `+${result.gemsAwarded} gem!`;
+      const remainingMessage = remainingAfter !== null ? ` (${remainingAfter} remaining today)` : '';
 
-      const remainingMessage = remainingAfter !== null ? `\n${remainingAfter} attempts remaining today.` : '';
+      if (result.fulfilledRequestId) {
+        showCelebration(`+${result.gemsAwarded} gems! Request fulfilled!${remainingMessage}`);
+      } else {
+        showSuccess(`+${result.gemsAwarded} gem!${remainingMessage}`);
+      }
 
-      Alert.alert('Success', gemMessage + remainingMessage, [
-        { text: 'OK', onPress: onGoBack }
-      ]);
-
-      // Update daily attempts info
       if (dailyAttemptsInfo) {
         setDailyAttemptsInfo({
           ...dailyAttemptsInfo,
@@ -165,8 +163,10 @@ export function LogAttemptScreen({ onGoBack }: LogAttemptScreenProps) {
           remaining: dailyAttemptsInfo.remaining - 1,
         });
       }
+
+      setTimeout(() => onGoBack(), 1500);
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to log attempt');
+      showError(error.message || 'Failed to log attempt');
     } finally {
       setLoading(false);
     }

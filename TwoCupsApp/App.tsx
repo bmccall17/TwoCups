@@ -7,7 +7,8 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Text, View, StyleSheet } from 'react-native';
 
 import { AuthProvider, useAuth } from './src/context/AuthContext';
-import { LoadingSpinner, InstallAppModal } from './src/components/common';
+import { ToastProvider } from './src/context/ToastContext';
+import { LoadingSpinner, InstallAppModal, ToastContainer } from './src/components/common';
 import { useInstallPrompt } from './src/hooks';
 import { LoginScreen, SignUpScreen, PairingScreen } from './src/screens/auth';
 import { HomeScreen } from './src/screens/HomeScreen';
@@ -225,11 +226,14 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <StatusBar style="light" backgroundColor={colors.background} />
-      <AuthProvider>
-        <NavigationContainer>
-          <RootNavigator />
-        </NavigationContainer>
-      </AuthProvider>
+      <ToastProvider>
+        <AuthProvider>
+          <NavigationContainer>
+            <RootNavigator />
+          </NavigationContainer>
+          <ToastContainer />
+        </AuthProvider>
+      </ToastProvider>
     </SafeAreaProvider>
   );
 }
