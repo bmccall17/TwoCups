@@ -30,6 +30,7 @@ import { useAuth } from '../context/AuthContext';
 import { LoadingSpinner, EmptyState } from '../components/common';
 import { colors, spacing, typography, borderRadius } from '../theme';
 import { Attempt } from '../types';
+import { usePlayerData } from '../hooks/usePlayerData';
 
 const PAGE_SIZE = 20;
 
@@ -92,6 +93,7 @@ const formatDateRange = (filter: DateRangeFilterType): string => {
 
 export function HistoryScreen() {
   const { user, userData, coupleData } = useAuth();
+  const { myPlayer, partnerPlayer, partnerName } = usePlayerData();
   const [attempts, setAttempts] = useState<Attempt[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -103,6 +105,7 @@ export function HistoryScreen() {
   const [statusFilter, setStatusFilter] = useState<StatusFilterType>('all');
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilterType>('all');
   const [dateRangeFilter, setDateRangeFilter] = useState<DateRangeFilterType>('last7days');
+  const [showAnalytics, setShowAnalytics] = useState(true);
 
   const coupleId = userData?.activeCoupleId;
   const myUid = user?.uid;
@@ -348,6 +351,25 @@ export function HistoryScreen() {
     };
   }, [attempts, playerFilter, statusFilter, myUid, partnerId]);
 
+  // Analytics stats - calculated from loaded attempts (respects date range filter)
+  const analyticsStats = useMemo(() => {
+    const myAttempts = attempts.filter(a => a.byPlayerId === myUid);
+    const partnerAttempts = attempts.filter(a => a.byPlayerId === partnerId);
+    
+    const totalAttempts = attempts.length;
+    const acknowledgedAttempts = attempts.filter(a => a.acknowledged).length;
+    const acknowledgeRate = totalAttempts > 0 ? Math.round((acknowledgedAttempts / totalAttempts) * 100) : 0;
+
+    return {
+      totalAttempts,
+      myAttemptsCount: myAttempts.length,
+      partnerAttemptsCount: partnerAttempts.length,
+      acknowledgedCount: acknowledgedAttempts,
+      pendingCount: totalAttempts - acknowledgedAttempts,
+      acknowledgeRate,
+    };
+  }, [attempts, myUid, partnerId]);
+
   const playerFilterOptions: { key: PlayerFilterType; label: string }[] = [
     { key: 'all', label: 'All' },
     { key: 'byMe', label: 'By Me' },
@@ -589,6 +611,70 @@ export function HistoryScreen() {
         </ScrollView>
       )}
 
+      {/* Analytics Section */}
+      <TouchableOpacity
+        style={styles.analyticsHeader}
+        onPress={() => setShowAnalytics(!showAnalytics)}
+      >
+        <Text style={styles.analyticsTitle}>📊 Analytics</Text>
+        <Text style={styles.analyticsToggle}>{showAnalytics ? '▼' : '▶'}</Text>
+      </TouchableOpacity>
+
+      {showAnalytics && (
+        <View style={styles.analyticsContainer}>
+          <View style={styles.analyticsRow}>
+            <View style={styles.analyticsStat}>
+              <Text style={styles.analyticsValue}>{analyticsStats.myAttemptsCount}</Text>
+              <Text style={styles.analyticsLabel}>My Attempts</Text>
+            </View>
+            <View style={styles.analyticsStat}>
+              <Text style={styles.analyticsValue}>{analyticsStats.partnerAttemptsCount}</Text>
+              <Text style={styles.analyticsLabel}>{partnerName}'s</Text>
+            </View>
+            <View style={styles.analyticsStat}>
+              <Text style={styles.analyticsValue}>{analyticsStats.totalAttempts}</Text>
+              <Text style={styles.analyticsLabel}>Total</Text>
+            </View>
+          </View>
+
+          <View style={styles.analyticsRow}>
+            <View style={styles.analyticsStat}>
+              <Text style={[styles.analyticsValue, { color: colors.success }]}>
+                {analyticsStats.acknowledgedCount}
+              </Text>
+              <Text style={styles.analyticsLabel}>Acknowledged</Text>
+            </View>
+            <View style={styles.analyticsStat}>
+              <Text style={[styles.analyticsValue, { color: colors.warning }]}>
+                {analyticsStats.pendingCount}
+              </Text>
+              <Text style={styles.analyticsLabel}>Pending</Text>
+            </View>
+            <View style={styles.analyticsStat}>
+              <Text style={[styles.analyticsValue, { color: colors.primary }]}>
+                {analyticsStats.acknowledgeRate}%
+              </Text>
+              <Text style={styles.analyticsLabel}>Ack Rate</Text>
+            </View>
+          </View>
+
+          <View style={styles.analyticsRow}>
+            <View style={styles.analyticsStat}>
+              <Text style={[styles.analyticsValue, { color: colors.gem }]}>
+                💎 {myPlayer?.gemCount ?? 0}
+              </Text>
+              <Text style={styles.analyticsLabel}>My Gems</Text>
+            </View>
+            <View style={styles.analyticsStat}>
+              <Text style={[styles.analyticsValue, { color: colors.gem }]}>
+                💎 {partnerPlayer?.gemCount ?? 0}
+              </Text>
+              <Text style={styles.analyticsLabel}>{partnerName}'s Gems</Text>
+            </View>
+          </View>
+        </View>
+      )}
+
       {filteredAttempts.length === 0 ? (
         <EmptyState
           icon="📜"
@@ -808,5 +894,50 @@ const styles = StyleSheet.create({
   loadingMoreText: {
     ...typography.bodySmall,
     color: colors.textSecondary,
+  },
+  analyticsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    backgroundColor: colors.surface,
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.sm,
+    borderRadius: borderRadius.md,
+  },
+  analyticsTitle: {
+    ...typography.h3,
+    color: colors.textPrimary,
+  },
+  analyticsToggle: {
+    ...typography.body,
+    color: colors.textMuted,
+  },
+  analyticsContainer: {
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+  },
+  analyticsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: spacing.md,
+  },
+  analyticsStat: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  analyticsValue: {
+    ...typography.h2,
+    color: colors.textPrimary,
+    fontWeight: '700',
+  },
+  analyticsLabel: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    marginTop: spacing.xs,
   },
 });

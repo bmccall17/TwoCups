@@ -102,7 +102,7 @@
         "Stats update based on active date range filter"
       ],
       "priority": 6,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "blockedReason": null
     },
@@ -119,8 +119,8 @@
       ],
       "priority": 7,
       "passes": false,
-      "blocked": true,
-      "blockedReason": "Depends on US-020"
+      "blocked": false,
+      "blockedReason": null
     },
     {
       "id": "US-022",
@@ -135,8 +135,8 @@
       ],
       "priority": 8,
       "passes": false,
-      "blocked": true,
-      "blockedReason": "Depends on US-020"
+      "blocked": false,
+      "blockedReason": null
     }
   ]
 }

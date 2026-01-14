@@ -358,3 +358,38 @@ Added date range filter to the History screen:
 - Single field inequality + orderBy on same field doesn't require composite index in Firestore
 
 ---
+
+## 2026-01-14 - US-020 (Analytics Dashboard - Basic Stats) ✅
+Thread: https://ampcode.com/threads/T-019bbd2e-dd3d-75a5-8930-99c74b62936f
+
+### What was implemented
+Added collapsible analytics section to the History screen showing key relationship metrics:
+
+1. **Analytics header with toggle** - Collapsible section with 📊 icon
+2. **Attempt counts by player** - Shows My Attempts, Partner's Attempts, and Total
+3. **Acknowledgment stats** - Shows Acknowledged count, Pending count, and Acknowledgment rate %
+4. **Gem counts** - Shows total gems earned by each player (real-time from player data)
+5. **Date range aware** - Stats recalculate based on selected date range filter
+
+### Files changed
+- `TwoCupsApp/src/screens/HistoryScreen.tsx`
+  - Added usePlayerData hook import for gem counts
+  - Added showAnalytics state for collapsible toggle
+  - Added analyticsStats useMemo for calculating stats from loaded attempts
+  - Added analytics UI section with 3 rows of stats
+  - Added styles for analytics components
+
+### Acceptance Criteria Checklist
+- [x] Analytics section on History screen
+- [x] Shows total attempts logged (by each player)
+- [x] Shows total attempts acknowledged
+- [x] Shows acknowledgment rate (acknowledged / total as percentage)
+- [x] Shows total gems earned (each player)
+- [x] Stats update based on active date range filter
+
+### Learnings
+- usePlayerData hook provides real-time gem counts via onSnapshot listeners
+- useMemo works well for calculating derived stats from loaded data
+- Collapsible sections improve UX when there's a lot of information
+
+---
