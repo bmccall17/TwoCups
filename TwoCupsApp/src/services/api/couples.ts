@@ -266,7 +266,11 @@ export async function joinCouple(params: JoinCoupleParams): Promise<JoinCoupleRe
   }
 
   // Mark invite code as used
-  batch.update(inviteDocRef, { status: 'used' });
+  batch.update(inviteDocRef, { 
+    status: 'used',
+    usedBy: uid,
+    usedAt: now,
+  });
 
   await batch.commit();
 

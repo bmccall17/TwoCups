@@ -3,131 +3,253 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper: Check if user is authenticated
+    // ============================================
+    // HELPER FUNCTIONS
+    // ============================================
+
+    // Check if user is authenticated
     function isAuthenticated() {
       return request.auth != null;
     }
 
-    // Helper: Check if user is part of a couple
-    function isPartnerInCouple(coupleId) {
-      return isAuthenticated() &&
-        request.auth.uid in get(/databases/$(database)/documents/couples/$(coupleId)).data.partnerIds;
+    // Get a couple document
+    function coupleDoc(coupleId) {
+      return get(/databases/$(database)/documents/couples/$(coupleId));
     }
 
-    // Helper: Get the other partner's ID
-    function getPartnerId(coupleData) {
-      return coupleData.partnerIds[0] == request.auth.uid
-        ? coupleData.partnerIds[1]
-        : coupleData.partnerIds[0];
+    // Check if user is a partner in a couple (safely handles missing docs)
+    function isPartnerInCouple(coupleId) {
+      let c = coupleDoc(coupleId);
+      return isAuthenticated() 
+        && c != null 
+        && request.auth.uid in c.data.partnerIds;
+    }
+
+    // Check if couple is active (has 2 partners and status is active)
+    function isActiveCouple(coupleId) {
+      let c = coupleDoc(coupleId);
+      return c != null
+        && c.data.status == 'active'
+        && c.data.partnerIds.size() == 2;
     }
 
     // ============================================
     // USERS COLLECTION
     // ============================================
     match /users/{userId} {
-      // Any authenticated user can read user documents (needed for partner info)
+      // Users can read their own doc OR partner's doc (for displayName)
+      // For trusted user base, any authenticated user can read (displayName/initial only)
+      // User docs contain minimal non-sensitive data: displayName, initial, activeCoupleId, createdAt
       allow read: if isAuthenticated();
 
-      // Users can create their own document
-      // Allow minimal doc (empty displayName/initial) for anonymous auth bootstrap
+      // Users can only create their own document with required fields
       allow create: if isAuthenticated()
         && request.auth.uid == userId
-        && request.resource.data.keys().hasAll(['displayName', 'initial', 'activeCoupleId', 'createdAt'])
+        && request.resource.data.keys().hasOnly(['displayName', 'initial', 'activeCoupleId', 'createdAt'])
         && request.resource.data.displayName is string
-        && request.resource.data.initial is string;
+        && request.resource.data.initial is string
+        && request.resource.data.createdAt is timestamp;
 
-      // Users can update their own document (including activeCoupleId)
-      allow update: if isAuthenticated() && request.auth.uid == userId;
+      // Users can only update their own document, cannot change createdAt
+      allow update: if isAuthenticated() 
+        && request.auth.uid == userId
+        && request.resource.data.keys().hasOnly(['displayName', 'initial', 'activeCoupleId', 'createdAt'])
+        && request.resource.data.createdAt == resource.data.createdAt;
+
+      // No delete allowed
+      allow delete: if false;
     }
 
     // ============================================
     // COUPLES COLLECTION
     // ============================================
     match /couples/{coupleId} {
-      // Anyone authenticated can read couples (needed for join flow validation)
-      // This is acceptable for "known players" trusted user base
-      allow read: if isAuthenticated();
+      // Partners can read their couple
+      // ALSO: Allow reading pending couples for join flow validation
+      // (pending couples only have 1 partner, limited exposure)
+      allow read: if isPartnerInCouple(coupleId)
+        || (isAuthenticated() && resource.data.status == 'pending');
 
       // Anyone authenticated can create a couple (as first partner)
       allow create: if isAuthenticated()
+        && request.resource.data.keys().hasOnly([
+          'partnerIds', 'status', 'inviteCode', 'collectiveCupLevel', 
+          'pointsPerAcknowledgment', 'createdAt', 'lastActivityAt'
+        ])
         && request.resource.data.partnerIds.size() == 1
         && request.resource.data.partnerIds[0] == request.auth.uid
         && request.resource.data.status == 'pending'
-        && request.resource.data.keys().hasAll(['partnerIds', 'status', 'inviteCode', 'collectiveCupLevel', 'pointsPerAcknowledgment', 'createdAt', 'lastActivityAt']);
+        && request.resource.data.collectiveCupLevel == 0
+        && request.resource.data.createdAt is timestamp;
 
-      // Partners can update couple (for joining, activity updates)
-      // Simplified: any authenticated user can update if couple has <2 partners (joining)
-      // or if they're already a partner (normal updates)
-      allow update: if isAuthenticated()
-        && (
+      // Update: either join as 2nd partner OR normal partner updates
+      allow update: if isAuthenticated() && (
+        // JOIN FLOW: Add self as 2nd partner (pending -> active)
+        (
+          resource.data.status == 'pending'
+          && resource.data.partnerIds.size() == 1
+          && request.resource.data.status == 'active'
+          && request.resource.data.partnerIds.size() == 2
+          && resource.data.partnerIds[0] == request.resource.data.partnerIds[0]
+          && request.auth.uid == request.resource.data.partnerIds[1]
+          && request.auth.uid != resource.data.partnerIds[0]
+          // Prevent changing immutable fields during join
+          && request.resource.data.inviteCode == resource.data.inviteCode
+          && request.resource.data.createdAt == resource.data.createdAt
+          && request.resource.data.pointsPerAcknowledgment == resource.data.pointsPerAcknowledgment
+          && request.resource.data.collectiveCupLevel == resource.data.collectiveCupLevel
+        )
+        ||
+        // NORMAL UPDATES: Only existing partners can update
+        (
           request.auth.uid in resource.data.partnerIds
-          || resource.data.partnerIds.size() < 2
-        );
+          && request.resource.data.keys().hasOnly([
+            'partnerIds', 'status', 'inviteCode', 'collectiveCupLevel', 
+            'pointsPerAcknowledgment', 'createdAt', 'lastActivityAt'
+          ])
+          // Cannot change partnerIds, status, inviteCode, createdAt
+          && request.resource.data.partnerIds == resource.data.partnerIds
+          && request.resource.data.status == resource.data.status
+          && request.resource.data.inviteCode == resource.data.inviteCode
+          && request.resource.data.createdAt == resource.data.createdAt
+        )
+      );
+
+      // No delete allowed
+      allow delete: if false;
 
       // ----------------------------------------
       // PLAYERS SUBCOLLECTION
       // ----------------------------------------
       match /players/{playerId} {
-        // Anyone authenticated can read players (needed after join before listener updates)
-        allow read: if isAuthenticated();
+        // Only partners can read player documents
+        allow read: if isPartnerInCouple(coupleId);
 
         // Users can create their own player document (for joining a couple)
         allow create: if isAuthenticated()
           && playerId == request.auth.uid
-          && request.resource.data.keys().hasAll(['cupLevel', 'gemCount', 'joinedAt'])
+          && request.resource.data.keys().hasOnly(['cupLevel', 'gemCount', 'joinedAt', 'achievedMilestones'])
           && request.resource.data.cupLevel == 0
-          && request.resource.data.gemCount == 0;
+          && request.resource.data.gemCount == 0
+          && request.resource.data.joinedAt is timestamp;
 
-        // Partners can update player documents (for gem/cup updates)
-        allow update: if isPartnerInCouple(coupleId);
+        // Only partners can update player documents, restricted fields
+        allow update: if isPartnerInCouple(coupleId)
+          && request.resource.data.keys().hasOnly(['cupLevel', 'gemCount', 'joinedAt', 'achievedMilestones'])
+          && request.resource.data.joinedAt == resource.data.joinedAt;
+
+        // No delete allowed
+        allow delete: if false;
       }
 
       // ----------------------------------------
       // ATTEMPTS SUBCOLLECTION
       // ----------------------------------------
       match /attempts/{attemptId} {
-        // Partners can read all attempts
+        // Only partners can read attempts
         allow read: if isPartnerInCouple(coupleId);
 
-        // Partners can create attempts (for their partner, not themselves)
+        // Partners can create attempts for their partner (not themselves)
         allow create: if isPartnerInCouple(coupleId)
+          && isActiveCouple(coupleId)
+          && request.resource.data.keys().hasAll(['byPlayerId', 'forPlayerId', 'action', 'createdAt', 'acknowledged'])
           && request.resource.data.byPlayerId == request.auth.uid
+          && request.resource.data.forPlayerId in coupleDoc(coupleId).data.partnerIds
           && request.resource.data.forPlayerId != request.auth.uid
           && request.resource.data.acknowledged == false
-          && request.resource.data.keys().hasAll(['byPlayerId', 'forPlayerId', 'action', 'createdAt', 'acknowledged']);
+          && request.resource.data.action is string
+          && request.resource.data.createdAt is timestamp;
 
-        // Only recipient can acknowledge (update acknowledged + acknowledgedAt fields)
+        // Only recipient can acknowledge (update acknowledged + acknowledgedAt)
         allow update: if isPartnerInCouple(coupleId)
           && resource.data.forPlayerId == request.auth.uid
           && resource.data.acknowledged == false
           && request.resource.data.acknowledged == true
-          && request.resource.data.acknowledgedAt is timestamp;
+          && request.resource.data.acknowledgedAt is timestamp
+          // Cannot change other fields
+          && request.resource.data.byPlayerId == resource.data.byPlayerId
+          && request.resource.data.forPlayerId == resource.data.forPlayerId
+          && request.resource.data.action == resource.data.action
+          && request.resource.data.createdAt == resource.data.createdAt;
+
+        // No delete allowed
+        allow delete: if false;
       }
 
       // ----------------------------------------
       // REQUESTS SUBCOLLECTION
       // ----------------------------------------
       match /requests/{requestId} {
-        // Partners can read all requests
+        // Only partners can read requests
         allow read: if isPartnerInCouple(coupleId);
 
-        // Partners can create requests
+        // Partners can create requests for their partner
         allow create: if isPartnerInCouple(coupleId)
+          && isActiveCouple(coupleId)
+          && request.resource.data.keys().hasAll(['byPlayerId', 'forPlayerId', 'action', 'status', 'createdAt'])
           && request.resource.data.byPlayerId == request.auth.uid
-          && request.resource.data.status == 'active';
+          && request.resource.data.forPlayerId in coupleDoc(coupleId).data.partnerIds
+          && request.resource.data.forPlayerId != request.auth.uid
+          && request.resource.data.status == 'active'
+          && request.resource.data.action is string
+          && request.resource.data.createdAt is timestamp;
 
-        // Partners can update requests (cancel own, mark fulfilled)
-        allow update: if isPartnerInCouple(coupleId);
+        // Partners can update requests with restricted transitions
+        allow update: if isPartnerInCouple(coupleId) && (
+          // CANCEL: Only requester can cancel active -> canceled
+          (
+            request.auth.uid == resource.data.byPlayerId
+            && resource.data.status == 'active'
+            && request.resource.data.status == 'canceled'
+            // Preserve immutable fields
+            && request.resource.data.byPlayerId == resource.data.byPlayerId
+            && request.resource.data.forPlayerId == resource.data.forPlayerId
+            && request.resource.data.action == resource.data.action
+            && request.resource.data.createdAt == resource.data.createdAt
+          )
+          ||
+          // FULFILL: Only recipient can mark fulfilled
+          (
+            request.auth.uid == resource.data.forPlayerId
+            && resource.data.status == 'active'
+            && request.resource.data.status == 'fulfilled'
+            && request.resource.data.fulfilledAt is timestamp
+            // Preserve immutable fields
+            && request.resource.data.byPlayerId == resource.data.byPlayerId
+            && request.resource.data.forPlayerId == resource.data.forPlayerId
+            && request.resource.data.action == resource.data.action
+            && request.resource.data.createdAt == resource.data.createdAt
+          )
+        );
+
+        // No delete allowed
+        allow delete: if false;
       }
 
       // ----------------------------------------
       // SUGGESTIONS SUBCOLLECTION
       // ----------------------------------------
       match /suggestions/{suggestionId} {
+        // Only partners can read suggestions
         allow read: if isPartnerInCouple(coupleId);
+
+        // Partners can create their own suggestions
         allow create: if isPartnerInCouple(coupleId)
-          && request.resource.data.byPlayerId == request.auth.uid;
-        allow update, delete: if isPartnerInCouple(coupleId);
+          && isActiveCouple(coupleId)
+          && request.resource.data.keys().hasAll(['byPlayerId', 'action', 'createdAt'])
+          && request.resource.data.byPlayerId == request.auth.uid
+          && request.resource.data.action is string
+          && request.resource.data.createdAt is timestamp;
+
+        // Only owner can update their suggestions
+        allow update: if isPartnerInCouple(coupleId)
+          && resource.data.byPlayerId == request.auth.uid
+          && request.resource.data.byPlayerId == resource.data.byPlayerId
+          && request.resource.data.createdAt == resource.data.createdAt;
+
+        // Only owner can delete their suggestions
+        allow delete: if isPartnerInCouple(coupleId)
+          && resource.data.byPlayerId == request.auth.uid;
       }
     }
 
@@ -135,18 +257,32 @@ service cloud.firestore {
     // INVITE CODES COLLECTION
     // ============================================
     match /inviteCodes/{inviteCode} {
-      // Anyone authenticated can read (to validate codes)
+      // Anyone authenticated can read invite codes (to validate during join)
       allow read: if isAuthenticated();
 
-      // Anyone authenticated can create invite codes
+      // Only authenticated users can create invite codes (their own)
       allow create: if isAuthenticated()
+        && request.resource.data.keys().hasOnly(['coupleId', 'creatorId', 'status', 'createdAt', 'expiresAt'])
         && request.resource.data.creatorId == request.auth.uid
-        && request.resource.data.status == 'active';
+        && request.resource.data.status == 'active'
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.expiresAt is timestamp;
 
-      // Anyone authenticated can update (to mark as used when joining)
+      // Anyone authenticated can mark invite as used (during join)
+      // Must transition from active -> used, set usedBy, usedAt
       allow update: if isAuthenticated()
         && resource.data.status == 'active'
-        && request.resource.data.status == 'used';
+        && request.resource.data.status == 'used'
+        && request.resource.data.usedBy == request.auth.uid
+        && request.resource.data.usedAt is timestamp
+        // Preserve immutable fields
+        && request.resource.data.coupleId == resource.data.coupleId
+        && request.resource.data.creatorId == resource.data.creatorId
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.expiresAt == resource.data.expiresAt;
+
+      // No delete allowed
+      allow delete: if false;
     }
   }
 }
