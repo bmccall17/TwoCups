@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
 import { useAuth } from '../context/AuthContext';
+import { usePlayerData } from '../hooks';
 import { Button } from '../components/common';
 import { colors, spacing, typography, borderRadius } from '../theme';
 
@@ -14,9 +15,11 @@ export function SettingsScreen({
   onNavigateToMakeRequest,
 }: SettingsScreenProps) {
   const { userData, coupleData, signOut } = useAuth();
+  const { partnerName } = usePlayerData();
 
   const displayName = userData?.displayName || 'Guest';
   const inviteCode = coupleData?.inviteCode || '—';
+  const isActive = coupleData?.status === 'active';
 
   return (
     <SafeAreaView style={styles.container}>
@@ -37,11 +40,18 @@ export function SettingsScreen({
         {/* Couple Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Couple</Text>
-          <View style={styles.card}>
-            <Text style={styles.label}>Invite Code</Text>
-            <Text style={styles.value}>{inviteCode}</Text>
-            <Text style={styles.hint}>Share this code with your partner</Text>
-          </View>
+          {isActive ? (
+            <View style={styles.card}>
+              <Text style={styles.label}>Partner</Text>
+              <Text style={styles.value}>{partnerName || 'Partner'}</Text>
+            </View>
+          ) : (
+            <View style={styles.card}>
+              <Text style={styles.label}>Invite Code</Text>
+              <Text style={styles.value}>{inviteCode}</Text>
+              <Text style={styles.hint}>Share this code with your partner</Text>
+            </View>
+          )}
         </View>
 
         {/* Quick Actions */}

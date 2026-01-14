@@ -24,7 +24,14 @@
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "name": "Two Cups",
+      "shortName": "Two Cups",
+      "description": "A gamified relationship app for couples",
+      "backgroundColor": "#0F0F0F",
+      "themeColor": "#8B5CF6",
+      "display": "standalone",
+      "orientation": "portrait"
     },
     "plugins": [
       "expo-web-browser"

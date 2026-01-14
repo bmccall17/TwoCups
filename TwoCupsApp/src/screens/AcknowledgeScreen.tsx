@@ -19,11 +19,7 @@ import { Attempt } from '../types';
 
 type FilterType = 'pending' | 'acknowledged' | 'all';
 
-interface AcknowledgeScreenProps {
-  onGoBack: () => void;
-}
-
-export function AcknowledgeScreen({ onGoBack }: AcknowledgeScreenProps) {
+export function AcknowledgeScreen() {
   const { user, userData, coupleData } = useAuth();
   const [attempts, setAttempts] = useState<Attempt[]>([]);
   const [loading, setLoading] = useState(true);
@@ -142,9 +138,6 @@ export function AcknowledgeScreen({ onGoBack }: AcknowledgeScreenProps) {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={onGoBack} style={styles.backButton}>
-            <Text style={styles.backText}>← Back</Text>
-          </TouchableOpacity>
           <Text style={styles.title}>Acknowledge Attempts</Text>
           <Text style={styles.subtitle}>
             {pendingCount > 0
@@ -271,13 +264,6 @@ const styles = StyleSheet.create({
   },
   header: {
     marginBottom: spacing.lg,
-  },
-  backButton: {
-    marginBottom: spacing.md,
-  },
-  backText: {
-    ...typography.body,
-    color: colors.primary,
   },
   title: {
     ...typography.h1,

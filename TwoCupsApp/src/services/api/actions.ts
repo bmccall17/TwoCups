@@ -44,6 +44,7 @@ export interface AcknowledgeAttemptResult {
   success: boolean;
   gemsAwarded: number;
   cupOverflow: boolean;
+  collectiveCupOverflow: boolean;
 }
 
 /**
@@ -216,11 +217,13 @@ export async function acknowledgeAttempt(params: AcknowledgeAttemptParams): Prom
     cupLevel: finalCupLevel,
   });
 
-  // Update collective cup
+  // Update collective cup (with overflow handling like individual cups)
   const currentCollectiveCup = coupleData?.collectiveCupLevel ?? 0;
-  const newCollectiveCup = Math.min(currentCollectiveCup + ACK_COLLECTIVE_CUP_AWARD, 100);
+  const newCollectiveCupRaw = currentCollectiveCup + ACK_COLLECTIVE_CUP_AWARD;
+  const collectiveCupOverflow = newCollectiveCupRaw >= 100;
+  const finalCollectiveCup = collectiveCupOverflow ? newCollectiveCupRaw - 100 : newCollectiveCupRaw;
   batch.update(coupleDocRef, {
-    collectiveCupLevel: newCollectiveCup,
+    collectiveCupLevel: finalCollectiveCup,
     lastActivityAt: now,
   });
 
@@ -230,6 +233,7 @@ export async function acknowledgeAttempt(params: AcknowledgeAttemptParams): Prom
     success: true,
     gemsAwarded: ACK_GEM_AWARD * 2, // Total for both players
     cupOverflow,
+    collectiveCupOverflow,
   };
 }
 

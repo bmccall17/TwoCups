@@ -7,7 +7,8 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Text, View, StyleSheet } from 'react-native';
 
 import { AuthProvider, useAuth } from './src/context/AuthContext';
-import { LoadingSpinner } from './src/components/common';
+import { LoadingSpinner, InstallAppModal } from './src/components/common';
+import { useInstallPrompt } from './src/hooks';
 import { LoginScreen, SignUpScreen, PairingScreen } from './src/screens/auth';
 import { HomeScreen } from './src/screens/HomeScreen';
 import { LogAttemptScreen } from './src/screens/LogAttemptScreen';
@@ -100,10 +101,10 @@ function MainTabNavigator({ navigation }: { navigation: any }) {
           tabBarIcon: ({ focused }) => <TabIcon icon="🏠" focused={focused} />,
         }}
       >
-        {() => (
+        {({ navigation: tabNavigation }) => (
           <HomeScreen
-            onNavigateToLogAttempt={() => {}}
-            onNavigateToAcknowledge={() => {}}
+            onNavigateToLogAttempt={() => tabNavigation.navigate('LogTab')}
+            onNavigateToAcknowledge={() => tabNavigation.navigate('AcknowledgeTab')}
             onNavigateToMakeRequest={() => navigation.navigate('MakeRequest')}
             onNavigateToManageSuggestions={() => navigation.navigate('ManageSuggestions')}
           />
@@ -127,7 +128,7 @@ function MainTabNavigator({ navigation }: { navigation: any }) {
           tabBarIcon: ({ focused }) => <TabIcon icon="✅" focused={focused} />,
         }}
       >
-        {() => <AcknowledgeScreen onGoBack={() => navigation.navigate('MainTabs')} />}
+        {() => <AcknowledgeScreen />}
       </MainTab.Screen>
 
       <MainTab.Screen
@@ -186,12 +187,24 @@ function AppNavigator() {
 
 function RootNavigator() {
   const { user, loading } = useAuth();
+  const { showPrompt, isIOS, triggerInstall, dismissPrompt } = useInstallPrompt();
 
   if (loading) {
     return <LoadingSpinner message="Loading..." />;
   }
 
-  return user ? <AppNavigator /> : <AuthNavigator />;
+  return (
+    <>
+      {user ? <AppNavigator /> : <AuthNavigator />}
+      {/* Show install prompt only when user is logged in */}
+      <InstallAppModal
+        visible={showPrompt && !!user}
+        isIOS={isIOS}
+        onInstall={triggerInstall}
+        onDismiss={dismissPrompt}
+      />
+    </>
+  );
 }
 
 const styles = StyleSheet.create({
