@@ -48,9 +48,11 @@ function AuthNavigator() {
 }
 
 function AppNavigator() {
-  const { coupleData } = useAuth();
+  const { coupleData, userData } = useAuth();
   // Show HomeScreen only when couple is active (both partners joined)
   const coupleIsActive = coupleData?.status === 'active';
+  
+  console.log('[AppNavigator] Render - userData.activeCoupleId:', userData?.activeCoupleId, 'coupleData?.status:', coupleData?.status, 'coupleIsActive:', coupleIsActive);
 
   return (
     <AppStack.Navigator

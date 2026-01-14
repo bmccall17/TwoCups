@@ -24,7 +24,7 @@
         "Data from sessions on each respective device remains on that device"
       ],
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "blockedReason": null,
       "notes": "Code fix committed. NEEDS BROWSER TESTING. Check Firebase Console: 1) Auth > Anonymous enabled, 2) Auth > Authorized domains includes localhost"

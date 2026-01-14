@@ -44,17 +44,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // Listen for couple document changes when activeCoupleId changes
   useEffect(() => {
+    console.log('[AuthContext] Couple effect triggered, activeCoupleId:', userData?.activeCoupleId);
+    
     if (!userData?.activeCoupleId) {
       setCoupleData(null);
       return;
     }
 
     const coupleDocRef = doc(db, 'couples', userData.activeCoupleId);
+    console.log('[AuthContext] Setting up couple listener for:', userData.activeCoupleId);
+    
     const unsubscribeCouple = onSnapshot(
       coupleDocRef,
       (docSnapshot) => {
+        console.log('[AuthContext] Couple snapshot received, exists:', docSnapshot.exists());
         if (docSnapshot.exists()) {
           const data = docSnapshot.data();
+          console.log('[AuthContext] Couple data:', { status: data?.status, partnerIds: data?.partnerIds });
           setCoupleData({
             partnerIds: data?.partnerIds ?? [],
             status: data?.status ?? 'pending',
@@ -65,11 +71,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
             lastActivityAt: data?.lastActivityAt?.toDate() ?? new Date(),
           });
         } else {
+          console.log('[AuthContext] Couple document does not exist');
           setCoupleData(null);
         }
       },
       (error) => {
-        console.error('Error listening to couple document:', error);
+        console.error('[AuthContext] Error listening to couple document:', error);
       }
     );
 
@@ -112,8 +119,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
         unsubscribeUser = onSnapshot(
           userDocRef,
           (docSnapshot) => {
+            console.log('[AuthContext] User snapshot received, exists:', docSnapshot.exists());
             if (docSnapshot.exists()) {
               const data = docSnapshot.data();
+              console.log('[AuthContext] User data:', { displayName: data?.displayName, activeCoupleId: data?.activeCoupleId });
               setUserData({
                 displayName: data?.displayName ?? '',
                 initial: data?.initial ?? '',
@@ -121,8 +130,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
                 createdAt: data?.createdAt?.toDate() ?? new Date(),
               });
             } else {
-              // Document doesn't exist yet - set empty userData (not null)
-              // This prevents the loading state from getting stuck
+              console.log('[AuthContext] User document does not exist, setting empty userData');
               setUserData({
                 displayName: '',
                 initial: '',
@@ -133,7 +141,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
             setLoading(false);
           },
           (error) => {
-            console.error('Error listening to user document:', error);
+            console.error('[AuthContext] Error listening to user document:', error);
             setLoading(false);
           }
         );

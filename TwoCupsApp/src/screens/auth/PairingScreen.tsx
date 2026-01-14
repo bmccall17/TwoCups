@@ -88,14 +88,16 @@ export function PairingScreen() {
 
     setLoading(true);
     try {
+      console.log('[PairingScreen] Joining couple with code:', inviteCode.toUpperCase());
       const result = await joinCouple({
         inviteCode: inviteCode.toUpperCase(),
         displayName: displayName.trim(),
         initial: initial.toUpperCase(),
       });
-
-      Alert.alert('Success', `You're now paired with ${result.partnerName}!`);
+      console.log('[PairingScreen] Join successful:', result);
+      // Navigation happens automatically via AuthContext when coupleData.status becomes 'active'
     } catch (error: any) {
+      console.error('[PairingScreen] Join failed:', error);
       Alert.alert('Error', error.message || 'Failed to join couple');
     } finally {
       setLoading(false);
