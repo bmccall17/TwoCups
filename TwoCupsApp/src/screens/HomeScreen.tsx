@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { useMilestoneCelebration } from '../context/MilestoneCelebrationContext';
 import { usePlayerData } from '../hooks';
-import { Button, LoadingSpinner, GemCounter } from '../components/common';
+import { Button, LoadingSpinner, GemCounter, GemLeaderboard } from '../components/common';
 import { CupVisualization } from '../components/cups';
 import { colors, spacing, typography, borderRadius } from '../theme';
 
@@ -59,6 +59,18 @@ export function HomeScreen({
           myName={myName}
           partnerName={partnerName}
         />
+
+        {/* Gem Leaderboard Section */}
+        {myPlayer && partnerPlayer && (
+          <GemLeaderboard
+            myGems={myPlayer.gemCount}
+            partnerGems={partnerPlayer.gemCount}
+            myPlayerId={myPlayer.odI}
+            partnerPlayerId={partnerPlayer.odI}
+            myName={myName}
+            partnerName={partnerName}
+          />
+        )}
 
         {/* Cups Section */}
         <View style={styles.cupsSection}>

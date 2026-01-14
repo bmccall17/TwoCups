@@ -494,6 +494,75 @@ export async function deleteRequest(params: {
   return { success: true };
 }
 
+export interface WeeklyGemStats {
+  myWeeklyGems: number;
+  partnerWeeklyGems: number;
+}
+
+/**
+ * Get weekly gem earnings for both players in a couple
+ */
+export async function getWeeklyGemStats(
+  coupleId: string,
+  myPlayerId: string,
+  partnerPlayerId: string
+): Promise<WeeklyGemStats> {
+  const startOfWeek = new Date();
+  const dayOfWeek = startOfWeek.getDay();
+  const daysToSubtract = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+  startOfWeek.setDate(startOfWeek.getDate() - daysToSubtract);
+  startOfWeek.setHours(0, 0, 0, 0);
+  const startOfWeekTimestamp = Timestamp.fromDate(startOfWeek);
+
+  const attemptsRef = collection(db, 'couples', coupleId, 'attempts');
+
+  const calculateGemsForPlayer = async (playerId: string): Promise<number> => {
+    let totalGems = 0;
+
+    const loggedAttemptsQuery = query(
+      attemptsRef,
+      where('byPlayerId', '==', playerId),
+      where('createdAt', '>=', startOfWeekTimestamp)
+    );
+    const loggedSnapshot = await getDocs(loggedAttemptsQuery);
+    loggedSnapshot.docs.forEach((doc) => {
+      const data = doc.data();
+      totalGems += BASE_GEM_AWARD;
+      if (data.fulfilledRequestId) {
+        totalGems += REQUEST_FULFILLMENT_BONUS;
+      }
+    });
+
+    const ackedForPlayerQuery = query(
+      attemptsRef,
+      where('forPlayerId', '==', playerId),
+      where('acknowledgedAt', '>=', startOfWeekTimestamp)
+    );
+    const ackedForSnapshot = await getDocs(ackedForPlayerQuery);
+    totalGems += ackedForSnapshot.size * ACK_GEM_AWARD;
+
+    const ackedByPlayerQuery = query(
+      attemptsRef,
+      where('byPlayerId', '==', playerId),
+      where('acknowledgedAt', '>=', startOfWeekTimestamp)
+    );
+    const ackedBySnapshot = await getDocs(ackedByPlayerQuery);
+    totalGems += ackedBySnapshot.size * ACK_GEM_AWARD;
+
+    return totalGems;
+  };
+
+  const [myWeeklyGems, partnerWeeklyGems] = await Promise.all([
+    calculateGemsForPlayer(myPlayerId),
+    calculateGemsForPlayer(partnerPlayerId),
+  ]);
+
+  return {
+    myWeeklyGems,
+    partnerWeeklyGems,
+  };
+}
+
 /**
  * Delete a suggestion
  */
