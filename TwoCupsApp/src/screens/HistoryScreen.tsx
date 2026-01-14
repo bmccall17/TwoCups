@@ -31,6 +31,7 @@ import { LoadingSpinner, EmptyState } from '../components/common';
 import { colors, spacing, typography, borderRadius } from '../theme';
 import { Attempt } from '../types';
 import { usePlayerData } from '../hooks/usePlayerData';
+import { Request } from '../types';
 
 const PAGE_SIZE = 20;
 
@@ -107,6 +108,8 @@ export function HistoryScreen() {
   const [dateRangeFilter, setDateRangeFilter] = useState<DateRangeFilterType>('last7days');
   const [showAnalytics, setShowAnalytics] = useState(true);
   const [showCategoryBreakdown, setShowCategoryBreakdown] = useState(false);
+  const [showRequestStats, setShowRequestStats] = useState(false);
+  const [requests, setRequests] = useState<Request[]>([]);
 
   const coupleId = userData?.activeCoupleId;
   const myUid = user?.uid;
@@ -128,6 +131,39 @@ export function HistoryScreen() {
 
     fetchNames();
   }, [coupleData?.partnerIds]);
+
+  // Fetch all requests for analytics
+  useEffect(() => {
+    if (!coupleId) return;
+
+    const fetchRequests = async () => {
+      try {
+        const requestsRef = collection(db, 'couples', coupleId, 'requests');
+        const dateStart = getDateRangeStart(dateRangeFilter);
+        
+        const constraints: QueryConstraint[] = [orderBy('createdAt', 'desc')];
+        if (dateStart) {
+          constraints.unshift(where('createdAt', '>=', Timestamp.fromDate(dateStart)));
+        }
+        
+        const q = query(requestsRef, ...constraints);
+        const snapshot = await getDocs(q);
+        
+        const requestsList: Request[] = snapshot.docs.map(docSnap => ({
+          id: docSnap.id,
+          ...docSnap.data(),
+          createdAt: docSnap.data().createdAt?.toDate() ?? new Date(),
+          fulfilledAt: docSnap.data().fulfilledAt?.toDate(),
+        })) as Request[];
+        
+        setRequests(requestsList);
+      } catch (error) {
+        console.error('Error fetching requests:', error);
+      }
+    };
+
+    fetchRequests();
+  }, [coupleId, dateRangeFilter]);
 
   const fetchAttempts = useCallback(async (isRefresh = false) => {
     if (!coupleId) return;
@@ -403,6 +439,57 @@ export function HistoryScreen() {
       forMeTotal: forMeAttempts.length,
     };
   }, [attempts, myUid]);
+
+  // Request stats - calculated from loaded requests
+  const requestStats = useMemo(() => {
+    const myRequests = requests.filter(r => r.byPlayerId === myUid);
+    const partnerRequests = requests.filter(r => r.byPlayerId === partnerId);
+    
+    const totalRequests = requests.length;
+    const fulfilledRequests = requests.filter(r => r.status === 'fulfilled');
+    const fulfilledCount = fulfilledRequests.length;
+    const fulfillmentRate = totalRequests > 0 ? Math.round((fulfilledCount / totalRequests) * 100) : 0;
+    
+    // Calculate average time to fulfill (in hours)
+    let avgFulfillmentTime: number | null = null;
+    const fulfilledWithTime = fulfilledRequests.filter(r => r.fulfilledAt && r.createdAt);
+    if (fulfilledWithTime.length > 0) {
+      const totalMs = fulfilledWithTime.reduce((sum, r) => {
+        const created = r.createdAt instanceof Date ? r.createdAt.getTime() : 0;
+        const fulfilled = r.fulfilledAt instanceof Date ? r.fulfilledAt.getTime() : 0;
+        return sum + (fulfilled - created);
+      }, 0);
+      avgFulfillmentTime = Math.round((totalMs / fulfilledWithTime.length) / (1000 * 60 * 60)); // hours
+    }
+    
+    // Most requested categories
+    type CategoryStat = { category: string; count: number; percentage: number };
+    const categoryCounts: Record<string, number> = {};
+    requests.forEach(r => {
+      if (r.category) {
+        categoryCounts[r.category] = (categoryCounts[r.category] || 0) + 1;
+      }
+    });
+    const mostRequestedCategories: CategoryStat[] = Object.entries(categoryCounts)
+      .map(([category, count]) => ({
+        category,
+        count,
+        percentage: totalRequests > 0 ? Math.round((count / totalRequests) * 100) : 0,
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+
+    return {
+      totalRequests,
+      myRequestsCount: myRequests.length,
+      partnerRequestsCount: partnerRequests.length,
+      fulfilledCount,
+      activeCount: totalRequests - fulfilledCount - requests.filter(r => r.status === 'canceled').length,
+      fulfillmentRate,
+      avgFulfillmentTime,
+      mostRequestedCategories,
+    };
+  }, [requests, myUid, partnerId]);
 
   const playerFilterOptions: { key: PlayerFilterType; label: string }[] = [
     { key: 'all', label: 'All' },
@@ -781,6 +868,98 @@ export function HistoryScreen() {
               ))
             )}
           </View>
+        </View>
+      )}
+
+      {/* Request Stats Section */}
+      <TouchableOpacity
+        style={styles.analyticsHeader}
+        onPress={() => setShowRequestStats(!showRequestStats)}
+      >
+        <Text style={styles.analyticsTitle}>📋 Request Stats</Text>
+        <Text style={styles.analyticsToggle}>{showRequestStats ? '▼' : '▶'}</Text>
+      </TouchableOpacity>
+
+      {showRequestStats && (
+        <View style={styles.analyticsContainer}>
+          {/* Request counts by player */}
+          <View style={styles.analyticsRow}>
+            <View style={styles.analyticsStat}>
+              <Text style={styles.analyticsValue}>{requestStats.myRequestsCount}</Text>
+              <Text style={styles.analyticsLabel}>My Requests</Text>
+            </View>
+            <View style={styles.analyticsStat}>
+              <Text style={styles.analyticsValue}>{requestStats.partnerRequestsCount}</Text>
+              <Text style={styles.analyticsLabel}>{partnerName}'s</Text>
+            </View>
+            <View style={styles.analyticsStat}>
+              <Text style={styles.analyticsValue}>{requestStats.totalRequests}</Text>
+              <Text style={styles.analyticsLabel}>Total</Text>
+            </View>
+          </View>
+
+          {/* Fulfillment stats */}
+          <View style={styles.analyticsRow}>
+            <View style={styles.analyticsStat}>
+              <Text style={[styles.analyticsValue, { color: colors.success }]}>
+                {requestStats.fulfilledCount}
+              </Text>
+              <Text style={styles.analyticsLabel}>Fulfilled</Text>
+            </View>
+            <View style={styles.analyticsStat}>
+              <Text style={[styles.analyticsValue, { color: colors.warning }]}>
+                {requestStats.activeCount}
+              </Text>
+              <Text style={styles.analyticsLabel}>Active</Text>
+            </View>
+            <View style={styles.analyticsStat}>
+              <Text style={[styles.analyticsValue, { color: colors.primary }]}>
+                {requestStats.fulfillmentRate}%
+              </Text>
+              <Text style={styles.analyticsLabel}>Fulfilled</Text>
+            </View>
+          </View>
+
+          {/* Average fulfillment time */}
+          {requestStats.avgFulfillmentTime !== null && (
+            <View style={styles.analyticsRow}>
+              <View style={styles.analyticsStat}>
+                <Text style={[styles.analyticsValue, { color: colors.textPrimary }]}>
+                  {requestStats.avgFulfillmentTime < 24
+                    ? `${requestStats.avgFulfillmentTime}h`
+                    : `${Math.round(requestStats.avgFulfillmentTime / 24)}d`}
+                </Text>
+                <Text style={styles.analyticsLabel}>Avg Time to Fulfill</Text>
+              </View>
+            </View>
+          )}
+
+          {/* Most requested categories */}
+          {requestStats.mostRequestedCategories.length > 0 && (
+            <View style={styles.breakdownSection}>
+              <Text style={styles.breakdownSectionTitle}>Most Requested Categories</Text>
+              {requestStats.mostRequestedCategories.map((stat) => (
+                <View key={`request-${stat.category}`} style={styles.breakdownRow}>
+                  <View style={styles.breakdownLabelContainer}>
+                    <Text style={styles.breakdownLabel} numberOfLines={1}>
+                      {stat.category}
+                    </Text>
+                    <Text style={styles.breakdownCount}>
+                      {stat.count} ({stat.percentage}%)
+                    </Text>
+                  </View>
+                  <View style={styles.breakdownBarContainer}>
+                    <View
+                      style={[
+                        styles.breakdownBar,
+                        { width: `${stat.percentage}%`, backgroundColor: colors.primaryLight },
+                      ]}
+                    />
+                  </View>
+                </View>
+              ))}
+            </View>
+          )}
         </View>
       )}
 
