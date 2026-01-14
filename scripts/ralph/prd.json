@@ -118,7 +118,7 @@
         "Separate breakdown for 'attempts I logged' vs 'attempts for me'"
       ],
       "priority": 7,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "blockedReason": null
     },

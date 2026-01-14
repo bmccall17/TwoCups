@@ -106,6 +106,7 @@ export function HistoryScreen() {
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilterType>('all');
   const [dateRangeFilter, setDateRangeFilter] = useState<DateRangeFilterType>('last7days');
   const [showAnalytics, setShowAnalytics] = useState(true);
+  const [showCategoryBreakdown, setShowCategoryBreakdown] = useState(false);
 
   const coupleId = userData?.activeCoupleId;
   const myUid = user?.uid;
@@ -369,6 +370,39 @@ export function HistoryScreen() {
       acknowledgeRate,
     };
   }, [attempts, myUid, partnerId]);
+
+  // Category breakdown stats - separate for "by me" and "for me"
+  const categoryBreakdownStats = useMemo(() => {
+    type CategoryStat = { category: string; count: number; percentage: number };
+
+    const byMeAttempts = attempts.filter(a => a.byPlayerId === myUid);
+    const forMeAttempts = attempts.filter(a => a.forPlayerId === myUid);
+
+    const calculateBreakdown = (attemptList: Attempt[]): CategoryStat[] => {
+      const counts: Record<string, number> = {};
+      attemptList.forEach(a => {
+        if (a.category) {
+          counts[a.category] = (counts[a.category] || 0) + 1;
+        }
+      });
+
+      const total = attemptList.length;
+      return Object.entries(counts)
+        .map(([category, count]) => ({
+          category,
+          count,
+          percentage: total > 0 ? Math.round((count / total) * 100) : 0,
+        }))
+        .sort((a, b) => b.count - a.count);
+    };
+
+    return {
+      byMe: calculateBreakdown(byMeAttempts),
+      byMeTotal: byMeAttempts.length,
+      forMe: calculateBreakdown(forMeAttempts),
+      forMeTotal: forMeAttempts.length,
+    };
+  }, [attempts, myUid]);
 
   const playerFilterOptions: { key: PlayerFilterType; label: string }[] = [
     { key: 'all', label: 'All' },
@@ -675,6 +709,81 @@ export function HistoryScreen() {
         </View>
       )}
 
+      {/* Category Breakdown Section */}
+      <TouchableOpacity
+        style={styles.analyticsHeader}
+        onPress={() => setShowCategoryBreakdown(!showCategoryBreakdown)}
+      >
+        <Text style={styles.analyticsTitle}>📊 Category Breakdown</Text>
+        <Text style={styles.analyticsToggle}>{showCategoryBreakdown ? '▼' : '▶'}</Text>
+      </TouchableOpacity>
+
+      {showCategoryBreakdown && (
+        <View style={styles.categoryBreakdownContainer}>
+          {/* Attempts I Logged */}
+          <View style={styles.breakdownSection}>
+            <Text style={styles.breakdownSectionTitle}>
+              Attempts I Logged ({categoryBreakdownStats.byMeTotal})
+            </Text>
+            {categoryBreakdownStats.byMe.length === 0 ? (
+              <Text style={styles.breakdownEmpty}>No attempts logged yet</Text>
+            ) : (
+              categoryBreakdownStats.byMe.map((stat) => (
+                <View key={`byMe-${stat.category}`} style={styles.breakdownRow}>
+                  <View style={styles.breakdownLabelContainer}>
+                    <Text style={styles.breakdownLabel} numberOfLines={1}>
+                      {stat.category}
+                    </Text>
+                    <Text style={styles.breakdownCount}>
+                      {stat.count} ({stat.percentage}%)
+                    </Text>
+                  </View>
+                  <View style={styles.breakdownBarContainer}>
+                    <View
+                      style={[
+                        styles.breakdownBar,
+                        { width: `${stat.percentage}%`, backgroundColor: colors.primary },
+                      ]}
+                    />
+                  </View>
+                </View>
+              ))
+            )}
+          </View>
+
+          {/* Attempts For Me */}
+          <View style={styles.breakdownSection}>
+            <Text style={styles.breakdownSectionTitle}>
+              Attempts For Me ({categoryBreakdownStats.forMeTotal})
+            </Text>
+            {categoryBreakdownStats.forMe.length === 0 ? (
+              <Text style={styles.breakdownEmpty}>No attempts for you yet</Text>
+            ) : (
+              categoryBreakdownStats.forMe.map((stat) => (
+                <View key={`forMe-${stat.category}`} style={styles.breakdownRow}>
+                  <View style={styles.breakdownLabelContainer}>
+                    <Text style={styles.breakdownLabel} numberOfLines={1}>
+                      {stat.category}
+                    </Text>
+                    <Text style={styles.breakdownCount}>
+                      {stat.count} ({stat.percentage}%)
+                    </Text>
+                  </View>
+                  <View style={styles.breakdownBarContainer}>
+                    <View
+                      style={[
+                        styles.breakdownBar,
+                        { width: `${stat.percentage}%`, backgroundColor: colors.success },
+                      ]}
+                    />
+                  </View>
+                </View>
+              ))
+            )}
+          </View>
+        </View>
+      )}
+
       {filteredAttempts.length === 0 ? (
         <EmptyState
           icon="📜"
@@ -939,5 +1048,55 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.textSecondary,
     marginTop: spacing.xs,
+  },
+  categoryBreakdownContainer: {
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+  },
+  breakdownSection: {
+    marginBottom: spacing.md,
+  },
+  breakdownSectionTitle: {
+    ...typography.bodySmall,
+    color: colors.textPrimary,
+    fontWeight: '600',
+    marginBottom: spacing.sm,
+  },
+  breakdownEmpty: {
+    ...typography.caption,
+    color: colors.textMuted,
+    fontStyle: 'italic',
+  },
+  breakdownRow: {
+    marginBottom: spacing.sm,
+  },
+  breakdownLabelContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.xs,
+  },
+  breakdownLabel: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    flex: 1,
+  },
+  breakdownCount: {
+    ...typography.caption,
+    color: colors.textMuted,
+    marginLeft: spacing.sm,
+  },
+  breakdownBarContainer: {
+    height: 8,
+    backgroundColor: colors.card,
+    borderRadius: borderRadius.sm,
+    overflow: 'hidden',
+  },
+  breakdownBar: {
+    height: '100%',
+    borderRadius: borderRadius.sm,
   },
 });
