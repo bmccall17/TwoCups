@@ -36,7 +36,7 @@
         "Clear error message when limit reached"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "blockedReason": null
     },
@@ -54,7 +54,7 @@
         "Errors show clear error toasts"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "blockedReason": null
     },
@@ -71,7 +71,7 @@
         "Empty states have friendly copy and hint text"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "blockedReason": null
     },
@@ -87,7 +87,7 @@
         "User can delete active requests"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "blockedReason": null
     },
@@ -104,7 +104,7 @@
         "Animation auto-dismisses after 3-4 seconds"
       ],
       "priority": 6,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "blockedReason": null
     },
@@ -120,7 +120,7 @@
         "Show suggestion count per category"
       ],
       "priority": 7,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "blockedReason": null
     }
