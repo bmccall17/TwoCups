@@ -6,12 +6,13 @@ import {
   SafeAreaView,
   ScrollView,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
 import { db } from '../services/firebase/config';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
-import { createRequest, getActiveRequestsInfo } from '../services/api';
+import { createRequest, deleteRequest, getActiveRequestsInfo } from '../services/api';
 import type { ActiveRequestsInfo } from '../services/api';
 import { Button, TextInput, LoadingSpinner, EmptyState } from '../components/common';
 import { colors, spacing, typography, borderRadius } from '../theme';
@@ -29,6 +30,8 @@ const CATEGORIES = [
   'Surprises & Thoughtfulness',
 ];
 
+type FilterType = 'all' | 'active' | 'fulfilled';
+
 interface MakeRequestScreenProps {
   onGoBack: () => void;
 }
@@ -42,7 +45,9 @@ export function MakeRequestScreen({ onGoBack }: MakeRequestScreenProps) {
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [requestsInfo, setRequestsInfo] = useState<ActiveRequestsInfo | null>(null);
-  const [activeRequests, setActiveRequests] = useState<Request[]>([]);
+  const [requests, setRequests] = useState<Request[]>([]);
+  const [filter, setFilter] = useState<FilterType>('all');
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   const coupleId = userData?.activeCoupleId;
   const myUid = user?.uid;
@@ -70,16 +75,17 @@ export function MakeRequestScreen({ onGoBack }: MakeRequestScreenProps) {
     const q = query(
       requestsRef,
       where('byPlayerId', '==', myUid),
-      where('status', '==', 'active')
+      orderBy('createdAt', 'desc')
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const requests: Request[] = snapshot.docs.map(doc => ({
+      const requestsList: Request[] = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
         createdAt: doc.data().createdAt?.toDate() ?? new Date(),
+        fulfilledAt: doc.data().fulfilledAt?.toDate(),
       })) as Request[];
-      setActiveRequests(requests);
+      setRequests(requestsList);
       setInitialLoading(false);
     });
 
@@ -111,12 +117,70 @@ export function MakeRequestScreen({ onGoBack }: MakeRequestScreenProps) {
 
       await loadRequestsInfo();
       showSuccess(`Request sent! (${requestsInfo ? requestsInfo.count + 1 : 1}/${requestsInfo?.limit || 5} active)`);
-      setTimeout(() => onGoBack(), 1500);
+      setAction('');
+      setDescription('');
+      setCategory(null);
     } catch (error: any) {
       showError(error.message || 'Failed to create request');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleDeleteRequest = (request: Request) => {
+    Alert.alert(
+      'Delete Request',
+      `Are you sure you want to delete "${request.action}"?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            if (!coupleId) return;
+            setDeleting(request.id);
+            try {
+              await deleteRequest({ coupleId, requestId: request.id });
+              await loadRequestsInfo();
+              showSuccess('Request deleted');
+            } catch (error: any) {
+              showError(error.message || 'Failed to delete request');
+            } finally {
+              setDeleting(null);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const filteredRequests = requests.filter(request => {
+    if (filter === 'active') return request.status === 'active';
+    if (filter === 'fulfilled') return request.status === 'fulfilled';
+    return true;
+  });
+
+  const activeCount = requests.filter(r => r.status === 'active').length;
+  const fulfilledCount = requests.filter(r => r.status === 'fulfilled').length;
+
+  const formatDate = (date: Date) => {
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+    if (days === 0) {
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      if (hours === 0) {
+        const minutes = Math.floor(diff / (1000 * 60));
+        return minutes <= 1 ? 'Just now' : `${minutes}m ago`;
+      }
+      return `${hours}h ago`;
+    } else if (days === 1) {
+      return 'Yesterday';
+    } else if (days < 7) {
+      return `${days}d ago`;
+    }
+    return date.toLocaleDateString();
   };
 
   if (initialLoading) {
@@ -205,22 +269,108 @@ export function MakeRequestScreen({ onGoBack }: MakeRequestScreenProps) {
           style={styles.submitButton}
         />
 
-        {/* Active Requests List */}
-        <View style={styles.activeRequestsSection}>
-          <Text style={styles.sectionTitle}>Your Active Requests</Text>
-          {activeRequests.length > 0 ? (
-            activeRequests.map((request) => (
-              <View key={request.id} style={styles.requestCard}>
+        {/* Requests Section */}
+        <View style={styles.requestsSection}>
+          <Text style={styles.sectionTitle}>Your Requests</Text>
+
+          {/* Filter Tabs */}
+          <View style={styles.filterContainer}>
+            <TouchableOpacity
+              style={[styles.filterTab, filter === 'all' && styles.filterTabActive]}
+              onPress={() => setFilter('all')}
+            >
+              <Text style={[styles.filterText, filter === 'all' && styles.filterTextActive]}>
+                All ({requests.length})
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.filterTab, filter === 'active' && styles.filterTabActive]}
+              onPress={() => setFilter('active')}
+            >
+              <Text style={[styles.filterText, filter === 'active' && styles.filterTextActive]}>
+                Active ({activeCount})
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.filterTab, filter === 'fulfilled' && styles.filterTabActive]}
+              onPress={() => setFilter('fulfilled')}
+            >
+              <Text style={[styles.filterText, filter === 'fulfilled' && styles.filterTextActive]}>
+                Fulfilled ({fulfilledCount})
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Requests List */}
+          {filteredRequests.length > 0 ? (
+            filteredRequests.map((request) => (
+              <View
+                key={request.id}
+                style={[
+                  styles.requestCard,
+                  request.status === 'fulfilled' && styles.requestCardFulfilled,
+                ]}
+              >
+                <View style={styles.requestHeader}>
+                  <View style={[
+                    styles.statusBadge,
+                    request.status === 'fulfilled' ? styles.statusBadgeFulfilled : styles.statusBadgeActive,
+                  ]}>
+                    <Text style={[
+                      styles.statusText,
+                      request.status === 'fulfilled' ? styles.statusTextFulfilled : styles.statusTextActive,
+                    ]}>
+                      {request.status === 'fulfilled' ? '✓ Fulfilled' : '● Active'}
+                    </Text>
+                  </View>
+                  <Text style={styles.requestTime}>
+                    {formatDate(request.createdAt)}
+                  </Text>
+                </View>
+
                 <Text style={styles.requestAction}>{request.action}</Text>
+
+                {request.description && (
+                  <Text style={styles.requestDescription}>{request.description}</Text>
+                )}
+
                 {request.category && (
-                  <Text style={styles.requestCategory}>{request.category}</Text>
+                  <View style={styles.categoryBadge}>
+                    <Text style={styles.categoryBadgeText}>{request.category}</Text>
+                  </View>
+                )}
+
+                {request.status === 'fulfilled' && request.fulfilledAt && (
+                  <View style={styles.fulfilledInfo}>
+                    <Text style={styles.fulfilledInfoText}>
+                      Fulfilled {formatDate(request.fulfilledAt)}
+                    </Text>
+                  </View>
+                )}
+
+                {request.status === 'active' && (
+                  <TouchableOpacity
+                    style={styles.deleteButton}
+                    onPress={() => handleDeleteRequest(request)}
+                    disabled={deleting === request.id}
+                  >
+                    <Text style={styles.deleteButtonText}>
+                      {deleting === request.id ? 'Deleting...' : 'Delete'}
+                    </Text>
+                  </TouchableOpacity>
                 )}
               </View>
             ))
           ) : (
             <EmptyState
               icon="📝"
-              title="No active requests"
+              title={
+                filter === 'active'
+                  ? 'No active requests'
+                  : filter === 'fulfilled'
+                  ? 'No fulfilled requests yet'
+                  : 'No requests yet'
+              }
               subtitle="Create one above!"
             />
           )}
@@ -324,7 +474,7 @@ const styles = StyleSheet.create({
   submitButton: {
     marginTop: 'auto',
   },
-  activeRequestsSection: {
+  requestsSection: {
     marginTop: spacing.xl,
   },
   sectionTitle: {
@@ -332,22 +482,116 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     marginBottom: spacing.md,
   },
+  filterContainer: {
+    flexDirection: 'row',
+    marginBottom: spacing.lg,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.md,
+    padding: spacing.xs,
+  },
+  filterTab: {
+    flex: 1,
+    paddingVertical: spacing.sm,
+    alignItems: 'center',
+    borderRadius: borderRadius.sm,
+  },
+  filterTabActive: {
+    backgroundColor: colors.primary,
+  },
+  filterText: {
+    ...typography.bodySmall,
+    color: colors.textSecondary,
+  },
+  filterTextActive: {
+    color: colors.textOnPrimary,
+    fontWeight: '600',
+  },
   requestCard: {
     backgroundColor: colors.surface,
     borderRadius: borderRadius.md,
     padding: spacing.md,
-    marginBottom: spacing.sm,
-    borderLeftWidth: 3,
+    marginBottom: spacing.md,
+    borderLeftWidth: 4,
     borderLeftColor: colors.primary,
+  },
+  requestCardFulfilled: {
+    borderLeftColor: colors.success,
+    opacity: 0.9,
+  },
+  requestHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  statusBadge: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.full,
+  },
+  statusBadgeActive: {
+    backgroundColor: colors.primary + '20',
+  },
+  statusBadgeFulfilled: {
+    backgroundColor: colors.success + '20',
+  },
+  statusText: {
+    ...typography.caption,
+    fontWeight: '600',
+  },
+  statusTextActive: {
+    color: colors.primary,
+  },
+  statusTextFulfilled: {
+    color: colors.success,
+  },
+  requestTime: {
+    ...typography.caption,
+    color: colors.textMuted,
   },
   requestAction: {
     ...typography.body,
     color: colors.textPrimary,
     fontWeight: '600',
+    marginBottom: spacing.xs,
   },
-  requestCategory: {
+  requestDescription: {
+    ...typography.bodySmall,
+    color: colors.textSecondary,
+    marginBottom: spacing.sm,
+  },
+  categoryBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.card,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.full,
+    marginBottom: spacing.sm,
+  },
+  categoryBadgeText: {
     ...typography.caption,
     color: colors.textSecondary,
-    marginTop: spacing.xs,
+  },
+  fulfilledInfo: {
+    marginTop: spacing.sm,
+    paddingTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  fulfilledInfoText: {
+    ...typography.caption,
+    color: colors.success,
+  },
+  deleteButton: {
+    marginTop: spacing.sm,
+    paddingVertical: spacing.sm,
+    alignItems: 'center',
+    backgroundColor: colors.error + '15',
+    borderRadius: borderRadius.sm,
+  },
+  deleteButtonText: {
+    ...typography.bodySmall,
+    color: colors.error,
+    fontWeight: '600',
   },
 });

@@ -391,6 +391,45 @@ export async function createSuggestion(params: {
 }
 
 /**
+ * Delete an active request
+ */
+export async function deleteRequest(params: {
+  coupleId: string;
+  requestId: string;
+}): Promise<{ success: boolean }> {
+  const uid = getCurrentUserId();
+  if (!uid) {
+    throw new Error('Must be logged in');
+  }
+
+  const { coupleId, requestId } = params;
+
+  if (!requestId) {
+    throw new Error('Request ID is required');
+  }
+
+  const requestDocRef = doc(db, 'couples', coupleId, 'requests', requestId);
+  const requestDoc = await getDoc(requestDocRef);
+
+  if (!requestDoc.exists()) {
+    throw new Error('Request not found');
+  }
+
+  const requestData = requestDoc.data();
+  if (requestData.byPlayerId !== uid) {
+    throw new Error('Only the creator can delete this request');
+  }
+
+  if (requestData.status !== 'active') {
+    throw new Error('Only active requests can be deleted');
+  }
+
+  await deleteDoc(requestDocRef);
+
+  return { success: true };
+}
+
+/**
  * Delete a suggestion
  */
 export async function deleteSuggestion(params: {
