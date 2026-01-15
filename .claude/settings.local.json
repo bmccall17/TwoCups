@@ -19,7 +19,11 @@
       "Bash(wc:*)",
       "Bash(ls:*)",
       "Bash(git stash:*)",
-      "Bash(git commit -m \"$\\(cat <<''EOF''\nchore: cleanup - remove GemLeaderboard and PRD files\n\n- Remove unused GemLeaderboard component from HomeScreen\n- Delete sprint planning PRD files\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nchore: cleanup - remove GemLeaderboard and PRD files\n\n- Remove unused GemLeaderboard component from HomeScreen\n- Delete sprint planning PRD files\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git push:*)",
+      "Bash(git branch:*)",
+      "Bash(git remote:*)",
+      "Bash(git fetch:*)"
     ]
   }
 }
