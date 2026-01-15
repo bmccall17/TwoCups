@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
+import * as SplashScreen from 'expo-splash-screen';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -7,6 +8,9 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Text, View, StyleSheet } from 'react-native';
 
 import { AuthProvider, useAuth } from './src/context/AuthContext';
+
+// Keep the splash screen visible while we fetch resources
+SplashScreen.preventAutoHideAsync();
 import { ToastProvider } from './src/context/ToastContext';
 import { GemAnimationProvider } from './src/context/GemAnimationContext';
 import { MilestoneCelebrationProvider } from './src/context/MilestoneCelebrationContext';
@@ -215,13 +219,28 @@ function AppNavigator() {
 function RootNavigator() {
   const { user, loading } = useAuth();
   const { showPrompt, isIOS, triggerInstall, dismissPrompt } = useInstallPrompt();
+  const [appIsReady, setAppIsReady] = useState(false);
 
-  if (loading) {
-    return <LoadingSpinner message="Loading..." />;
+  useEffect(() => {
+    if (!loading) {
+      // App is ready when auth loading is complete
+      setAppIsReady(true);
+    }
+  }, [loading]);
+
+  const onLayoutRootView = useCallback(async () => {
+    if (appIsReady) {
+      // Hide splash screen once the app is ready
+      await SplashScreen.hideAsync();
+    }
+  }, [appIsReady]);
+
+  if (!appIsReady) {
+    return null;
   }
 
   return (
-    <>
+    <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
       {user ? <AppNavigator /> : <AuthNavigator />}
       {/* Show install prompt only when user is logged in */}
       <InstallAppModal
@@ -230,7 +249,7 @@ function RootNavigator() {
         onInstall={triggerInstall}
         onDismiss={dismissPrompt}
       />
-    </>
+    </View>
   );
 }
 
