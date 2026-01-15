@@ -45,7 +45,7 @@ no acknowledgment → no transformation.
   Acknowledgment cannot be automated or inferred.
 - **No punishment mechanics**  
   Coal represents time, not failure.
-- **No scorekeeping**  
+- **Collective scorekeeping**  
   The goal is attunement, not optimization.
 - **Slow by design**  
   TwoCups values rhythm, not streaks.
