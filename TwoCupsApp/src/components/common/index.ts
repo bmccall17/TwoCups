@@ -11,3 +11,4 @@ export { GemCounter } from './GemCounter';
 export { GemLeaderboard } from './GemLeaderboard';
 export { OfflineBanner } from './OfflineBanner';
 export { ErrorBoundary } from './ErrorBoundary';
+export { UpdatePrompt } from './UpdatePrompt';

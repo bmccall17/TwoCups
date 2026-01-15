@@ -15,7 +15,7 @@ import { ToastProvider } from './src/context/ToastContext';
 import { GemAnimationProvider } from './src/context/GemAnimationContext';
 import { MilestoneCelebrationProvider } from './src/context/MilestoneCelebrationContext';
 import { NetworkProvider } from './src/context/NetworkContext';
-import { LoadingSpinner, InstallAppModal, ToastContainer, OfflineBanner, ErrorBoundary } from './src/components/common';
+import { LoadingSpinner, InstallAppModal, ToastContainer, OfflineBanner, ErrorBoundary, UpdatePrompt } from './src/components/common';
 import { useInstallPrompt } from './src/hooks';
 import { LoginScreen, SignUpScreen, PairingScreen } from './src/screens/auth';
 import { HomeScreen } from './src/screens/HomeScreen';
@@ -278,6 +278,7 @@ export default function App() {
               <NetworkProvider>
                 <MilestoneCelebrationProvider>
                   <NavigationContainer>
+                    <UpdatePrompt />
                     <RootNavigator />
                     <OfflineBanner />
                   </NavigationContainer>

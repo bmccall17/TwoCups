@@ -1,0 +1,29 @@
+{
+  "name": "Two Cups",
+  "short_name": "Two Cups",
+  "description": "A collaborative relationship app for couples",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0F0F0F",
+  "theme_color": "#8B5CF6",
+  "icons": [
+    {
+      "src": "/assets/favicon.png",
+      "sizes": "48x48",
+      "type": "image/png"
+    },
+    {
+      "src": "/assets/icon.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/adaptive-icon.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

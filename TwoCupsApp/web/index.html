@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="%LANG_ISO_CODE%">
+  <head>
+    <meta charset="utf-8" />
+    <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <title>%WEB_TITLE%</title>
+
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#8B5CF6" />
+    <meta name="description" content="A collaborative relationship app for couples" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Two Cups" />
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/assets/icon.png" />
+
+    <!-- The `react-native-web` recommended style reset: https://necolas.github.io/react-native-web/docs/setup/#root-element -->
+    <style id="expo-reset">
+      /* These styles make the body full-height */
+      html,
+      body {
+        height: 100%;
+        background-color: #0F0F0F;
+      }
+      /* These styles disable body scrolling if you are using <ScrollView> */
+      body {
+        overflow: hidden;
+      }
+      /* These styles make the root element full-height */
+      #root {
+        display: flex;
+        height: 100%;
+        flex: 1;
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- Use static rendering with Expo Router to support running without JavaScript. -->
+    <noscript>
+      You need to enable JavaScript to run this app.
+    </noscript>
+    <!-- The root element for your Expo app. -->
+    <div id="root"></div>
+
+    <!-- Service Worker Registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('/sw.js')
+            .then(function(registration) {
+              console.log('SW registered:', registration.scope);
+
+              // Check for updates on page load
+              registration.update();
+
+              // Listen for new service worker installing
+              registration.addEventListener('updatefound', function() {
+                const newWorker = registration.installing;
+                newWorker.addEventListener('statechange', function() {
+                  if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                    // New content is available, dispatch event
+                    window.dispatchEvent(new CustomEvent('swUpdate', { detail: registration }));
+                  }
+                });
+              });
+            })
+            .catch(function(error) {
+              console.log('SW registration failed:', error);
+            });
+
+          // Listen for messages from service worker
+          navigator.serviceWorker.addEventListener('message', function(event) {
+            if (event.data && event.data.type === 'SW_UPDATED') {
+              // Reload the page to get new content
+              window.location.reload();
+            }
+          });
+        });
+      }
+    </script>
+  </body>
+</html>
