@@ -18,6 +18,7 @@ import type { ActiveRequestsInfo } from '../services/api';
 import { Button, TextInput, LoadingSpinner, EmptyState, ErrorState } from '../components/common';
 import { colors, spacing, typography, borderRadius } from '../theme';
 import { Request } from '../types';
+import { getErrorMessage } from '../types/utils';
 
 const CATEGORIES = [
   'Words of Affirmation',
@@ -142,8 +143,8 @@ export function MakeRequestScreen({ onGoBack }: MakeRequestScreenProps) {
       setAction('');
       setDescription('');
       setCategory(null);
-    } catch (error: any) {
-      showError(error.message || 'Failed to create request');
+    } catch (error: unknown) {
+      showError(getErrorMessage(error) || 'Failed to create request');
     } finally {
       setLoading(false);
     }
@@ -165,8 +166,8 @@ export function MakeRequestScreen({ onGoBack }: MakeRequestScreenProps) {
               await deleteRequest({ coupleId, requestId: request.id });
               await loadRequestsInfo();
               showSuccess('Request deleted');
-            } catch (error: any) {
-              showError(error.message || 'Failed to delete request');
+            } catch (error: unknown) {
+              showError(getErrorMessage(error) || 'Failed to delete request');
             } finally {
               setDeleting(null);
             }

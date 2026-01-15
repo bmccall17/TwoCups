@@ -14,6 +14,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Button, TextInput } from '../../components/common';
 import { createCouple, joinCouple } from '../../services/api';
 import { colors, spacing, typography, borderRadius } from '../../theme';
+import { getErrorMessage } from '../../types/utils';
 
 type Mode = 'choice' | 'create' | 'join';
 
@@ -76,8 +77,8 @@ export function PairingScreen() {
       });
 
       setGeneratedCode(result.inviteCode);
-    } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to create couple');
+    } catch (error: unknown) {
+      Alert.alert('Error', getErrorMessage(error) || 'Failed to create couple');
     } finally {
       setLoading(false);
     }
@@ -96,9 +97,9 @@ export function PairingScreen() {
       });
       console.log('[PairingScreen] Join successful:', result);
       // Navigation happens automatically via AuthContext when coupleData.status becomes 'active'
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[PairingScreen] Join failed:', error);
-      Alert.alert('Error', error.message || 'Failed to join couple');
+      Alert.alert('Error', getErrorMessage(error) || 'Failed to join couple');
     } finally {
       setLoading(false);
     }

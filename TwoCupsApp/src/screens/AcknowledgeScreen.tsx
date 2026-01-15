@@ -19,6 +19,7 @@ import { acknowledgeAttempt } from '../services/api';
 import { Button, LoadingSpinner, EmptyState, ErrorState, CelebrationOverlay } from '../components/common';
 import { colors, spacing, typography, borderRadius } from '../theme';
 import { Attempt } from '../types';
+import { getErrorMessage } from '../types/utils';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -218,8 +219,8 @@ export function AcknowledgeScreen() {
           { amount: gemsPerPlayer, partnerAmount: gemsPerPlayer }
         );
       }
-    } catch (error: any) {
-      showError(error.message || 'Failed to acknowledge');
+    } catch (error: unknown) {
+      showError(getErrorMessage(error));
     } finally {
       setAcknowledging(null);
     }

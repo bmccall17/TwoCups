@@ -18,6 +18,7 @@ import { logAttempt, getDailyAttemptsInfo, DailyAttemptsInfo } from '../services
 import { Button, TextInput, LoadingSpinner, EmptyState, ErrorState } from '../components/common';
 import { colors, spacing, typography, borderRadius } from '../theme';
 import { Request, Suggestion } from '../types';
+import { getErrorMessage } from '../types/utils';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -221,8 +222,8 @@ export function LogAttemptScreen({ onGoBack }: LogAttemptScreenProps) {
       }
 
       setTimeout(() => onGoBack(), 1500);
-    } catch (error: any) {
-      showError(error.message || 'Failed to log attempt');
+    } catch (error: unknown) {
+      showError(getErrorMessage(error));
     } finally {
       setLoading(false);
     }

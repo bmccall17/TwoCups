@@ -12,6 +12,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { Button, TextInput } from '../../components/common';
 import { colors, spacing, typography } from '../../theme';
+import { isFirebaseError, getErrorMessage } from '../../types/utils';
 
 interface SignUpScreenProps {
   onNavigateToLogin: () => void;
@@ -59,14 +60,18 @@ export function SignUpScreen({ onNavigateToLogin }: SignUpScreenProps) {
     try {
       await signUp(email.trim(), password);
       // After successful signup, auth state will update automatically
-    } catch (error: any) {
+    } catch (error: unknown) {
       let message = 'Please try again';
-      if (error.code === 'auth/email-already-in-use') {
-        message = 'An account with this email already exists';
-      } else if (error.code === 'auth/weak-password') {
-        message = 'Password is too weak';
-      } else if (error.message) {
-        message = error.message;
+      if (isFirebaseError(error)) {
+        if (error.code === 'auth/email-already-in-use') {
+          message = 'An account with this email already exists';
+        } else if (error.code === 'auth/weak-password') {
+          message = 'Password is too weak';
+        } else {
+          message = getErrorMessage(error);
+        }
+      } else {
+        message = getErrorMessage(error);
       }
       Alert.alert('Sign Up Failed', message);
     } finally {

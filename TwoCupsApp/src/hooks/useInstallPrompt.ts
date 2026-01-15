@@ -1,14 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { BeforeInstallPromptEvent, hasMSStream, hasStandalone, WindowWithPWA, NavigatorWithStandalone } from '../types/browser';
 
 const INSTALL_DISMISSED_KEY = '@twocups:install_dismissed';
 const DISMISS_DURATION_DAYS = 7; // Show again after 7 days
-
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
-}
 
 interface InstallPromptState {
   canInstall: boolean;
@@ -31,7 +27,7 @@ export function useInstallPrompt(): InstallPromptState {
   // Detect iOS Safari
   const isIOS = isWeb && typeof navigator !== 'undefined' &&
     /iPad|iPhone|iPod/.test(navigator.userAgent) &&
-    !(window as any).MSStream;
+    !hasMSStream(window as WindowWithPWA);
 
   // Detect Android
   const isAndroid = isWeb && typeof navigator !== 'undefined' &&
@@ -45,7 +41,8 @@ export function useInstallPrompt(): InstallPromptState {
       // Check display-mode media query
       const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
       // Check iOS standalone property
-      const isIOSStandalone = (navigator as any).standalone === true;
+      const nav = navigator as NavigatorWithStandalone;
+      const isIOSStandalone = hasStandalone(nav) && nav.standalone === true;
 
       setIsInstalled(isStandalone || isIOSStandalone);
     };

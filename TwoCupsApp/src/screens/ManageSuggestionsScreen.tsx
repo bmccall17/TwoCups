@@ -16,6 +16,7 @@ import { createSuggestion, deleteSuggestion } from '../services/api';
 import { Button, TextInput, LoadingSpinner, EmptyState, ErrorState } from '../components/common';
 import { colors, spacing, typography, borderRadius } from '../theme';
 import { Suggestion } from '../types';
+import { getErrorMessage } from '../types/utils';
 
 const CATEGORIES = [
   'Words of Affirmation',
@@ -115,8 +116,8 @@ export function ManageSuggestionsScreen({ onGoBack }: ManageSuggestionsScreenPro
       setCategory(null);
       setShowForm(false);
       Alert.alert('Success', 'Suggestion added! Your partner will see this.');
-    } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to create suggestion');
+    } catch (error: unknown) {
+      Alert.alert('Error', getErrorMessage(error) || 'Failed to create suggestion');
     } finally {
       setLoading(false);
     }
@@ -136,8 +137,8 @@ export function ManageSuggestionsScreen({ onGoBack }: ManageSuggestionsScreenPro
           onPress: async () => {
             try {
               await deleteSuggestion({ coupleId, suggestionId });
-            } catch (error: any) {
-              Alert.alert('Error', error.message || 'Failed to delete');
+            } catch (error: unknown) {
+              Alert.alert('Error', getErrorMessage(error) || 'Failed to delete');
             }
           },
         },

@@ -1,5 +1,114 @@
 # Two Cups - Ship Log
 
+## 2026-01-15 - PWA Update System (Auto-refresh for installed apps)
+
+**Status:** Complete - Ready to deploy
+
+### Problem Solved
+PWA installed via "Add to Homescreen" on Android was caching old versions and not picking up new deployments. Users had to manually clear cache or reinstall.
+
+### Solution Implemented
+Multi-layered approach to ensure PWA always gets fresh content:
+
+#### 1. Firebase Hosting Cache Headers (`firebase.json`)
+- `index.html`: `no-cache, no-store, must-revalidate` - forces fresh check
+- `sw.js`: `no-cache` - service worker always checks for updates
+- `manifest.json`: `no-cache` - manifest always fresh
+- JS/CSS with hashes: long cache (they get new names per build)
+
+#### 2. Service Worker (`public/sw.js`)
+- **Network-first** strategy for HTML - always tries fresh content
+- **Cache-first** for hashed assets (performance optimization)
+- Auto-checks for updates on every page load
+- Notifies the app when updates are available
+- Takes control immediately on activation
+
+#### 3. Update Prompt UI (`UpdatePrompt.tsx`)
+- Shows notification banner when new version available
+- "Refresh" button to apply update immediately
+- "Later" button to dismiss (update applies on next visit)
+- Slides in from top with animation
+
+#### 4. Post-Build Script (`scripts/post-build.js`)
+- Injects service worker registration into index.html
+- Adds PWA manifest link and Apple meta tags
+- Copies icon assets to dist folder
+- Sets dark background to prevent white flash
+
+### Files Created
+- `TwoCupsApp/public/sw.js` - Service worker
+- `TwoCupsApp/public/manifest.json` - PWA manifest
+- `TwoCupsApp/scripts/post-build.js` - Build post-processing
+- `TwoCupsApp/src/components/common/UpdatePrompt.tsx` - Update UI
+
+### Files Modified
+- `firebase.json` - Added cache control headers
+- `TwoCupsApp/package.json` - Updated build:web script
+- `TwoCupsApp/src/components/common/index.ts` - Export UpdatePrompt
+- `TwoCupsApp/App.tsx` - Added UpdatePrompt component
+
+### How Updates Work Now
+1. User opens installed PWA
+2. Service worker checks for new version in background
+3. If update found, shows "Update Available" banner
+4. User taps "Refresh" to get new version instantly
+5. Or dismisses and gets update on next visit
+
+---
+
+## 2026-01-15 - US-038: App Icon and Splash Screen
+
+**Status:** Complete - Ready to deploy
+
+### What Was Implemented
+Created branded app icon and splash screen matching the Two Cups theme.
+
+### Design
+- **Concept:** Two cups (purple and gold) tilting toward each other with a heart between them
+- **Colors:** Primary purple (#8B5CF6), Gold (#FFD700), Dark background (#0F0F0F)
+- **Style:** Clean, minimal, works at small sizes
+
+### Icons Generated
+- `icon.png` (1024x1024) - Main app icon for iOS
+- `adaptive-icon.png` (1024x1024) - Android adaptive icon foreground
+- `splash-icon.png` (288x288) - Splash screen logo
+- `favicon.png` (48x48) - Web favicon
+
+### Configuration Changes (`app.json`)
+- App name: "Two Cups"
+- `userInterfaceStyle`: "dark"
+- `splash.backgroundColor`: "#0F0F0F"
+- `android.adaptiveIcon.backgroundColor`: "#0F0F0F"
+- Added `ios.bundleIdentifier`: "com.twocups.app"
+- Added `expo-splash-screen` plugin
+
+### Splash Screen Behavior
+- Installed `expo-splash-screen` package
+- `SplashScreen.preventAutoHideAsync()` on app load
+- `SplashScreen.hideAsync()` when app is ready
+- No white flash between splash and app content
+
+### Files Created
+- `TwoCupsApp/scripts/generate_icons.py` - Python script to regenerate icons
+- `TwoCupsApp/assets/icon.png` - App icon
+- `TwoCupsApp/assets/adaptive-icon.png` - Android adaptive icon
+- `TwoCupsApp/assets/splash-icon.png` - Splash icon
+- `TwoCupsApp/assets/favicon.png` - Web favicon
+
+### Files Modified
+- `TwoCupsApp/app.json` - Icon and splash configuration
+- `TwoCupsApp/App.tsx` - Splash screen handling
+- `TwoCupsApp/package.json` - Added expo-splash-screen dependency
+
+### Acceptance Criteria Met
+- [x] App icon designed (Two Cups theme)
+- [x] Icon configured for all Android & iOS densities
+- [x] Splash screen shows app logo on launch
+- [x] Splash screen transitions smoothly to app
+- [x] No white flash between splash and app
+
+---
+
 ## 2026-01-15 - Git Configuration & Workflow Setup
 
 **Status:** Configured for GitHub Desktop workflow

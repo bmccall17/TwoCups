@@ -12,6 +12,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { Button, TextInput } from '../../components/common';
 import { colors, spacing, typography } from '../../theme';
+import { getErrorMessage } from '../../types/utils';
 
 interface LoginScreenProps {
   onNavigateToSignUp: () => void;
@@ -47,8 +48,8 @@ export function LoginScreen({ onNavigateToSignUp }: LoginScreenProps) {
     setLoading(true);
     try {
       await signIn(email.trim(), password);
-    } catch (error: any) {
-      Alert.alert('Login Failed', error.message || 'Please try again');
+    } catch (error: unknown) {
+      Alert.alert('Login Failed', getErrorMessage(error));
     } finally {
       setLoading(false);
     }
@@ -58,8 +59,8 @@ export function LoginScreen({ onNavigateToSignUp }: LoginScreenProps) {
     setLoading(true);
     try {
       await signInAnonymously();
-    } catch (error: any) {
-      Alert.alert('Login Failed', error.message || 'Please try again');
+    } catch (error: unknown) {
+      Alert.alert('Login Failed', getErrorMessage(error));
     } finally {
       setLoading(false);
     }
