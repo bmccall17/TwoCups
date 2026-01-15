@@ -53,6 +53,7 @@ export function MakeRequestScreen({ onGoBack }: MakeRequestScreenProps) {
   const [deleting, setDeleting] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  const [showForm, setShowForm] = useState(false);
 
   const coupleId = userData?.activeCoupleId;
   const myUid = user?.uid;
@@ -143,6 +144,7 @@ export function MakeRequestScreen({ onGoBack }: MakeRequestScreenProps) {
       setAction('');
       setDescription('');
       setCategory(null);
+      setShowForm(false);
     } catch (error: unknown) {
       showError(getErrorMessage(error) || 'Failed to create request');
     } finally {
@@ -243,60 +245,17 @@ export function MakeRequestScreen({ onGoBack }: MakeRequestScreenProps) {
           </TouchableOpacity>
           <Text style={styles.title}>Make a Request</Text>
           <Text style={styles.subtitle}>Ask your partner for something specific</Text>
-          
+
           {/* Active Requests Counter */}
           {requestsInfo && (
             <View style={[styles.counterContainer, atLimit && styles.counterContainerLimit]}>
               <Text style={[styles.counterText, atLimit && styles.counterTextLimit]}>
-                {atLimit 
+                {atLimit
                   ? `⚠️ Limit reached (${requestsInfo.count}/${requestsInfo.limit} active requests)`
                   : `📋 ${requestsInfo.count}/${requestsInfo.limit} active requests`}
               </Text>
             </View>
           )}
-        </View>
-
-        {/* Form */}
-        <View style={styles.formSection}>
-          <TextInput
-            label="What would you like?"
-            value={action}
-            onChangeText={setAction}
-            placeholder="e.g., Make me coffee in the morning"
-            multiline
-          />
-
-          <TextInput
-            label="Description (optional)"
-            value={description}
-            onChangeText={setDescription}
-            placeholder="Add more details..."
-            multiline
-          />
-
-          {/* Category Picker */}
-          <Text style={styles.inputLabel}>Category</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
-            {CATEGORIES.map((cat) => (
-              <TouchableOpacity
-                key={cat}
-                style={[
-                  styles.categoryChip,
-                  category === cat && styles.categoryChipSelected,
-                ]}
-                onPress={() => setCategory(category === cat ? null : cat)}
-              >
-                <Text
-                  style={[
-                    styles.categoryChipText,
-                    category === cat && styles.categoryChipTextSelected,
-                  ]}
-                >
-                  {cat}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
         </View>
 
         {/* Info Box */}
@@ -306,14 +265,81 @@ export function MakeRequestScreen({ onGoBack }: MakeRequestScreenProps) {
           </Text>
         </View>
 
-        {/* Submit Button */}
-        <Button
-          title={atLimit ? "Request Limit Reached" : "Send Request 💌"}
-          onPress={handleSubmit}
-          loading={loading}
-          disabled={!action.trim() || atLimit}
-          style={styles.submitButton}
-        />
+        {/* Add Request Button */}
+        {!showForm && (
+          <Button
+            title="+ Add Request"
+            onPress={() => setShowForm(true)}
+            style={styles.addButton}
+            disabled={atLimit}
+          />
+        )}
+
+        {/* Form */}
+        {showForm && (
+          <View style={styles.formSection}>
+            <TextInput
+              label="What would you like?"
+              value={action}
+              onChangeText={setAction}
+              placeholder="e.g., Make me coffee in the morning"
+              multiline
+            />
+
+            <TextInput
+              label="Description (optional)"
+              value={description}
+              onChangeText={setDescription}
+              placeholder="Add more details..."
+              multiline
+            />
+
+            {/* Category Picker */}
+            <Text style={styles.inputLabel}>Category</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
+              {CATEGORIES.map((cat) => (
+                <TouchableOpacity
+                  key={cat}
+                  style={[
+                    styles.categoryChip,
+                    category === cat && styles.categoryChipSelected,
+                  ]}
+                  onPress={() => setCategory(category === cat ? null : cat)}
+                >
+                  <Text
+                    style={[
+                      styles.categoryChipText,
+                      category === cat && styles.categoryChipTextSelected,
+                    ]}
+                  >
+                    {cat}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            <View style={styles.formButtons}>
+              <Button
+                title="Cancel"
+                onPress={() => {
+                  setShowForm(false);
+                  setAction('');
+                  setDescription('');
+                  setCategory(null);
+                }}
+                variant="outline"
+                style={styles.cancelButton}
+              />
+              <Button
+                title="Send Request 💌"
+                onPress={handleSubmit}
+                loading={loading}
+                disabled={!action.trim()}
+                style={styles.submitButton}
+              />
+            </View>
+          </View>
+        )}
 
         {/* Requests Section */}
         <View style={styles.requestsSection}>
@@ -473,9 +499,6 @@ const styles = StyleSheet.create({
     color: colors.error,
     fontWeight: '600',
   },
-  formSection: {
-    marginBottom: spacing.xl,
-  },
   inputLabel: {
     ...typography.bodySmall,
     color: colors.textSecondary,
@@ -509,7 +532,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderRadius: borderRadius.md,
     padding: spacing.md,
-    marginBottom: spacing.xl,
+    marginBottom: spacing.lg,
     borderLeftWidth: 4,
     borderLeftColor: colors.primary,
   },
@@ -517,8 +540,25 @@ const styles = StyleSheet.create({
     ...typography.bodySmall,
     color: colors.textSecondary,
   },
+  addButton: {
+    marginBottom: spacing.lg,
+  },
+  formSection: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  formButtons: {
+    flexDirection: 'row',
+    marginTop: spacing.md,
+  },
+  cancelButton: {
+    flex: 1,
+    marginRight: spacing.sm,
+  },
   submitButton: {
-    marginTop: 'auto',
+    flex: 2,
   },
   requestsSection: {
     marginTop: spacing.xl,

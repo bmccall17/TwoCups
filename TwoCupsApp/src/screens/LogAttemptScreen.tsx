@@ -54,6 +54,7 @@ export function LogAttemptScreen({ onGoBack }: LogAttemptScreenProps) {
   const [suggestionFilter, setSuggestionFilter] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  const [showForm, setShowForm] = useState(false);
 
   const coupleId = userData?.activeCoupleId;
   const myUid = user?.uid;
@@ -144,12 +145,14 @@ export function LogAttemptScreen({ onGoBack }: LogAttemptScreenProps) {
     setAction(request.action);
     setDescription(request.description || '');
     setCategory(request.category || null);
+    setShowForm(true);
   };
 
   const handleSelectSuggestion = (suggestion: Suggestion) => {
     setAction(suggestion.action);
     setDescription(suggestion.description || '');
     setCategory(suggestion.category || null);
+    setShowForm(true);
   };
 
   // Compute category counts for filter chips
@@ -220,6 +223,11 @@ export function LogAttemptScreen({ onGoBack }: LogAttemptScreenProps) {
           remaining: dailyAttemptsInfo.remaining - 1,
         });
       }
+
+      setAction('');
+      setDescription('');
+      setCategory(null);
+      setShowForm(false);
 
       setTimeout(() => onGoBack(), 1500);
     } catch (error: unknown) {
@@ -386,58 +394,82 @@ export function LogAttemptScreen({ onGoBack }: LogAttemptScreenProps) {
           )}
         </View>
 
+        {/* Add Attempt Button */}
+        {!showForm && (
+          <Button
+            title="+ Log an Attempt"
+            onPress={() => setShowForm(true)}
+            style={styles.addButton}
+            disabled={dailyAttemptsInfo?.remaining === 0}
+          />
+        )}
+
         {/* Custom Entry Section */}
-        <View style={styles.formSection}>
-          <Text style={styles.formSectionTitle}>Or Log a Custom Attempt</Text>
-          <TextInput
-            label="Action"
-            value={action}
-            onChangeText={setAction}
-            placeholder="What did you do?"
-            multiline
-          />
+        {showForm && (
+          <View style={styles.formSection}>
+            <Text style={styles.formSectionTitle}>Log an Attempt</Text>
+            <TextInput
+              label="Action"
+              value={action}
+              onChangeText={setAction}
+              placeholder="What did you do?"
+              multiline
+            />
 
-          <TextInput
-            label="Description (optional)"
-            value={description}
-            onChangeText={setDescription}
-            placeholder="Add more details..."
-            multiline
-          />
+            <TextInput
+              label="Description (optional)"
+              value={description}
+              onChangeText={setDescription}
+              placeholder="Add more details..."
+              multiline
+            />
 
-          {/* Category Picker */}
-          <Text style={styles.inputLabel}>Category</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
-            {CATEGORIES.map((cat) => (
-              <TouchableOpacity
-                key={cat}
-                style={[
-                  styles.categoryChip,
-                  category === cat && styles.categoryChipSelected,
-                ]}
-                onPress={() => setCategory(category === cat ? null : cat)}
-              >
-                <Text
+            {/* Category Picker */}
+            <Text style={styles.inputLabel}>Category</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
+              {CATEGORIES.map((cat) => (
+                <TouchableOpacity
+                  key={cat}
                   style={[
-                    styles.categoryChipText,
-                    category === cat && styles.categoryChipTextSelected,
+                    styles.categoryChip,
+                    category === cat && styles.categoryChipSelected,
                   ]}
+                  onPress={() => setCategory(category === cat ? null : cat)}
                 >
-                  {cat}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
+                  <Text
+                    style={[
+                      styles.categoryChipText,
+                      category === cat && styles.categoryChipTextSelected,
+                    ]}
+                  >
+                    {cat}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
 
-        {/* Submit Button */}
-        <Button
-          title={dailyAttemptsInfo?.remaining === 0 ? "Daily Limit Reached" : "Log Attempt 💝"}
-          onPress={handleSubmit}
-          loading={loading}
-          disabled={!action.trim() || dailyAttemptsInfo?.remaining === 0}
-          style={styles.submitButton}
-        />
+            <View style={styles.formButtons}>
+              <Button
+                title="Cancel"
+                onPress={() => {
+                  setShowForm(false);
+                  setAction('');
+                  setDescription('');
+                  setCategory(null);
+                }}
+                variant="outline"
+                style={styles.cancelButton}
+              />
+              <Button
+                title="Log Attempt 💝"
+                onPress={handleSubmit}
+                loading={loading}
+                disabled={!action.trim()}
+                style={styles.submitButton}
+              />
+            </View>
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -590,13 +622,24 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingVertical: spacing.lg,
   },
+  addButton: {
+    marginBottom: spacing.lg,
+  },
   formSection: {
-    marginBottom: spacing.xl,
+    marginBottom: spacing.lg,
     backgroundColor: colors.surface,
     borderRadius: borderRadius.lg,
     padding: spacing.md,
     borderWidth: 1,
     borderColor: colors.border,
+  },
+  formButtons: {
+    flexDirection: 'row',
+    marginTop: spacing.md,
+  },
+  cancelButton: {
+    flex: 1,
+    marginRight: spacing.sm,
   },
   formSectionTitle: {
     ...typography.h3,
@@ -633,6 +676,6 @@ const styles = StyleSheet.create({
     color: colors.textOnPrimary,
   },
   submitButton: {
-    marginTop: 'auto',
+    flex: 2,
   },
 });
