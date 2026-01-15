@@ -1,5 +1,56 @@
 # Two Cups - Ship Log
 
+## 2026-01-15 - US-039: TypeScript Type Safety Improvements
+
+**Status:** Complete
+
+### Problem Solved
+Codebase had 14 instances of `any` types, reducing type safety and making runtime errors harder to catch at compile time. Console was showing runtime type errors related to browser API checks.
+
+### Changes Made
+
+#### 1. Created Type Utilities (`src/types/utils.ts`)
+- `isError()`, `hasMessage()`, `hasCode()` - Type guards for error handling
+- `getErrorMessage()` - Safely extracts error messages from unknown errors
+- `isFirebaseError()` - Type guard for Firebase auth errors
+- `FirebaseError` interface
+
+#### 2. Created Browser API Types (`src/types/browser.ts`)
+- `BeforeInstallPromptEvent` interface for PWA install prompts
+- Extended Window/Navigator interfaces for PWA features
+
+#### 3. Fixed All Error Handling
+Changed all catch blocks from `error: any` to `error: unknown` with proper type guards:
+- Auth screens: LoginScreen, SignUpScreen, PairingScreen
+- Main screens: LogAttemptScreen, AcknowledgeScreen, MakeRequestScreen, ManageSuggestionsScreen
+- All `error.message` → `getErrorMessage(error)` for safe access
+
+#### 4. Fixed Navigation Types
+- App.tsx: Changed `navigation: any` → `NativeStackNavigationProp<AppStackParamList>`
+
+#### 5. Fixed Browser API Runtime Errors
+- Simplified browser property checks to avoid runtime errors
+- Changed from complex type guards to simple type assertions
+- Fixed console errors related to `window.MSStream` and `navigator.standalone` checks
+
+### Files Created
+- `TwoCupsApp/src/types/utils.ts` - Error handling utilities
+- `TwoCupsApp/src/types/browser.ts` - Browser API type extensions
+
+### Files Modified (10)
+- `TwoCupsApp/App.tsx`
+- `TwoCupsApp/src/hooks/useInstallPrompt.ts`
+- All auth screens (3 files)
+- Main screens (4 files)
+
+### Verification
+- ✅ TypeScript compilation passes
+- ✅ Zero `any` types in codebase
+- ✅ Web build successful
+- ✅ Console runtime errors resolved
+
+---
+
 ## 2026-01-15 - PWA Update System (Auto-refresh for installed apps)
 
 **Status:** Complete - Ready to deploy
