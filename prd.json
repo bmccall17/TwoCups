@@ -14,10 +14,10 @@
     {
       "id": "US-038",
       "title": "App Icon and Splash Screen",
-      "description": "Create and configure app icon and splash screen for Android.",
+      "description": "Create and configure app icon and splash screen for Android and iOS.",
       "acceptanceCriteria": [
         "App icon designed (Two Cups theme)",
-        "Icon configured for all Android densities",
+        "Icon configured for all Android & iOS densities",
         "Splash screen shows app logo on launch",
         "Splash screen transitions smoothly to app",
         "No white flash between splash and app"

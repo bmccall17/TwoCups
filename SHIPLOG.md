@@ -1,5 +1,31 @@
 # Two Cups - Ship Log
 
+## 2026-01-15 - Git Configuration & Workflow Setup
+
+**Status:** Configured for GitHub Desktop workflow
+
+### Problem Solved
+Git push was stuck/hanging when attempting to push to origin. Issue was caused by SSH authentication waiting for passphrase input in WSL environment.
+
+### Configuration Changes
+1. Killed stuck git push process
+2. Pulled and merged remote changes (resolved diverged branches)
+3. Removed CLI-specific git settings that interfere with GitHub Desktop:
+   - Removed `core.sshCommand` batch mode setting
+   - Removed `push.timeout` setting
+
+### Current Workflow
+- **Coding:** Claude Code handles all code changes
+- **Git Operations:** GitHub Desktop handles all commits, pushes, and pulls
+- **Remote:** SSH configured via `git@github.com:bmccall17/TwoCups.git`
+
+### Git Status
+- Branch synced with origin/main
+- Clean minimal configuration (user.name, user.email only)
+- Ready for GitHub Desktop management
+
+---
+
 ## 2026-01-15 - Collaborative Transformation
 
 **Status:** Deployed - UI transformed from competitive to collaborative framing
