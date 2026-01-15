@@ -165,18 +165,18 @@ function AnimatedGemDisplay({ count, label, isLeft = true }: AnimatedGemDisplayP
 
 function getEncouragingMessage(total: number, fromLogging: number, fromAcknowledgments: number): string {
   if (total === 0) {
-    return "Log an attempt or acknowledge your partner to earn gems! 💪";
+    return "Log an attempt or acknowledge your partner to start! 💝";
   }
   if (total >= 20) {
-    return "Amazing day! You're on fire! 🔥";
+    return "So much care flowing today! 💕";
   }
   if (total >= 10) {
-    return "Fantastic progress! Keep it up! ⭐";
+    return "You're showing up for each other beautifully! 🌸";
   }
   if (total >= 5) {
-    return "Great job! You're building something special! 💜";
+    return "Beautiful moments of connection! 💜";
   }
-  return "Nice start! Every gem counts! ✨";
+  return "Every acknowledgment matters! ✨";
 }
 
 export const GemCounter = memo(function GemCounter({ myGems, partnerGems, myName = 'Me', partnerName = 'Partner', onPress }: GemCounterProps) {
@@ -212,7 +212,7 @@ export const GemCounter = memo(function GemCounter({ myGems, partnerGems, myName
     <Wrapper style={[styles.container, isSmallScreen && styles.containerSmall]} {...wrapperProps}>
       <View style={styles.header}>
         <Text style={styles.headerIcon}>✨</Text>
-        <Text style={styles.headerText}>Gem Treasury</Text>
+        <Text style={styles.headerText}>Shared Gems</Text>
         <Text style={styles.headerIcon}>✨</Text>
       </View>
 

@@ -16,20 +16,20 @@ import { colors, spacing, typography, borderRadius } from '../theme';
 const MILESTONES = [100, 250, 500, 1000, 2500, 5000, 10000];
 
 const MILESTONE_MESSAGES: Record<number, string> = {
-  100: "You've earned your first 100 gems! You're off to a great start!",
-  250: "250 gems! You're building something beautiful together!",
-  500: "500 gems! You're crushing it! Keep nurturing your relationship!",
-  1000: "1000 gems! A true gem collector! Your love is shining bright!",
-  2500: "2500 gems! You're a love champion! Amazing dedication!",
-  5000: "5000 gems! Legendary status! Your connection is unbreakable!",
-  10000: "10000 gems! You've reached the ultimate milestone! True relationship goals!",
+  100: "100 gems of care given and received! You're off to a beautiful start!",
+  250: "250 gems! You're building something meaningful together!",
+  500: "500 gems of care shared! Keep nurturing your connection!",
+  1000: "1000 moments of connection celebrated! Your love is shining bright!",
+  2500: "2500 gems! Your care is flowing beautifully! Such dedication!",
+  5000: "5000 gems! A garden of shared meaning! Your connection is unbreakable!",
+  10000: "10000 gems! What a journey together! Your relationship is truly special!",
 };
 
 const MILESTONE_BADGES: Record<number, string> = {
   100: '💎',
   250: '✨',
-  500: '🏆',
-  1000: '👑',
+  500: '🌸',
+  1000: '💕',
   2500: '🌟',
   5000: '💫',
   10000: '🎆',

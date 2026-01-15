@@ -787,7 +787,7 @@ export function HistoryScreen() {
         style={styles.analyticsHeader}
         onPress={() => setShowLeaderboard(!showLeaderboard)}
       >
-        <Text style={styles.analyticsTitle}>🏆 Leaderboard</Text>
+        <Text style={styles.analyticsTitle}>💫 Our Journey</Text>
         <Text style={styles.analyticsToggle}>{showLeaderboard ? '▼' : '▶'}</Text>
       </TouchableOpacity>
 
@@ -817,52 +817,33 @@ export function HistoryScreen() {
         <View style={styles.analyticsContainer}>
           <View style={styles.analyticsRow}>
             <View style={styles.analyticsStat}>
-              <Text style={styles.analyticsValue}>{analyticsStats.myAttemptsCount}</Text>
-              <Text style={styles.analyticsLabel}>My Attempts</Text>
-            </View>
-            <View style={styles.analyticsStat}>
-              <Text style={styles.analyticsValue}>{analyticsStats.partnerAttemptsCount}</Text>
-              <Text style={styles.analyticsLabel}>{partnerName}'s</Text>
-            </View>
-            <View style={styles.analyticsStat}>
               <Text style={styles.analyticsValue}>{analyticsStats.totalAttempts}</Text>
-              <Text style={styles.analyticsLabel}>Total</Text>
+              <Text style={styles.analyticsLabel}>Total Attempts</Text>
             </View>
-          </View>
-
-          <View style={styles.analyticsRow}>
             <View style={styles.analyticsStat}>
-              <Text style={[styles.analyticsValue, { color: colors.success }]}>
-                {analyticsStats.acknowledgedCount}
-              </Text>
+              <Text style={styles.analyticsValue}>{analyticsStats.acknowledgedCount}</Text>
               <Text style={styles.analyticsLabel}>Acknowledged</Text>
-            </View>
-            <View style={styles.analyticsStat}>
-              <Text style={[styles.analyticsValue, { color: colors.warning }]}>
-                {analyticsStats.pendingCount}
-              </Text>
-              <Text style={styles.analyticsLabel}>Pending</Text>
             </View>
             <View style={styles.analyticsStat}>
               <Text style={[styles.analyticsValue, { color: colors.primary }]}>
                 {analyticsStats.acknowledgeRate}%
               </Text>
-              <Text style={styles.analyticsLabel}>Ack Rate</Text>
+              <Text style={styles.analyticsLabel}>Seen & Received</Text>
             </View>
           </View>
 
           <View style={styles.analyticsRow}>
             <View style={styles.analyticsStat}>
-              <Text style={[styles.analyticsValue, { color: colors.gem }]}>
-                💎 {myPlayer?.gemCount ?? 0}
+              <Text style={[styles.analyticsValue, { color: colors.warning }]}>
+                {analyticsStats.pendingCount}
               </Text>
-              <Text style={styles.analyticsLabel}>My Gems</Text>
+              <Text style={styles.analyticsLabel}>Awaiting Acknowledgment</Text>
             </View>
             <View style={styles.analyticsStat}>
               <Text style={[styles.analyticsValue, { color: colors.gem }]}>
-                💎 {partnerPlayer?.gemCount ?? 0}
+                💎 {(myPlayer?.gemCount ?? 0) + (partnerPlayer?.gemCount ?? 0)}
               </Text>
-              <Text style={styles.analyticsLabel}>{partnerName}'s Gems</Text>
+              <Text style={styles.analyticsLabel}>Gems Together</Text>
             </View>
           </View>
         </View>
@@ -954,24 +935,12 @@ export function HistoryScreen() {
 
       {showRequestStats && (
         <View style={styles.analyticsContainer}>
-          {/* Request counts by player */}
+          {/* Request counts - collaborative framing */}
           <View style={styles.analyticsRow}>
-            <View style={styles.analyticsStat}>
-              <Text style={styles.analyticsValue}>{requestStats.myRequestsCount}</Text>
-              <Text style={styles.analyticsLabel}>My Requests</Text>
-            </View>
-            <View style={styles.analyticsStat}>
-              <Text style={styles.analyticsValue}>{requestStats.partnerRequestsCount}</Text>
-              <Text style={styles.analyticsLabel}>{partnerName}'s</Text>
-            </View>
             <View style={styles.analyticsStat}>
               <Text style={styles.analyticsValue}>{requestStats.totalRequests}</Text>
-              <Text style={styles.analyticsLabel}>Total</Text>
+              <Text style={styles.analyticsLabel}>Total Requests</Text>
             </View>
-          </View>
-
-          {/* Fulfillment stats */}
-          <View style={styles.analyticsRow}>
             <View style={styles.analyticsStat}>
               <Text style={[styles.analyticsValue, { color: colors.success }]}>
                 {requestStats.fulfilledCount}
@@ -979,16 +948,20 @@ export function HistoryScreen() {
               <Text style={styles.analyticsLabel}>Fulfilled</Text>
             </View>
             <View style={styles.analyticsStat}>
-              <Text style={[styles.analyticsValue, { color: colors.warning }]}>
-                {requestStats.activeCount}
-              </Text>
-              <Text style={styles.analyticsLabel}>Active</Text>
-            </View>
-            <View style={styles.analyticsStat}>
               <Text style={[styles.analyticsValue, { color: colors.primary }]}>
                 {requestStats.fulfillmentRate}%
               </Text>
-              <Text style={styles.analyticsLabel}>Fulfilled</Text>
+              <Text style={styles.analyticsLabel}>Completion Rate</Text>
+            </View>
+          </View>
+
+          {/* Active requests */}
+          <View style={styles.analyticsRow}>
+            <View style={styles.analyticsStat}>
+              <Text style={[styles.analyticsValue, { color: colors.warning }]}>
+                {requestStats.activeCount}
+              </Text>
+              <Text style={styles.analyticsLabel}>Active Requests</Text>
             </View>
           </View>
 

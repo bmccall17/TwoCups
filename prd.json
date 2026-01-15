@@ -1,6 +1,6 @@
 {
-  "name": "TwoCups Sprint 7 - Technical Debt & Polish",
-  "branchName": "ralph/sprint-7-tech-debt",
+  "name": "TwoCups Sprint 6 - Technical Debt & Polish",
+  "branchName": "main",
   "description": "Address technical debt, improve reliability, add offline support, and prepare for production release",
   "created": "2026-01-14",
 
@@ -12,7 +12,7 @@
 
   "userStories": [
     {
-      "id": "US-060",
+      "id": "US-038",
       "title": "App Icon and Splash Screen",
       "description": "Create and configure app icon and splash screen for Android.",
       "acceptanceCriteria": [
@@ -22,13 +22,13 @@
         "Splash screen transitions smoothly to app",
         "No white flash between splash and app"
       ],
-      "priority": 11,
+      "priority": 1,
       "passes": false,
       "blocked": false,
       "blockedReason": null
     },
     {
-      "id": "US-064",
+      "id": "US-039",
       "title": "Replace 'any' Types with Proper TypeScript Types",
       "description": "Eliminate 'any' types throughout the codebase for better type safety.",
       "acceptanceCriteria": [
@@ -37,13 +37,13 @@
         "TypeScript strict mode passes without errors",
         "No runtime regressions introduced"
       ],
-      "priority": 15,
+      "priority": 2,
       "passes": false,
       "blocked": false,
       "blockedReason": null
     },
     {
-      "id": "US-065",
+      "id": "US-040",
       "title": "Fix Type Mismatches Between Functions and Mobile",
       "description": "Align Suggestion and Request interfaces between Cloud Functions and mobile app.",
       "acceptanceCriteria": [
@@ -52,13 +52,43 @@
         "Request interface consistent across codebase",
         "TypeScript compilation passes in both projects"
       ],
-      "priority": 16,
+      "priority": 3,
       "passes": false,
       "blocked": false,
       "blockedReason": null
     },
     {
-      "id": "US-069",
+      "id": "US-041",
+      "title": "Remove Debug Console Statements",
+      "description": "Clean up console.log and console.error statements, replace with proper logging.",
+      "acceptanceCriteria": [
+        "All 20+ debug console statements identified",
+        "Production code uses Crashlytics for error logging",
+        "Development logging is conditional on __DEV__ flag",
+        "No sensitive data logged"
+      ],
+      "priority": 4,
+      "passes": false,
+      "blocked": true,
+      "blockedReason": "Depends on US-062 (Crashlytics) for proper error reporting replacement"
+    },
+    {
+      "id": "US-042",
+      "title": "Centralize Configuration Constants",
+      "description": "Move duplicated configuration values to a single source of truth.",
+      "acceptanceCriteria": [
+        "Configuration constants in single config file",
+        "No duplicated magic numbers or strings",
+        "All 3+ files with duplicated config updated",
+        "Easy to modify configuration in one place"
+      ],
+      "priority": 5,
+      "passes": false,
+      "blocked": false,
+      "blockedReason": null
+    },
+    {
+      "id": "US-043",
       "title": "Input Validation Improvements",
       "description": "Add comprehensive input validation with max lengths, email regex, and sanitization.",
       "acceptanceCriteria": [
@@ -68,13 +98,29 @@
         "Validation error messages are user-friendly",
         "Server-side validation matches client-side"
       ],
-      "priority": 20,
+      "priority": 6,
       "passes": false,
       "blocked": false,
       "blockedReason": null
     },
     {
-      "id": "US-071",
+      "id": "US-044",
+      "title": "Fix Unawaited Promises",
+      "description": "Add proper await handling to promises in MilestoneCelebrationContext and AcknowledgeScreen.",
+      "acceptanceCriteria": [
+        "All promises properly awaited or handled",
+        "MilestoneCelebrationContext async issues fixed",
+        "AcknowledgeScreen async issues fixed",
+        "No unhandled promise rejections",
+        "ESLint no-floating-promises rule passes"
+      ],
+      "priority": 7,
+      "passes": false,
+      "blocked": false,
+      "blockedReason": null
+    },
+    {
+      "id": "US-045",
       "title": "Fix Silent Failures",
       "description": "Replace empty catch blocks with proper error handling.",
       "acceptanceCriteria": [
@@ -83,23 +129,22 @@
         "User notified when operations fail",
         "No silent swallowing of errors"
       ],
-      "priority": 22,
+      "priority": 8,
       "passes": false,
       "blocked": true,
       "blockedReason": "Depends on US-062 (Crashlytics) for proper error logging"
     },
     {
-      "id": "US-075",
-      "title": "Optimize Animation Performance",
-      "description": "Pre-calculate random values and optimize animations for smooth 60fps.",
+      "id": "US-046",
+      "title": "Fix Confusing Property Names",
+      "description": "Rename unclear property names like 'odI' to descriptive names.",
       "acceptanceCriteria": [
-        "Random values pre-calculated before animation starts",
-        "No random calculations during animation frames",
-        "Animations run at consistent 60fps",
-        "Memory usage stable during animations",
-        "No dropped frames on mid-range devices"
+        "'odI' renamed to clear, descriptive name",
+        "All confusing property names identified and fixed",
+        "Naming follows project conventions",
+        "All usages updated consistently"
       ],
-      "priority": 26,
+      "priority": 9,
       "passes": false,
       "blocked": false,
       "blockedReason": null

@@ -23,7 +23,9 @@
       "Bash(git push:*)",
       "Bash(git branch:*)",
       "Bash(git remote:*)",
-      "Bash(git fetch:*)"
+      "Bash(git fetch:*)",
+      "Bash(npm run lint)",
+      "Bash(npm run:*)"
     ]
   }
 }

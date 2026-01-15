@@ -1,4 +1,4 @@
-import React, { useEffect, useState, memo, useMemo, useRef, useCallback } from 'react';
+import React, { useEffect, useState, memo, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated, Easing } from 'react-native';
 import { colors, spacing, typography, borderRadius, shadows } from '../../theme';
 import { getWeeklyGemStats, WeeklyGemStats } from '../../services/api';
@@ -15,31 +15,20 @@ interface GemLeaderboardProps {
 
 type ViewMode = 'weekly' | 'allTime';
 
-function getChampionMessage(myGems: number, partnerGems: number, myName: string, partnerName: string): string {
-  const diff = Math.abs(myGems - partnerGems);
-  
-  if (myGems === partnerGems) {
-    return "You're both Gem Champions! 🏆💕";
+function getCollaborativeMessage(total: number): string {
+  if (total === 0) {
+    return "Your journey together is just beginning! 🌱";
   }
-  
-  if (diff <= 5) {
-    return "Neck and neck! What a team! 🤝";
+  if (total >= 100) {
+    return "Y'all are building something beautiful together! 💕";
   }
-  
-  if (myGems > partnerGems) {
-    if (diff > 50) return "You're crushing it! 💪✨";
-    if (diff > 20) return "You're on a roll! Keep going! 🌟";
-    return "Nice lead! Every gem counts! 💎";
-  } else {
-    if (diff > 50) return `${partnerName} is on fire! 🔥`;
-    if (diff > 20) return `${partnerName} is shining! ✨`;
-    return `${partnerName} has a slight edge! 💜`;
+  if (total >= 50) {
+    return "Look at all this care flowing between you! ✨";
   }
-}
-
-function getLeaderLabel(isLeading: boolean, isTied: boolean): string | null {
-  if (isTied) return null;
-  return isLeading ? '👑 Gem Champion' : null;
+  if (total >= 20) {
+    return "You're finding your rhythm together! 🌊";
+  }
+  return "Every gem represents a moment of care! 💜";
 }
 
 export const GemLeaderboard = memo(function GemLeaderboard({
@@ -52,11 +41,11 @@ export const GemLeaderboard = memo(function GemLeaderboard({
 }: GemLeaderboardProps) {
   const { userData } = useAuth();
   const coupleId = userData?.activeCoupleId;
-  
+
   const [viewMode, setViewMode] = useState<ViewMode>('weekly');
   const [weeklyStats, setWeeklyStats] = useState<WeeklyGemStats | null>(null);
   const [loading, setLoading] = useState(false);
-  
+
   const barAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -88,11 +77,9 @@ export const GemLeaderboard = memo(function GemLeaderboard({
 
   const displayMyGems = viewMode === 'weekly' ? (weeklyStats?.myWeeklyGems ?? 0) : myGems;
   const displayPartnerGems = viewMode === 'weekly' ? (weeklyStats?.partnerWeeklyGems ?? 0) : partnerGems;
-  
+  const combinedTotal = displayMyGems + displayPartnerGems;
+
   const maxGems = Math.max(displayMyGems, displayPartnerGems, 1);
-  const isTied = displayMyGems === displayPartnerGems;
-  const myLeading = displayMyGems > displayPartnerGems;
-  const partnerLeading = displayPartnerGems > displayMyGems;
 
   const myBarWidth = barAnim.interpolate({
     inputRange: [0, 1],
@@ -104,15 +91,21 @@ export const GemLeaderboard = memo(function GemLeaderboard({
     outputRange: ['0%', `${(displayPartnerGems / maxGems) * 100}%`],
   });
 
-  const myLeaderLabel = getLeaderLabel(myLeading, isTied);
-  const partnerLeaderLabel = getLeaderLabel(partnerLeading, isTied);
-
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerIcon}>🏆</Text>
-        <Text style={styles.headerText}>Gem Leaderboard</Text>
-        <Text style={styles.headerIcon}>🏆</Text>
+        <Text style={styles.headerIcon}>💫</Text>
+        <Text style={styles.headerText}>Our Shared Journey</Text>
+        <Text style={styles.headerIcon}>💫</Text>
+      </View>
+
+      {/* Combined Total - Prominent */}
+      <View style={styles.combinedTotalContainer}>
+        <Text style={styles.combinedLabel}>Together</Text>
+        <View style={styles.combinedValueRow}>
+          <Text style={styles.combinedEmoji}>💎</Text>
+          <Text style={styles.combinedValue}>{combinedTotal.toLocaleString()}</Text>
+        </View>
       </View>
 
       {/* View Mode Toggle */}
@@ -135,13 +128,12 @@ export const GemLeaderboard = memo(function GemLeaderboard({
         </TouchableOpacity>
       </View>
 
-      {/* Bar Chart */}
+      {/* Bar Chart - Now collaborative, not competitive */}
       <View style={styles.chartContainer}>
         {/* My Bar */}
         <View style={styles.barRow}>
           <View style={styles.labelContainer}>
             <Text style={styles.playerLabel}>{myName}</Text>
-            {myLeaderLabel && <Text style={styles.leaderBadge}>{myLeaderLabel}</Text>}
           </View>
           <View style={styles.barContainer}>
             <Animated.View
@@ -149,7 +141,6 @@ export const GemLeaderboard = memo(function GemLeaderboard({
                 styles.bar,
                 styles.myBar,
                 { width: myBarWidth },
-                myLeading && styles.leadingBar,
               ]}
             />
             <Text style={styles.gemCount}>💎 {displayMyGems}</Text>
@@ -160,7 +151,6 @@ export const GemLeaderboard = memo(function GemLeaderboard({
         <View style={styles.barRow}>
           <View style={styles.labelContainer}>
             <Text style={styles.playerLabel}>{partnerName}</Text>
-            {partnerLeaderLabel && <Text style={styles.leaderBadge}>{partnerLeaderLabel}</Text>}
           </View>
           <View style={styles.barContainer}>
             <Animated.View
@@ -168,7 +158,6 @@ export const GemLeaderboard = memo(function GemLeaderboard({
                 styles.bar,
                 styles.partnerBar,
                 { width: partnerBarWidth },
-                partnerLeading && styles.leadingBar,
               ]}
             />
             <Text style={styles.gemCount}>💎 {displayPartnerGems}</Text>
@@ -176,12 +165,12 @@ export const GemLeaderboard = memo(function GemLeaderboard({
         </View>
       </View>
 
-      {/* Playful Message */}
+      {/* Collaborative Message */}
       <View style={styles.messageContainer}>
         <Text style={styles.message}>
-          {loading && viewMode === 'weekly' 
-            ? '✨ Counting gems...' 
-            : getChampionMessage(displayMyGems, displayPartnerGems, myName, partnerName)
+          {loading && viewMode === 'weekly'
+            ? '✨ Counting gems...'
+            : getCollaborativeMessage(combinedTotal)
           }
         </Text>
       </View>
@@ -216,6 +205,31 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 1,
+  },
+  combinedTotalContainer: {
+    alignItems: 'center',
+    backgroundColor: colors.gem + '15',
+    borderRadius: borderRadius.md,
+    paddingVertical: spacing.md,
+    marginBottom: spacing.md,
+  },
+  combinedLabel: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    marginBottom: spacing.xs,
+  },
+  combinedValueRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  combinedEmoji: {
+    fontSize: 24,
+    marginRight: spacing.sm,
+  },
+  combinedValue: {
+    ...typography.h2,
+    color: colors.gem,
+    fontWeight: '700',
   },
   toggleContainer: {
     flexDirection: 'row',
@@ -258,12 +272,6 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     fontWeight: '500',
   },
-  leaderBadge: {
-    ...typography.caption,
-    color: colors.warning,
-    marginLeft: spacing.sm,
-    fontWeight: '600',
-  },
   barContainer: {
     height: 32,
     backgroundColor: colors.surface,
@@ -283,9 +291,6 @@ const styles = StyleSheet.create({
   },
   partnerBar: {
     backgroundColor: colors.primaryLight + '80',
-  },
-  leadingBar: {
-    backgroundColor: colors.gem,
   },
   gemCount: {
     ...typography.bodySmall,
