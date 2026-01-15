@@ -1,5 +1,41 @@
 # Two Cups - Ship Log
 
+## 2026-01-15 - Collaborative Transformation
+
+**Status:** Deployed - UI transformed from competitive to collaborative framing
+
+### What Changed
+Removed all competitive "VS" elements that pit partners against each other. The app now aligns with the README's core philosophy: "No scorekeeping - The goal is attunement, not optimization."
+
+### Files Modified
+- **GemLeaderboard.tsx** - Complete transformation
+  - "Gem Leaderboard" → "Our Shared Journey"
+  - Removed "Gem Champion" labels and leader logic
+  - Added prominent combined total display
+  - New collaborative messages ("Y'all are building something beautiful together!")
+  - Icons: 🏆 → 💫
+
+- **GemCounter.tsx** - Softened framing
+  - "Gem Treasury" → "Shared Gems"
+  - "You're on fire!" → "So much care flowing today!"
+
+- **HistoryScreen.tsx** - Analytics section
+  - "🏆 Leaderboard" → "💫 Our Journey"
+  - Individual gem comparison replaced with "Total Gems Together"
+
+- **MilestoneCelebrationContext.tsx** - Message softening
+  - "crushing it" → "gems of care shared"
+  - Badges: 🏆👑 → 🌸💕
+
+### Documentation Updated
+- `Items That May Fall Outside Intended Exp.md` - Marked all items as addressed, added language guidelines
+
+### Deployed
+- **Live URL**: https://twocups-2026.web.app
+- All changes verified and deployed via `npm run deploy`
+
+---
+
 ## 2026-01-12 - Project Paused
 
 **Status:** On hold - authentication flow issues need investigation

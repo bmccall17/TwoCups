@@ -289,3 +289,50 @@ If you want, next we can:
 * Or write the **in-app microcopy** that teaches this without ever explaining it
 
 This is already a very humane system.
+
+---
+
+## UI Language Philosophy
+
+The gem economy UI must reflect the collaborative, non-competitive nature of TwoCups. Gems represent "moments of care" and "connection" - not points to accumulate or compete over.
+
+### Language to AVOID
+
+| Don't Use | Why |
+|-----------|-----|
+| "Champion", "Winner", "Leader" | Implies competition between partners |
+| "Crushing it", "On fire", "Killing it" | Aggressive, performance-focused |
+| "Lead", "Edge", "Ahead", "Behind" | Creates comparison/ranking mindset |
+| "Beat", "Win", "Lose" | Frames relationship as a game to win |
+| "Leaderboard", "Scoreboard" | Explicitly competitive framing |
+| 🏆 👑 (trophy, crown) | Competitive/ranking iconography |
+
+### Language to USE
+
+| Use Instead | Why |
+|-------------|-----|
+| "Together", "Shared", "Our" | Emphasizes collective journey |
+| "Care flowing", "Connection" | Frames gems as moments of meaning |
+| "Beautiful", "Wonderful" | Warm, affirming without competition |
+| "You're showing up for each other" | Acknowledges effort collaboratively |
+| "Y'all are building something beautiful" | Southern-warm collective framing |
+| 💫 💕 🌸 ✨ | Warm, collaborative iconography |
+
+### Display Hierarchy
+
+When showing gem counts:
+1. **Combined total first** - "Together: 💎 54"
+2. **Individual contributions secondary** - Shown smaller, not compared
+3. **Never highlight who has "more"** - No leader badges, no "winning" indicators
+
+### Example Transformations
+
+| Before (Competitive) | After (Collaborative) |
+|---------------------|----------------------|
+| "You're the Gem Champion! 👑" | (removed entirely) |
+| "Nice lead! Every gem counts!" | "Every gem represents a moment of care! 💜" |
+| "Partner has a slight edge!" | "Y'all are building something beautiful together! 💕" |
+| "You're on fire! 🔥" | "So much care flowing today! 💕" |
+
+This philosophy ensures the UI reflects the README's core truth:
+> *"TwoCups is a mirror, not a measure."*

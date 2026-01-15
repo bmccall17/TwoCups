@@ -25,7 +25,9 @@
       "Bash(git remote:*)",
       "Bash(git fetch:*)",
       "Bash(npm run lint)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(git config:*)",
+      "Bash(ssh:*)"
     ]
   }
 }
