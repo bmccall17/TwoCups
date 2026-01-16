@@ -106,7 +106,7 @@ function MainTabNavigator() {
           fontWeight: '500',
         },
         tabBarItemStyle: {
-          paddingHorizontal: 2,
+          flex: 1,
         },
       }}
     >
