@@ -27,6 +27,7 @@ import { SettingsScreen } from './src/screens/SettingsScreen';
 import { HistoryScreen } from './src/screens/HistoryScreen';
 import { GemHistoryScreen } from './src/screens/GemHistoryScreen';
 import { colors } from './src/theme';
+import { initializeCrashlytics, log } from './src/services/crashlytics';
 
 type AuthStackParamList = {
   Login: undefined;
@@ -283,6 +284,13 @@ const styles = StyleSheet.create({
 });
 
 export default function App() {
+  // Initialize Crashlytics when app starts
+  useEffect(() => {
+    void initializeCrashlytics().then(() => {
+      log('App initialized');
+    });
+  }, []);
+
   return (
     <SafeAreaProvider>
       <ErrorBoundary>

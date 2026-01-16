@@ -7,6 +7,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { colors, spacing, typography, borderRadius } from '../../theme';
+import { recordComponentError, log } from '../../services/crashlytics';
 
 interface Props {
   children: ReactNode;
@@ -37,7 +38,10 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     this.setState({ errorInfo });
-    
+
+    // Log to Crashlytics (works on native, no-op on web)
+    recordComponentError(error, errorInfo.componentStack ?? undefined);
+
     if (__DEV__) {
       console.error('ErrorBoundary caught an error:', error);
       console.error('Component stack:', errorInfo.componentStack);
@@ -45,6 +49,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   handleRetry = (): void => {
+    log('ErrorBoundary: User pressed retry');
     this.setState({
       hasError: false,
       error: null,

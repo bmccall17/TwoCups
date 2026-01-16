@@ -1,5 +1,91 @@
 # Two Cups - Ship Log
 
+## 2026-01-16 - US-062: Crashlytics / Error Reporting Setup
+
+**Status:** Complete (code-ready, awaiting Firebase config files)
+
+### Overview
+Integrated Firebase Crashlytics for native crash reporting and error monitoring. Uses `@react-native-firebase/crashlytics` with Expo config plugins. Platform-aware design ensures web builds continue to work (Crashlytics is no-op on web).
+
+### New Packages Installed
+- `@react-native-firebase/app@23.8.2`
+- `@react-native-firebase/crashlytics@23.8.2`
+
+### Files Created
+
+**Crashlytics Service (`src/services/crashlytics/index.ts`)**
+- Platform-aware initialization (no-op on web)
+- `initializeCrashlytics()` - Enable crash collection at app start
+- `setUserId(userId)` - Associate user with crashes
+- `setUserAttributes({displayName, coupleId, coupleStatus})` - Add context
+- `log(message)` - Breadcrumb logging for crash reports
+- `recordError(error, context)` - Non-fatal error reporting
+- `recordComponentError(error, componentStack)` - ErrorBoundary integration
+- `testCrash()` - Dev-only crash test for verification
+
+**Logger Utility (`src/utils/logger.ts`)**
+- Wraps console methods with Crashlytics integration
+- `logger.debug()` - Dev-only, never sent to Crashlytics
+- `logger.info()` - General info, optionally sent to Crashlytics
+- `logger.warn()` - Warnings, sent to Crashlytics by default
+- `logger.error()` - Errors, always sent to Crashlytics
+- Pre-configured namespaced loggers: `authLogger`, `apiLogger`, `navigationLogger`
+
+### Files Modified
+
+**app.json**
+- Added config plugins for @react-native-firebase/app and @react-native-firebase/crashlytics
+- Added `android.googleServicesFile: "./google-services.json"`
+- Added `ios.googleServicesFile: "./GoogleService-Info.plist"`
+
+**ErrorBoundary.tsx**
+- Integrated `recordComponentError()` in `componentDidCatch`
+- Added `log()` when user presses retry button
+
+**AuthContext.tsx**
+- Added useEffect to set `setUserId(user.uid)` on auth state change
+- Added useEffect to set `setUserAttributes()` with displayName, coupleId, coupleStatus
+
+**App.tsx**
+- Added useEffect to call `initializeCrashlytics()` on app start
+- Logs "App initialized" breadcrumb
+
+**TextInput.tsx**
+- Fixed TypeScript error with ternary operators for style conditions
+
+**src/utils/index.ts**
+- Added export for logger module
+
+### Configuration Required (User Action)
+
+To complete native build setup, download from Firebase Console and place in `TwoCupsApp/`:
+1. `google-services.json` (Project Settings > General > Android app)
+2. `GoogleService-Info.plist` (Project Settings > General > iOS app)
+
+Then run:
+```bash
+npx expo prebuild
+npx expo run:android  # or npx expo run:ios
+```
+
+### Acceptance Criteria Met
+- [x] Firebase Crashlytics integrated (via @react-native-firebase)
+- [x] Crashes automatically reported with stack traces (native SDK handles this)
+- [x] Non-fatal errors can be logged (via `recordError()`)
+- [x] User ID associated with crashes (via `setUserId()` in AuthContext)
+- [x] Dashboard accessible in Firebase Console (existing twocups-2026 project)
+
+### Verification
+- ✅ TypeScript compilation passes
+- ✅ Web build successful (Crashlytics is no-op on web)
+- ✅ Config plugins load correctly on native prebuild
+
+### Notes
+- Crashlytics will NOT work in Expo Go - requires development build
+- US-041 (Remove Debug Console Statements) and US-045 (Fix Silent Failures) are now unblocked
+
+---
+
 ## 2026-01-16 - US-040: Fix Type Mismatches Between Functions and Mobile
 
 **Status:** Complete

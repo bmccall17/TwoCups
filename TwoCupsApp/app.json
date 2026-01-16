@@ -14,7 +14,8 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.twocups.app"
+      "bundleIdentifier": "com.twocups.app",
+      "googleServicesFile": "./GoogleService-Info.plist"
     },
     "android": {
       "package": "com.twocups.app",
@@ -23,7 +24,8 @@
         "backgroundColor": "#0F0F0F"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -37,7 +39,9 @@
     },
     "plugins": [
       "expo-web-browser",
-      "expo-splash-screen"
+      "expo-splash-screen",
+      "./node_modules/@react-native-firebase/app/app.plugin.js",
+      "./node_modules/@react-native-firebase/crashlytics/app.plugin.js"
     ]
   }
 }

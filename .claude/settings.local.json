@@ -29,7 +29,11 @@
       "Bash(git config:*)",
       "Bash(ssh:*)",
       "Bash(convert:*)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(npx expo prebuild:*)",
+      "Bash(node --version)",
+      "Bash(npm:*)",
+      "Bash(node -e:*)"
     ]
   }
 }

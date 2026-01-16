@@ -16,8 +16,8 @@ interface TextInputProps extends RNTextInputProps {
 
 export function TextInput({ label, error, style, showCharacterCount, maxLength, value, ...props }: TextInputProps) {
   const characterCount = value?.length ?? 0;
-  const isNearLimit = maxLength && characterCount >= maxLength * 0.9;
-  const isAtLimit = maxLength && characterCount >= maxLength;
+  const isNearLimit = maxLength ? characterCount >= maxLength * 0.9 : false;
+  const isAtLimit = maxLength ? characterCount >= maxLength : false;
 
   return (
     <View style={styles.container}>

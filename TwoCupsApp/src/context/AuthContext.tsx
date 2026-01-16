@@ -18,6 +18,7 @@ import {
 import { doc, onSnapshot, setDoc, getDoc, Timestamp } from 'firebase/firestore';
 import { auth, db } from '../services/firebase/config';
 import { User, Couple } from '../types';
+import { setUserId, setUserAttributes } from '../services/crashlytics';
 
 interface AuthContextType {
   user: FirebaseUser | null;
@@ -159,6 +160,34 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
     };
   }, []);
+
+  // Set Crashlytics user ID when auth state changes
+  useEffect(() => {
+    const updateCrashlyticsUser = async () => {
+      if (user) {
+        await setUserId(user.uid);
+      } else {
+        await setUserId(null);
+      }
+    };
+
+    void updateCrashlyticsUser();
+  }, [user]);
+
+  // Set Crashlytics user attributes when user/couple data changes
+  useEffect(() => {
+    const updateCrashlyticsAttributes = async () => {
+      if (userData) {
+        await setUserAttributes({
+          displayName: userData.displayName || undefined,
+          coupleId: userData.activeCoupleId || undefined,
+          coupleStatus: coupleData?.status || undefined,
+        });
+      }
+    };
+
+    void updateCrashlyticsAttributes();
+  }, [userData, coupleData]);
 
   const signUp = async (email: string, password: string) => {
     return createUserWithEmailAndPassword(auth, email, password);
