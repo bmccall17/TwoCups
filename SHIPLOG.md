@@ -1,5 +1,126 @@
 # Two Cups - Ship Log
 
+## 2026-01-16 - Firebase Hosting Deploy Audit & Fix
+
+**Status:** Complete - Deployed
+
+### Problem
+Firebase Hosting was deploying incomplete builds. Only 6 of 21 files were reaching production, causing:
+- PWA manifest icons returning 404 (`/assets/icon.png`, `/assets/adaptive-icon.png`)
+- Service worker cache version was static (`two-cups-v1`), causing stale content after deploys
+- No mechanism to verify production matched local build
+- No clean build step meant stale files could persist between builds
+
+### Root Cause Analysis
+The Firebase hosting cache showed only these files were deployed:
+```
+sw.js, metadata.json, manifest.json, index.html, favicon.ico, _expo/static/js/web/*.js
+```
+
+Missing files (15 total):
+- All `/assets/*.png` icons referenced by manifest.json
+- All `assets/node_modules/@react-navigation/elements/...` navigation icons
+
+The `post-build.js` script copies icons to `dist/assets/`, but the deploy was happening before post-build completed or the script wasn't running at all.
+
+### Fixes Applied
+
+#### 1. Dynamic Service Worker Cache Versioning
+Changed `public/sw.js` to use `BUILD_TIMESTAMP` placeholder:
+```javascript
+// Before:
+const CACHE_NAME = 'two-cups-v1';
+
+// After:
+const CACHE_NAME = 'two-cups-BUILD_TIMESTAMP';
+```
+Post-build script replaces `BUILD_TIMESTAMP` with actual epoch time, ensuring users get fresh cache on each deploy.
+
+#### 2. Enhanced Post-Build Script (`scripts/post-build.js`)
+Rewrote to:
+- Ensure `dist/assets/` directory exists before copying
+- Inject build timestamp into service worker
+- Generate `build-manifest.json` with SHA-256 hashes of all files
+- Add proper error handling and exit codes
+- Log clear status for each operation
+
+#### 3. Clean Build Process
+Updated `package.json` build scripts:
+```json
+"clean": "rm -rf dist",
+"build:web": "npm run clean && expo export --platform web && node scripts/post-build.js"
+```
+Ensures no stale files from previous builds pollute the deploy.
+
+#### 4. Deployment Verification Script (`scripts/verify-deploy.js`)
+New script to compare `build-manifest.json` between local and production:
+- Fetches production manifest from `https://twocups-2026.web.app/build-manifest.json`
+- Compares build timestamps
+- Reports missing files, extra files, and hash mismatches
+- Clear recommendation when sync needed
+
+#### 5. Deterministic Deploy Script (`scripts/deploy-hosting.sh`)
+Root-level bash script that:
+- Cleans previous build
+- Runs fresh build
+- Validates all required files exist (index.html, sw.js, manifest.json, icons)
+- Counts total files and shows build timestamp
+- Deploys to Firebase Hosting
+- Supports `--preview` for preview channels and `--dry-run` for build-only
+
+### Files Created
+- `TwoCupsApp/scripts/verify-deploy.js` - Production verification script
+- `scripts/deploy-hosting.sh` - Deterministic deploy script
+
+### Files Modified
+- `TwoCupsApp/public/sw.js` - Added `BUILD_TIMESTAMP` placeholder
+- `TwoCupsApp/scripts/post-build.js` - Complete rewrite with manifest generation
+- `TwoCupsApp/package.json` - Added `clean`, `deploy:preview`, `verify:prod` scripts
+
+### New Scripts Available
+```bash
+# From TwoCupsApp/
+npm run clean           # Delete dist folder
+npm run build:web       # Clean + build + post-process
+npm run deploy          # Build + deploy to production
+npm run deploy:preview  # Build + deploy to preview channel
+npm run verify:prod     # Compare local build vs production
+
+# From repo root:
+./scripts/deploy-hosting.sh           # Full deploy with validation
+./scripts/deploy-hosting.sh --preview # Deploy to preview channel
+./scripts/deploy-hosting.sh --dry-run # Build only, verify files
+```
+
+### Verification
+- ✅ Clean build produces 21 files (was deploying only 6)
+- ✅ All PWA icons present in `dist/assets/`
+- ✅ Service worker has unique timestamp per build
+- ✅ `build-manifest.json` generated with file hashes
+- ✅ Full deploy to production successful
+- ✅ TypeScript compilation passes
+
+### Build Manifest Example
+```json
+{
+  "buildTimestamp": "1768603841461",
+  "buildDate": "2026-01-16T22:50:41.710Z",
+  "fileCount": 21,
+  "files": [
+    { "path": "assets/icon.png", "hash": "62dff384...", "size": 8436 },
+    { "path": "index.html", "hash": "980627a4...", "size": 2802 },
+    ...
+  ]
+}
+```
+
+### Deployed
+- **Live URL**: https://twocups-2026.web.app
+- **Files deployed**: 21 (previously 6)
+- **PWA icons**: Now loading correctly
+
+---
+
 ## 2026-01-16 - Bottom Tab Bar Layout Fix
 
 **Status:** Complete

@@ -34,26 +34,49 @@ service cloud.firestore {
     }
 
     // ============================================
+    // USERNAMES COLLECTION
+    // ============================================
+    match /usernames/{username} {
+      // Anyone authenticated can read usernames (for availability checks and login lookup)
+      allow read: if isAuthenticated();
+
+      // Users can create a username doc only for themselves
+      allow create: if isAuthenticated()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.keys().hasOnly(['uid', 'email', 'createdAt'])
+        && request.resource.data.uid is string
+        && request.resource.data.email is string
+        && request.resource.data.createdAt is timestamp;
+
+      // Only the owner can delete their username doc (for username changes)
+      allow delete: if isAuthenticated()
+        && resource.data.uid == request.auth.uid;
+
+      // No updates allowed - delete and recreate for username changes
+      allow update: if false;
+    }
+
+    // ============================================
     // USERS COLLECTION
     // ============================================
     match /users/{userId} {
-      // Users can read their own doc OR partner's doc (for displayName)
-      // For trusted user base, any authenticated user can read (displayName/initial only)
-      // User docs contain minimal non-sensitive data: displayName, initial, activeCoupleId, createdAt
+      // Users can read their own doc OR partner's doc (for username)
+      // For trusted user base, any authenticated user can read (username/initial only)
+      // User docs contain minimal non-sensitive data: username, initial, activeCoupleId, createdAt
       allow read: if isAuthenticated();
 
       // Users can only create their own document with required fields
       allow create: if isAuthenticated()
         && request.auth.uid == userId
-        && request.resource.data.keys().hasOnly(['displayName', 'initial', 'activeCoupleId', 'createdAt'])
-        && request.resource.data.displayName is string
+        && request.resource.data.keys().hasOnly(['username', 'initial', 'activeCoupleId', 'createdAt'])
+        && request.resource.data.username is string
         && request.resource.data.initial is string
         && request.resource.data.createdAt is timestamp;
 
       // Users can only update their own document, cannot change createdAt
-      allow update: if isAuthenticated() 
+      allow update: if isAuthenticated()
         && request.auth.uid == userId
-        && request.resource.data.keys().hasOnly(['displayName', 'initial', 'activeCoupleId', 'createdAt'])
+        && request.resource.data.keys().hasOnly(['username', 'initial', 'activeCoupleId', 'createdAt'])
         && request.resource.data.createdAt == resource.data.createdAt;
 
       // No delete allowed
