@@ -102,8 +102,11 @@ function MainTabNavigator() {
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textSecondary,
         tabBarLabelStyle: {
-          fontSize: 12,
+          fontSize: 10,
           fontWeight: '500',
+        },
+        tabBarItemStyle: {
+          paddingHorizontal: 2,
         },
       }}
     >
@@ -138,7 +141,7 @@ function MainTabNavigator() {
       <MainTab.Screen
         name="AcknowledgeTab"
         options={{
-          tabBarLabel: 'Acknowledge',
+          tabBarLabel: 'Ack',
           tabBarIcon: ({ focused }) => <TabIcon icon="✅" focused={focused} />,
         }}
       >

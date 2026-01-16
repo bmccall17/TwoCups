@@ -2,7 +2,7 @@
 
 ## 2026-01-16 - US-062: Crashlytics / Error Reporting Setup
 
-**Status:** Complete (code-ready, awaiting Firebase config files)
+**Status:** Complete
 
 ### Overview
 Integrated Firebase Crashlytics for native crash reporting and error monitoring. Uses `@react-native-firebase/crashlytics` with Expo config plugins. Platform-aware design ensures web builds continue to work (Crashlytics is no-op on web).
