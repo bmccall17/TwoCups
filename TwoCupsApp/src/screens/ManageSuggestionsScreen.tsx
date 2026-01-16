@@ -18,6 +18,12 @@ import { Button, TextInput, LoadingSpinner, EmptyState, ErrorState } from '../co
 import { colors, spacing, typography, borderRadius } from '../theme';
 import { Suggestion } from '../types';
 import { getErrorMessage } from '../types/utils';
+import {
+  validateAction,
+  validateDescription,
+  sanitizeText,
+  MAX_LENGTHS,
+} from '../utils/validation';
 
 const CATEGORIES = [
   'Words of Affirmation',
@@ -93,8 +99,17 @@ export function ManageSuggestionsScreen({ onGoBack }: ManageSuggestionsScreenPro
   }, [coupleId, myUid, refreshKey]);
 
   const handleSubmit = async () => {
-    if (!action.trim()) {
-      Alert.alert('Error', 'Please enter a suggestion');
+    // Validate action
+    const actionValidation = validateAction(action);
+    if (!actionValidation.isValid) {
+      Alert.alert('Error', actionValidation.error || 'Please enter a suggestion');
+      return;
+    }
+
+    // Validate description (optional but has max length)
+    const descValidation = validateDescription(description);
+    if (!descValidation.isValid) {
+      Alert.alert('Error', descValidation.error || 'Description is too long');
       return;
     }
 
@@ -107,8 +122,8 @@ export function ManageSuggestionsScreen({ onGoBack }: ManageSuggestionsScreenPro
     try {
       await createSuggestion({
         coupleId,
-        action: action.trim(),
-        description: description.trim() || undefined,
+        action: sanitizeText(action, true),
+        description: description.trim() ? sanitizeText(description, true) : undefined,
         category: category || undefined,
       });
 
@@ -226,6 +241,8 @@ export function ManageSuggestionsScreen({ onGoBack }: ManageSuggestionsScreenPro
               onChangeText={setAction}
               placeholder="e.g., Bring me coffee in the morning"
               multiline
+              maxLength={MAX_LENGTHS.ACTION}
+              showCharacterCount
             />
 
             <TextInput
@@ -234,6 +251,8 @@ export function ManageSuggestionsScreen({ onGoBack }: ManageSuggestionsScreenPro
               onChangeText={setDescription}
               placeholder="Add more details..."
               multiline
+              maxLength={MAX_LENGTHS.DESCRIPTION}
+              showCharacterCount
             />
 
             <Text style={styles.inputLabel}>Category</Text>

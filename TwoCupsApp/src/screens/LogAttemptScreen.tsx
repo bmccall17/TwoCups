@@ -19,6 +19,12 @@ import { Button, TextInput, LoadingSpinner, EmptyState, ErrorState } from '../co
 import { colors, spacing, typography, borderRadius } from '../theme';
 import { Request, Suggestion } from '../types';
 import { getErrorMessage } from '../types/utils';
+import {
+  validateAction,
+  validateDescription,
+  sanitizeText,
+  MAX_LENGTHS,
+} from '../utils/validation';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -172,8 +178,17 @@ export function LogAttemptScreen({ onGoBack }: LogAttemptScreenProps) {
   const categoriesWithSuggestions = CATEGORIES.filter(cat => categoryCounts[cat] > 0);
 
   const handleSubmit = async () => {
-    if (!action.trim()) {
-      showError('Please enter an action');
+    // Validate action
+    const actionValidation = validateAction(action);
+    if (!actionValidation.isValid) {
+      showError(actionValidation.error || 'Please enter an action');
+      return;
+    }
+
+    // Validate description (optional but has max length)
+    const descValidation = validateDescription(description);
+    if (!descValidation.isValid) {
+      showError(descValidation.error || 'Description is too long');
       return;
     }
 
@@ -192,8 +207,8 @@ export function LogAttemptScreen({ onGoBack }: LogAttemptScreenProps) {
       const result = await logAttempt({
         coupleId,
         forPlayerId: partnerId,
-        action: action.trim(),
-        description: description.trim() || undefined,
+        action: sanitizeText(action, true),
+        description: description.trim() ? sanitizeText(description, true) : undefined,
         category: category || undefined,
       });
 
@@ -414,6 +429,8 @@ export function LogAttemptScreen({ onGoBack }: LogAttemptScreenProps) {
               onChangeText={setAction}
               placeholder="What did you do?"
               multiline
+              maxLength={MAX_LENGTHS.ACTION}
+              showCharacterCount
             />
 
             <TextInput
@@ -422,6 +439,8 @@ export function LogAttemptScreen({ onGoBack }: LogAttemptScreenProps) {
               onChangeText={setDescription}
               placeholder="Add more details..."
               multiline
+              maxLength={MAX_LENGTHS.DESCRIPTION}
+              showCharacterCount
             />
 
             {/* Category Picker */}

@@ -13,6 +13,10 @@ import {
   increment,
 } from 'firebase/firestore';
 import { db, getCurrentUserId } from '../firebase/config';
+import {
+  validateActionServer,
+  validateDescriptionServer,
+} from '../../utils/validation';
 
 // Game configuration
 const BASE_GEM_AWARD = 1;
@@ -193,10 +197,9 @@ export async function logAttempt(params: LogAttemptParams): Promise<LogAttemptRe
 
   const { coupleId, forPlayerId, action, description, category } = params;
 
-  // Validate input
-  if (!action || action.trim().length === 0) {
-    throw new Error('Action is required');
-  }
+  // Validate and sanitize input (server-side)
+  const sanitizedAction = validateActionServer(action);
+  const sanitizedDescription = validateDescriptionServer(description);
 
   // Prevent self-attempts
   if (forPlayerId === uid) {
@@ -212,7 +215,7 @@ export async function logAttempt(params: LogAttemptParams): Promise<LogAttemptRe
   const coupleDocRef = doc(db, 'couples', coupleId);
 
   // Check for matching active request (case-insensitive)
-  const normalizedAction = action.trim().toLowerCase();
+  const normalizedAction = sanitizedAction.toLowerCase();
   let fulfilledRequestId: string | undefined;
 
   const requestsRef = collection(db, 'couples', coupleId, 'requests');
@@ -245,8 +248,8 @@ export async function logAttempt(params: LogAttemptParams): Promise<LogAttemptRe
   batch.set(attemptDocRef, {
     byPlayerId: uid,
     forPlayerId,
-    action: action.trim(),
-    description: description?.trim() || null,
+    action: sanitizedAction,
+    description: sanitizedDescription || null,
     category: category || null,
     createdAt: now,
     acknowledged: false,
@@ -395,9 +398,9 @@ export async function createRequest(params: {
 
   const { coupleId, forPlayerId, action, description, category } = params;
 
-  if (!action || action.trim().length === 0) {
-    throw new Error('Action is required');
-  }
+  // Validate and sanitize input (server-side)
+  const sanitizedAction = validateActionServer(action);
+  const sanitizedDescription = validateDescriptionServer(description);
 
   // Check active request limit
   const activeInfo = await getActiveRequestsInfo(coupleId);
@@ -411,8 +414,8 @@ export async function createRequest(params: {
   await setDoc(requestDocRef, {
     byPlayerId: uid,
     forPlayerId,
-    action: action.trim(),
-    description: description?.trim() || null,
+    action: sanitizedAction,
+    description: sanitizedDescription || null,
     category: category || null,
     status: 'active',
     createdAt: now,
@@ -437,17 +440,17 @@ export async function createSuggestion(params: {
 
   const { coupleId, action, description, category } = params;
 
-  if (!action || action.trim().length === 0) {
-    throw new Error('Action is required');
-  }
+  // Validate and sanitize input (server-side)
+  const sanitizedAction = validateActionServer(action);
+  const sanitizedDescription = validateDescriptionServer(description);
 
   const now = Timestamp.now();
   const suggestionDocRef = doc(collection(db, 'couples', coupleId, 'suggestions'));
 
   await setDoc(suggestionDocRef, {
     byPlayerId: uid,
-    action: action.trim(),
-    description: description?.trim() || null,
+    action: sanitizedAction,
+    description: sanitizedDescription || null,
     category: category || null,
     createdAt: now,
   });

@@ -48,7 +48,7 @@
     },
     {
       "id": "US-040",
-      "title": "Fix Type Mismatches Between Functions and Mobile",
+      "title": "Fix Type Mismatches Between Functions and Mobile (Android & iOS)",
       "description": "Align Suggestion and Request interfaces between Cloud Functions and mobile app.",
       "acceptanceCriteria": [
         "Shared type definitions between functions and mobile",

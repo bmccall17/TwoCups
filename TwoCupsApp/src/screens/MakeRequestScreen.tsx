@@ -20,6 +20,12 @@ import { Button, TextInput, LoadingSpinner, EmptyState, ErrorState } from '../co
 import { colors, spacing, typography, borderRadius } from '../theme';
 import { Request } from '../types';
 import { getErrorMessage } from '../types/utils';
+import {
+  validateAction,
+  validateDescription,
+  sanitizeText,
+  MAX_LENGTHS,
+} from '../utils/validation';
 
 const CATEGORIES = [
   'Words of Affirmation',
@@ -120,8 +126,17 @@ export function MakeRequestScreen({ onGoBack }: MakeRequestScreenProps) {
   const atLimit = requestsInfo !== null && requestsInfo.remaining <= 0;
 
   const handleSubmit = async () => {
-    if (!action.trim()) {
-      showError('Please enter what you would like');
+    // Validate action
+    const actionValidation = validateAction(action);
+    if (!actionValidation.isValid) {
+      showError(actionValidation.error || 'Please enter what you would like');
+      return;
+    }
+
+    // Validate description (optional but has max length)
+    const descValidation = validateDescription(description);
+    if (!descValidation.isValid) {
+      showError(descValidation.error || 'Description is too long');
       return;
     }
 
@@ -135,8 +150,8 @@ export function MakeRequestScreen({ onGoBack }: MakeRequestScreenProps) {
       await createRequest({
         coupleId,
         forPlayerId: partnerId,
-        action: action.trim(),
-        description: description.trim() || undefined,
+        action: sanitizeText(action, true),
+        description: description.trim() ? sanitizeText(description, true) : undefined,
         category: category || undefined,
       });
 
@@ -294,6 +309,8 @@ export function MakeRequestScreen({ onGoBack }: MakeRequestScreenProps) {
               onChangeText={setAction}
               placeholder="e.g., Make me coffee in the morning"
               multiline
+              maxLength={MAX_LENGTHS.ACTION}
+              showCharacterCount
             />
 
             <TextInput
@@ -302,6 +319,8 @@ export function MakeRequestScreen({ onGoBack }: MakeRequestScreenProps) {
               onChangeText={setDescription}
               placeholder="Add more details..."
               multiline
+              maxLength={MAX_LENGTHS.DESCRIPTION}
+              showCharacterCount
             />
 
             {/* Category Picker */}

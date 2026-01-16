@@ -13,6 +13,13 @@ import { useAuth } from '../../context/AuthContext';
 import { Button, TextInput } from '../../components/common';
 import { colors, spacing, typography } from '../../theme';
 import { isFirebaseError, getErrorMessage } from '../../types/utils';
+import {
+  validateEmail,
+  validatePassword,
+  validatePasswordMatch,
+  sanitizeEmail,
+  MAX_LENGTHS,
+} from '../../utils/validation';
 
 interface SignUpScreenProps {
   onNavigateToLogin: () => void;
@@ -33,20 +40,19 @@ export function SignUpScreen({ onNavigateToLogin }: SignUpScreenProps) {
   const validate = () => {
     const newErrors: typeof errors = {};
 
-    if (!email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(email)) {
-      newErrors.email = 'Invalid email format';
+    const emailValidation = validateEmail(email);
+    if (!emailValidation.isValid) {
+      newErrors.email = emailValidation.error;
     }
 
-    if (!password) {
-      newErrors.password = 'Password is required';
-    } else if (password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.isValid) {
+      newErrors.password = passwordValidation.error;
     }
 
-    if (password !== confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
+    const confirmValidation = validatePasswordMatch(password, confirmPassword);
+    if (!confirmValidation.isValid) {
+      newErrors.confirmPassword = confirmValidation.error;
     }
 
     setErrors(newErrors);
@@ -58,7 +64,7 @@ export function SignUpScreen({ onNavigateToLogin }: SignUpScreenProps) {
 
     setLoading(true);
     try {
-      await signUp(email.trim(), password);
+      await signUp(sanitizeEmail(email), password);
       // After successful signup, auth state will update automatically
     } catch (error: unknown) {
       let message = 'Please try again';
@@ -102,6 +108,7 @@ export function SignUpScreen({ onNavigateToLogin }: SignUpScreenProps) {
               autoCapitalize="none"
               autoCorrect={false}
               placeholder="your@email.com"
+              maxLength={MAX_LENGTHS.EMAIL}
             />
 
             <TextInput
@@ -111,6 +118,7 @@ export function SignUpScreen({ onNavigateToLogin }: SignUpScreenProps) {
               error={errors.password}
               secureTextEntry
               placeholder="At least 6 characters"
+              maxLength={MAX_LENGTHS.PASSWORD}
             />
 
             <TextInput
@@ -120,6 +128,7 @@ export function SignUpScreen({ onNavigateToLogin }: SignUpScreenProps) {
               error={errors.confirmPassword}
               secureTextEntry
               placeholder="Re-enter your password"
+              maxLength={MAX_LENGTHS.PASSWORD}
             />
 
             <Button

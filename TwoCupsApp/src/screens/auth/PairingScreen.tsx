@@ -15,6 +15,15 @@ import { Button, TextInput } from '../../components/common';
 import { createCouple, joinCouple } from '../../services/api';
 import { colors, spacing, typography, borderRadius } from '../../theme';
 import { getErrorMessage } from '../../types/utils';
+import {
+  validateDisplayName,
+  validateInitial,
+  validateInviteCode,
+  sanitizeText,
+  sanitizeInitial,
+  sanitizeInviteCode,
+  MAX_LENGTHS,
+} from '../../utils/validation';
 
 type Mode = 'choice' | 'create' | 'join';
 
@@ -46,20 +55,21 @@ export function PairingScreen() {
   const validate = () => {
     const newErrors: typeof errors = {};
 
-    if (!displayName.trim()) {
-      newErrors.displayName = 'Display name is required';
+    const displayNameValidation = validateDisplayName(displayName);
+    if (!displayNameValidation.isValid) {
+      newErrors.displayName = displayNameValidation.error;
     }
 
-    if (!initial.trim()) {
-      newErrors.initial = 'Initial is required';
-    } else if (initial.length !== 1) {
-      newErrors.initial = 'Initial must be a single character';
+    const initialValidation = validateInitial(initial);
+    if (!initialValidation.isValid) {
+      newErrors.initial = initialValidation.error;
     }
 
-    if (mode === 'join' && !inviteCode.trim()) {
-      newErrors.inviteCode = 'Invite code is required';
-    } else if (mode === 'join' && inviteCode.length !== 6) {
-      newErrors.inviteCode = 'Invite code must be 6 characters';
+    if (mode === 'join') {
+      const inviteCodeValidation = validateInviteCode(inviteCode);
+      if (!inviteCodeValidation.isValid) {
+        newErrors.inviteCode = inviteCodeValidation.error;
+      }
     }
 
     setErrors(newErrors);
@@ -72,8 +82,8 @@ export function PairingScreen() {
     setLoading(true);
     try {
       const result = await createCouple({
-        displayName: displayName.trim(),
-        initial: initial.toUpperCase(),
+        displayName: sanitizeText(displayName),
+        initial: sanitizeInitial(initial),
       });
 
       setGeneratedCode(result.inviteCode);
@@ -89,11 +99,12 @@ export function PairingScreen() {
 
     setLoading(true);
     try {
-      console.log('[PairingScreen] Joining couple with code:', inviteCode.toUpperCase());
+      const sanitizedCode = sanitizeInviteCode(inviteCode);
+      console.log('[PairingScreen] Joining couple with code:', sanitizedCode);
       const result = await joinCouple({
-        inviteCode: inviteCode.toUpperCase(),
-        displayName: displayName.trim(),
-        initial: initial.toUpperCase(),
+        inviteCode: sanitizedCode,
+        displayName: sanitizeText(displayName),
+        initial: sanitizeInitial(initial),
       });
       console.log('[PairingScreen] Join successful:', result);
       // Navigation happens automatically via AuthContext when coupleData.status becomes 'active'
@@ -177,6 +188,8 @@ export function PairingScreen() {
             onChangeText={setDisplayName}
             error={errors.displayName}
             placeholder="How your partner knows you"
+            maxLength={MAX_LENGTHS.DISPLAY_NAME}
+            showCharacterCount
           />
 
           <TextInput
@@ -185,7 +198,7 @@ export function PairingScreen() {
             onChangeText={(text) => setInitial(text.slice(0, 1))}
             error={errors.initial}
             placeholder="A single letter"
-            maxLength={1}
+            maxLength={MAX_LENGTHS.INITIAL}
             autoCapitalize="characters"
           />
 
@@ -226,7 +239,7 @@ export function PairingScreen() {
           onChangeText={(text) => setInviteCode(text.toUpperCase())}
           error={errors.inviteCode}
           placeholder="6-character code"
-          maxLength={6}
+          maxLength={MAX_LENGTHS.INVITE_CODE}
           autoCapitalize="characters"
         />
 
@@ -236,6 +249,8 @@ export function PairingScreen() {
           onChangeText={setDisplayName}
           error={errors.displayName}
           placeholder="How your partner knows you"
+          maxLength={MAX_LENGTHS.DISPLAY_NAME}
+          showCharacterCount
         />
 
         <TextInput
@@ -244,7 +259,7 @@ export function PairingScreen() {
           onChangeText={(text) => setInitial(text.slice(0, 1))}
           error={errors.initial}
           placeholder="A single letter"
-          maxLength={1}
+          maxLength={MAX_LENGTHS.INITIAL}
           autoCapitalize="characters"
         />
 

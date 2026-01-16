@@ -9,6 +9,11 @@ import {
   collection,
 } from 'firebase/firestore';
 import { db, getCurrentUserId } from '../firebase/config';
+import {
+  validateDisplayNameServer,
+  validateInitialServer,
+  validateInviteCodeServer,
+} from '../../utils/validation';
 
 // Configuration
 const INVITE_CODE_EXPIRATION_HOURS = 72;
@@ -57,13 +62,9 @@ export async function createCouple(params: CreateCoupleParams): Promise<CreateCo
 
   const { displayName, initial } = params;
 
-  // Validate input
-  if (!displayName || displayName.trim().length === 0) {
-    throw new Error('Display name is required');
-  }
-  if (!initial || initial.length !== 1) {
-    throw new Error('Initial must be a single character');
-  }
+  // Validate and sanitize input (server-side)
+  const sanitizedDisplayName = validateDisplayNameServer(displayName);
+  const sanitizedInitial = validateInitialServer(initial);
 
   // Check if user already has an active couple
   const userDocRef = doc(db, 'users', uid);
@@ -118,14 +119,14 @@ export async function createCouple(params: CreateCoupleParams): Promise<CreateCo
   // Create/update user document
   if (userDoc.exists()) {
     batch.update(userDocRef, {
-      displayName: displayName.trim(),
-      initial: initial.toUpperCase(),
+      displayName: sanitizedDisplayName,
+      initial: sanitizedInitial,
       activeCoupleId: coupleId,
     });
   } else {
     batch.set(userDocRef, {
-      displayName: displayName.trim(),
-      initial: initial.toUpperCase(),
+      displayName: sanitizedDisplayName,
+      initial: sanitizedInitial,
       activeCoupleId: coupleId,
       createdAt: now,
     });
@@ -160,16 +161,10 @@ export async function joinCouple(params: JoinCoupleParams): Promise<JoinCoupleRe
 
   const { inviteCode, displayName, initial } = params;
 
-  // Validate input
-  if (!inviteCode || inviteCode.length !== 6) {
-    throw new Error('Invalid invite code format');
-  }
-  if (!displayName || displayName.trim().length === 0) {
-    throw new Error('Display name is required');
-  }
-  if (!initial || initial.length !== 1) {
-    throw new Error('Initial must be a single character');
-  }
+  // Validate and sanitize input (server-side)
+  const sanitizedInviteCode = validateInviteCodeServer(inviteCode);
+  const sanitizedDisplayName = validateDisplayNameServer(displayName);
+  const sanitizedInitial = validateInitialServer(initial);
 
   // Check if user already has an active couple
   const userDocRef = doc(db, 'users', uid);
@@ -182,7 +177,7 @@ export async function joinCouple(params: JoinCoupleParams): Promise<JoinCoupleRe
   }
 
   // Validate invite code
-  const inviteDocRef = doc(db, 'inviteCodes', inviteCode.toUpperCase());
+  const inviteDocRef = doc(db, 'inviteCodes', sanitizedInviteCode);
   const inviteDoc = await getDoc(inviteDocRef);
 
   if (!inviteDoc.exists()) {
@@ -252,14 +247,14 @@ export async function joinCouple(params: JoinCoupleParams): Promise<JoinCoupleRe
   // Create/update user document
   if (userDoc.exists()) {
     batch.update(userDocRef, {
-      displayName: displayName.trim(),
-      initial: initial.toUpperCase(),
+      displayName: sanitizedDisplayName,
+      initial: sanitizedInitial,
       activeCoupleId: inviteData.coupleId,
     });
   } else {
     batch.set(userDocRef, {
-      displayName: displayName.trim(),
-      initial: initial.toUpperCase(),
+      displayName: sanitizedDisplayName,
+      initial: sanitizedInitial,
       activeCoupleId: inviteData.coupleId,
       createdAt: now,
     });

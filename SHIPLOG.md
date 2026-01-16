@@ -1,5 +1,103 @@
 # Two Cups - Ship Log
 
+## 2026-01-16 - US-043: Input Validation Improvements
+
+**Status:** Complete
+
+### Overview
+Added comprehensive input validation with max lengths, email regex, sanitization, and user-friendly error messages. Server-side validation matches client-side for defense in depth.
+
+### New Validation Utilities
+Created `TwoCupsApp/src/utils/validation.ts` with:
+
+**Max Length Constants:**
+- EMAIL: 254 (RFC 5321 maximum)
+- PASSWORD: 128
+- DISPLAY_NAME: 50
+- INITIAL: 1
+- ACTION: 500
+- DESCRIPTION: 1000
+- INVITE_CODE: 6
+
+**Email Validation:**
+- RFC 5322 compliant regex (improved from simple `/\S+@\S+\.\S+/`)
+- Properly validates common formats while rejecting invalid ones
+
+**Sanitization Functions:**
+- `sanitizeText()` - Removes null bytes, normalizes unicode, removes control characters
+- `sanitizeEmail()` - Trims, lowercases, normalizes
+- `sanitizeInitial()` - Uppercase, alphanumeric only
+- `sanitizeInviteCode()` - Uppercase, alphanumeric only, length enforced
+
+**Server-Side Validation:**
+- `validateActionServer()`, `validateDescriptionServer()`
+- `validateDisplayNameServer()`, `validateInitialServer()`
+- `validateInviteCodeServer()`
+- Throws user-friendly errors on validation failure
+
+### TextInput Component Enhancement
+Updated `TwoCupsApp/src/components/common/TextInput.tsx`:
+- Added `showCharacterCount` prop for real-time character counting
+- Added `maxLength` prop passthrough
+- Visual feedback: normal → warning (90%) → limit (100%)
+- Character count displayed as "X/Y" format
+
+### Client-Side Validation Applied
+
+**Auth Screens:**
+- SignUpScreen: Email, password, confirm password validation
+- LoginScreen: Email validation, password max length
+
+**Pairing Screen:**
+- Display name validation (max 50 chars, required)
+- Initial validation (exactly 1 alphanumeric char)
+- Invite code validation (exactly 6 alphanumeric chars)
+
+**Content Screens:**
+- MakeRequestScreen: Action (max 500), Description (max 1000)
+- ManageSuggestionsScreen: Action (max 500), Description (max 1000)
+- LogAttemptScreen: Action (max 500), Description (max 1000)
+
+### Server-Side Validation Applied
+
+**API Layer (actions.ts):**
+- `logAttempt()`: Validates and sanitizes action/description
+- `createRequest()`: Validates and sanitizes action/description
+- `createSuggestion()`: Validates and sanitizes action/description
+
+**API Layer (couples.ts):**
+- `createCouple()`: Validates and sanitizes displayName/initial
+- `joinCouple()`: Validates and sanitizes inviteCode/displayName/initial
+
+### Files Created
+- `TwoCupsApp/src/utils/validation.ts` - Validation utilities
+- `TwoCupsApp/src/utils/index.ts` - Utils barrel export
+
+### Files Modified
+- `TwoCupsApp/src/components/common/TextInput.tsx` - Character count support
+- `TwoCupsApp/src/screens/auth/SignUpScreen.tsx` - New validation
+- `TwoCupsApp/src/screens/auth/LoginScreen.tsx` - New validation
+- `TwoCupsApp/src/screens/auth/PairingScreen.tsx` - New validation
+- `TwoCupsApp/src/screens/MakeRequestScreen.tsx` - New validation + maxLength
+- `TwoCupsApp/src/screens/ManageSuggestionsScreen.tsx` - New validation + maxLength
+- `TwoCupsApp/src/screens/LogAttemptScreen.tsx` - New validation + maxLength
+- `TwoCupsApp/src/services/api/actions.ts` - Server-side validation
+- `TwoCupsApp/src/services/api/couples.ts` - Server-side validation
+
+### Acceptance Criteria Met
+- [x] Max length validation on all text inputs
+- [x] Proper email regex validation (RFC 5322 compliant)
+- [x] Input sanitization to prevent injection (null bytes, control chars, unicode normalization)
+- [x] Validation error messages are user-friendly
+- [x] Server-side validation matches client-side
+
+### Verification
+- ✅ TypeScript compilation passes
+- ✅ Web build successful
+- ✅ Deployed to Firebase Hosting
+
+---
+
 ## 2026-01-15 - UX Improvements & Navigation Consistency
 
 **Status:** Complete

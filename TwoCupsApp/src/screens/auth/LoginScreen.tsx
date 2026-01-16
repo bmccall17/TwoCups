@@ -13,6 +13,12 @@ import { useAuth } from '../../context/AuthContext';
 import { Button, TextInput } from '../../components/common';
 import { colors, spacing, typography } from '../../theme';
 import { getErrorMessage } from '../../types/utils';
+import {
+  validateEmail,
+  validatePassword,
+  sanitizeEmail,
+  MAX_LENGTHS,
+} from '../../utils/validation';
 
 interface LoginScreenProps {
   onNavigateToSignUp: () => void;
@@ -28,14 +34,16 @@ export function LoginScreen({ onNavigateToSignUp }: LoginScreenProps) {
   const validate = () => {
     const newErrors: { email?: string; password?: string } = {};
 
-    if (!email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(email)) {
-      newErrors.email = 'Invalid email format';
+    const emailValidation = validateEmail(email);
+    if (!emailValidation.isValid) {
+      newErrors.email = emailValidation.error;
     }
 
+    // For login, we only check that password is provided (not strength)
     if (!password) {
       newErrors.password = 'Password is required';
+    } else if (password.length > MAX_LENGTHS.PASSWORD) {
+      newErrors.password = `Password must be ${MAX_LENGTHS.PASSWORD} characters or less`;
     }
 
     setErrors(newErrors);
@@ -47,7 +55,7 @@ export function LoginScreen({ onNavigateToSignUp }: LoginScreenProps) {
 
     setLoading(true);
     try {
-      await signIn(email.trim(), password);
+      await signIn(sanitizeEmail(email), password);
     } catch (error: unknown) {
       Alert.alert('Login Failed', getErrorMessage(error));
     } finally {
@@ -89,6 +97,7 @@ export function LoginScreen({ onNavigateToSignUp }: LoginScreenProps) {
               autoCapitalize="none"
               autoCorrect={false}
               placeholder="your@email.com"
+              maxLength={MAX_LENGTHS.EMAIL}
             />
 
             <TextInput
@@ -98,6 +107,7 @@ export function LoginScreen({ onNavigateToSignUp }: LoginScreenProps) {
               error={errors.password}
               secureTextEntry
               placeholder="Enter your password"
+              maxLength={MAX_LENGTHS.PASSWORD}
             />
 
             <Button

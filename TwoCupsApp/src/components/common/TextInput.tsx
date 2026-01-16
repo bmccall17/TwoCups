@@ -11,18 +11,42 @@ import { colors, spacing, typography, borderRadius } from '../../theme';
 interface TextInputProps extends RNTextInputProps {
   label?: string;
   error?: string;
+  showCharacterCount?: boolean;
 }
 
-export function TextInput({ label, error, style, ...props }: TextInputProps) {
+export function TextInput({ label, error, style, showCharacterCount, maxLength, value, ...props }: TextInputProps) {
+  const characterCount = value?.length ?? 0;
+  const isNearLimit = maxLength && characterCount >= maxLength * 0.9;
+  const isAtLimit = maxLength && characterCount >= maxLength;
+
   return (
     <View style={styles.container}>
       {label && <Text style={styles.label}>{label}</Text>}
       <RNTextInput
         style={[styles.input, error && styles.inputError, style]}
         placeholderTextColor={colors.textMuted}
+        maxLength={maxLength}
+        value={value}
         {...props}
       />
-      {error && <Text style={styles.error}>{error}</Text>}
+      <View style={styles.bottomRow}>
+        {error ? (
+          <Text style={styles.error}>{error}</Text>
+        ) : (
+          <View style={styles.spacer} />
+        )}
+        {showCharacterCount && maxLength && (
+          <Text
+            style={[
+              styles.characterCount,
+              isNearLimit && styles.characterCountWarning,
+              isAtLimit && styles.characterCountLimit,
+            ]}
+          >
+            {characterCount}/{maxLength}
+          </Text>
+        )}
+      </View>
     </View>
   );
 }
@@ -49,9 +73,30 @@ const styles = StyleSheet.create({
   inputError: {
     borderColor: colors.error,
   },
+  bottomRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginTop: spacing.xs,
+    minHeight: 16,
+  },
+  spacer: {
+    flex: 1,
+  },
   error: {
     ...typography.caption,
     color: colors.error,
-    marginTop: spacing.xs,
+    flex: 1,
+  },
+  characterCount: {
+    ...typography.caption,
+    color: colors.textMuted,
+    marginLeft: spacing.sm,
+  },
+  characterCountWarning: {
+    color: colors.warning,
+  },
+  characterCountLimit: {
+    color: colors.error,
   },
 });
