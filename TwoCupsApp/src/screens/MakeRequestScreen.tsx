@@ -263,12 +263,14 @@ export function MakeRequestScreen({ onGoBack }: MakeRequestScreenProps) {
           )}
         </View>
 
-        {/* Info Box */}
-        <View style={styles.infoBox}>
-          <Text style={styles.infoText}>
-            Your request will appear in your partner's Log Attempt screen. When they fulfill it, you both get bonus gems!
-          </Text>
-        </View>
+        {/* Info Box - only show for first-time users */}
+        {requests.length === 0 && (
+          <View style={styles.infoBox}>
+            <Text style={styles.infoText}>
+              Your request will appear in your partner's Log Attempt screen. When they fulfill it, you both get bonus gems!
+            </Text>
+          </View>
+        )}
 
         {/* Add Request Button */}
         {!showForm && (

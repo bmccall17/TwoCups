@@ -202,11 +202,13 @@ export function ManageSuggestionsScreen({ onGoBack }: ManageSuggestionsScreenPro
           <Text style={styles.subtitle}>Ways your partner can fill your cup</Text>
         </View>
 
-        <View style={styles.infoBox}>
-          <Text style={styles.infoText}>
-            Add suggestions for things that make you feel loved. Your partner will see these in their Log Attempt screen.
-          </Text>
-        </View>
+        {suggestions.length === 0 && (
+          <View style={styles.infoBox}>
+            <Text style={styles.infoText}>
+              Add suggestions for things that make you feel loved. Your partner will see these in their Log Attempt screen.
+            </Text>
+          </View>
+        )}
 
         {!showForm && (
           <Button
