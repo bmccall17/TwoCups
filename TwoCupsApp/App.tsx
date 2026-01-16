@@ -40,6 +40,10 @@ type MainTabParamList = {
   AcknowledgeTab: undefined;
   HistoryTab: undefined;
   SettingsTab: undefined;
+};
+
+type MainStackParamList = {
+  Tabs: undefined;
   MakeRequest: undefined;
   ManageSuggestions: undefined;
   GemHistory: undefined;
@@ -52,6 +56,7 @@ type AppStackParamList = {
 
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
 const AppStack = createNativeStackNavigator<AppStackParamList>();
+const MainStack = createNativeStackNavigator<MainStackParamList>();
 const MainTab = createBottomTabNavigator<MainTabParamList>();
 
 function TabIcon({ icon, focused }: { icon: string; focused: boolean }) {
@@ -86,7 +91,7 @@ function AuthNavigator() {
   );
 }
 
-function MainTabNavigator() {
+function TabNavigator() {
   return (
     <MainTab.Navigator
       screenOptions={{
@@ -118,9 +123,9 @@ function MainTabNavigator() {
           <HomeScreen
             onNavigateToLogAttempt={() => navigation.navigate('LogTab')}
             onNavigateToAcknowledge={() => navigation.navigate('AcknowledgeTab')}
-            onNavigateToMakeRequest={() => navigation.navigate('MakeRequest')}
-            onNavigateToManageSuggestions={() => navigation.navigate('ManageSuggestions')}
-            onNavigateToGemHistory={() => navigation.navigate('GemHistory')}
+            onNavigateToMakeRequest={() => navigation.getParent()?.navigate('MakeRequest')}
+            onNavigateToManageSuggestions={() => navigation.getParent()?.navigate('ManageSuggestions')}
+            onNavigateToGemHistory={() => navigation.getParent()?.navigate('GemHistory')}
           />
         )}
       </MainTab.Screen>
@@ -164,53 +169,40 @@ function MainTabNavigator() {
       >
         {({ navigation }) => (
           <SettingsScreen
-            onNavigateToManageSuggestions={() => navigation.navigate('ManageSuggestions')}
-            onNavigateToMakeRequest={() => navigation.navigate('MakeRequest')}
-            onNavigateToGemHistory={() => navigation.navigate('GemHistory')}
-          />
-        )}
-      </MainTab.Screen>
-
-      {/* Hidden screens - not shown in tab bar but accessible with persistent navbar */}
-      <MainTab.Screen
-        name="MakeRequest"
-        options={{
-          tabBarButton: () => null,
-        }}
-      >
-        {({ navigation }) => (
-          <MakeRequestScreen
-            onGoBack={() => navigation.goBack()}
-          />
-        )}
-      </MainTab.Screen>
-
-      <MainTab.Screen
-        name="ManageSuggestions"
-        options={{
-          tabBarButton: () => null,
-        }}
-      >
-        {({ navigation }) => (
-          <ManageSuggestionsScreen
-            onGoBack={() => navigation.goBack()}
-          />
-        )}
-      </MainTab.Screen>
-
-      <MainTab.Screen
-        name="GemHistory"
-        options={{
-          tabBarButton: () => null,
-        }}
-      >
-        {({ navigation }) => (
-          <GemHistoryScreen
-            onGoBack={() => navigation.goBack()}
+            onNavigateToManageSuggestions={() => navigation.getParent()?.navigate('ManageSuggestions')}
+            onNavigateToMakeRequest={() => navigation.getParent()?.navigate('MakeRequest')}
+            onNavigateToGemHistory={() => navigation.getParent()?.navigate('GemHistory')}
           />
         )}
       </MainTab.Screen>
     </MainTab.Navigator>
+  );
+}
+
+function MainTabNavigator() {
+  return (
+    <MainStack.Navigator
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
+      <MainStack.Screen name="Tabs" component={TabNavigator} />
+      <MainStack.Screen name="MakeRequest">
+        {({ navigation }) => (
+          <MakeRequestScreen onGoBack={() => navigation.goBack()} />
+        )}
+      </MainStack.Screen>
+      <MainStack.Screen name="ManageSuggestions">
+        {({ navigation }) => (
+          <ManageSuggestionsScreen onGoBack={() => navigation.goBack()} />
+        )}
+      </MainStack.Screen>
+      <MainStack.Screen name="GemHistory">
+        {({ navigation }) => (
+          <GemHistoryScreen onGoBack={() => navigation.goBack()} />
+        )}
+      </MainStack.Screen>
+    </MainStack.Navigator>
   );
 }
 
