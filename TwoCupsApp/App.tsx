@@ -39,14 +39,14 @@ type MainTabParamList = {
   AcknowledgeTab: undefined;
   HistoryTab: undefined;
   SettingsTab: undefined;
+  MakeRequest: undefined;
+  ManageSuggestions: undefined;
+  GemHistory: undefined;
 };
 
 type AppStackParamList = {
   Pairing: undefined;
   MainTabs: undefined;
-  MakeRequest: undefined;
-  ManageSuggestions: undefined;
-  GemHistory: undefined;
 };
 
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
@@ -85,7 +85,7 @@ function AuthNavigator() {
   );
 }
 
-function MainTabNavigator({ navigation }: { navigation: NativeStackNavigationProp<AppStackParamList> }) {
+function MainTabNavigator() {
   return (
     <MainTab.Navigator
       screenOptions={{
@@ -113,10 +113,10 @@ function MainTabNavigator({ navigation }: { navigation: NativeStackNavigationPro
           tabBarIcon: ({ focused }) => <TabIcon icon="🏠" focused={focused} />,
         }}
       >
-        {({ navigation: tabNavigation }) => (
+        {({ navigation }) => (
           <HomeScreen
-            onNavigateToLogAttempt={() => tabNavigation.navigate('LogTab')}
-            onNavigateToAcknowledge={() => tabNavigation.navigate('AcknowledgeTab')}
+            onNavigateToLogAttempt={() => navigation.navigate('LogTab')}
+            onNavigateToAcknowledge={() => navigation.navigate('AcknowledgeTab')}
             onNavigateToMakeRequest={() => navigation.navigate('MakeRequest')}
             onNavigateToManageSuggestions={() => navigation.navigate('ManageSuggestions')}
             onNavigateToGemHistory={() => navigation.navigate('GemHistory')}
@@ -131,7 +131,7 @@ function MainTabNavigator({ navigation }: { navigation: NativeStackNavigationPro
           tabBarIcon: ({ focused }) => <TabIcon icon="💝" focused={focused} />,
         }}
       >
-        {() => <LogAttemptScreen onGoBack={() => navigation.navigate('MainTabs')} />}
+        {({ navigation }) => <LogAttemptScreen onGoBack={() => navigation.navigate('HomeTab')} />}
       </MainTab.Screen>
 
       <MainTab.Screen
@@ -161,11 +161,51 @@ function MainTabNavigator({ navigation }: { navigation: NativeStackNavigationPro
           tabBarIcon: ({ focused }) => <TabIcon icon="⚙️" focused={focused} />,
         }}
       >
-        {() => (
+        {({ navigation }) => (
           <SettingsScreen
             onNavigateToManageSuggestions={() => navigation.navigate('ManageSuggestions')}
             onNavigateToMakeRequest={() => navigation.navigate('MakeRequest')}
             onNavigateToGemHistory={() => navigation.navigate('GemHistory')}
+          />
+        )}
+      </MainTab.Screen>
+
+      {/* Hidden screens - not shown in tab bar but accessible with persistent navbar */}
+      <MainTab.Screen
+        name="MakeRequest"
+        options={{
+          tabBarButton: () => null,
+        }}
+      >
+        {({ navigation }) => (
+          <MakeRequestScreen
+            onGoBack={() => navigation.goBack()}
+          />
+        )}
+      </MainTab.Screen>
+
+      <MainTab.Screen
+        name="ManageSuggestions"
+        options={{
+          tabBarButton: () => null,
+        }}
+      >
+        {({ navigation }) => (
+          <ManageSuggestionsScreen
+            onGoBack={() => navigation.goBack()}
+          />
+        )}
+      </MainTab.Screen>
+
+      <MainTab.Screen
+        name="GemHistory"
+        options={{
+          tabBarButton: () => null,
+        }}
+      >
+        {({ navigation }) => (
+          <GemHistoryScreen
+            onGoBack={() => navigation.goBack()}
           />
         )}
       </MainTab.Screen>
@@ -185,32 +225,7 @@ function AppNavigator() {
       {!coupleIsActive ? (
         <AppStack.Screen name="Pairing" component={PairingScreen} />
       ) : (
-        <>
-          <AppStack.Screen name="MainTabs">
-            {(props) => <MainTabNavigator navigation={props.navigation} />}
-          </AppStack.Screen>
-          <AppStack.Screen name="MakeRequest">
-            {(props) => (
-              <MakeRequestScreen
-                onGoBack={() => props.navigation.goBack()}
-              />
-            )}
-          </AppStack.Screen>
-          <AppStack.Screen name="ManageSuggestions">
-            {(props) => (
-              <ManageSuggestionsScreen
-                onGoBack={() => props.navigation.goBack()}
-              />
-            )}
-          </AppStack.Screen>
-          <AppStack.Screen name="GemHistory">
-            {(props) => (
-              <GemHistoryScreen
-                onGoBack={() => props.navigation.goBack()}
-              />
-            )}
-          </AppStack.Screen>
-        </>
+        <AppStack.Screen name="MainTabs" component={MainTabNavigator} />
       )}
     </AppStack.Navigator>
   );
