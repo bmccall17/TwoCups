@@ -456,7 +456,7 @@ export async function createSuggestion(params: {
 }
 
 /**
- * Delete an active request
+ * Cancel an active request (marks as canceled, doesn't delete)
  */
 export async function deleteRequest(params: {
   coupleId: string;
@@ -482,14 +482,17 @@ export async function deleteRequest(params: {
 
   const requestData = requestDoc.data();
   if (requestData.byPlayerId !== uid) {
-    throw new Error('Only the creator can delete this request');
+    throw new Error('Only the creator can cancel this request');
   }
 
   if (requestData.status !== 'active') {
-    throw new Error('Only active requests can be deleted');
+    throw new Error('Only active requests can be canceled');
   }
 
-  await deleteDoc(requestDocRef);
+  // Update status to 'canceled' instead of deleting (per Firestore rules)
+  await updateDoc(requestDocRef, {
+    status: 'canceled',
+  });
 
   return { success: true };
 }

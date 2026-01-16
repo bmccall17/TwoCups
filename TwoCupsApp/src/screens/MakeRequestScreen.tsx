@@ -184,14 +184,17 @@ export function MakeRequestScreen({ onGoBack }: MakeRequestScreenProps) {
     }
   };
 
-  const filteredRequests = requests.filter(request => {
+  // Exclude canceled requests from display
+  const visibleRequests = requests.filter(r => r.status !== 'canceled');
+
+  const filteredRequests = visibleRequests.filter(request => {
     if (filter === 'active') return request.status === 'active';
     if (filter === 'fulfilled') return request.status === 'fulfilled';
     return true;
   });
 
-  const activeCount = requests.filter(r => r.status === 'active').length;
-  const fulfilledCount = requests.filter(r => r.status === 'fulfilled').length;
+  const activeCount = visibleRequests.filter(r => r.status === 'active').length;
+  const fulfilledCount = visibleRequests.filter(r => r.status === 'fulfilled').length;
 
   const formatDate = (date: Date) => {
     const now = new Date();
@@ -264,7 +267,7 @@ export function MakeRequestScreen({ onGoBack }: MakeRequestScreenProps) {
         </View>
 
         {/* Info Box - only show for first-time users */}
-        {requests.length === 0 && (
+        {visibleRequests.length === 0 && (
           <View style={styles.infoBox}>
             <Text style={styles.infoText}>
               Your request will appear in your partner's Log Attempt screen. When they fulfill it, you both get bonus gems!
@@ -359,7 +362,7 @@ export function MakeRequestScreen({ onGoBack }: MakeRequestScreenProps) {
               onPress={() => setFilter('all')}
             >
               <Text style={[styles.filterText, filter === 'all' && styles.filterTextActive]}>
-                All ({requests.length})
+                All ({visibleRequests.length})
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
