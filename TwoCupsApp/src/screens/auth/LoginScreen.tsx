@@ -15,8 +15,7 @@ import { colors, spacing, typography } from '../../theme';
 import { getErrorMessage } from '../../types/utils';
 import {
   validateEmail,
-  validatePassword,
-  sanitizeEmail,
+  validateUsername,
   MAX_LENGTHS,
 } from '../../utils/validation';
 
@@ -26,17 +25,31 @@ interface LoginScreenProps {
 
 export function LoginScreen({ onNavigateToSignUp }: LoginScreenProps) {
   const { signIn, signInAnonymously } = useAuth();
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState(''); // email or username
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [errors, setErrors] = useState<{ identifier?: string; password?: string }>({});
+
+  const isEmail = (value: string) => value.includes('@');
 
   const validate = () => {
-    const newErrors: { email?: string; password?: string } = {};
+    const newErrors: { identifier?: string; password?: string } = {};
+    const trimmed = identifier.trim();
 
-    const emailValidation = validateEmail(email);
-    if (!emailValidation.isValid) {
-      newErrors.email = emailValidation.error;
+    if (!trimmed) {
+      newErrors.identifier = 'Email or username is required';
+    } else if (isEmail(trimmed)) {
+      // Validate as email
+      const emailValidation = validateEmail(trimmed);
+      if (!emailValidation.isValid) {
+        newErrors.identifier = emailValidation.error;
+      }
+    } else {
+      // Validate as username
+      const usernameValidation = validateUsername(trimmed);
+      if (!usernameValidation.isValid) {
+        newErrors.identifier = usernameValidation.error;
+      }
     }
 
     // For login, we only check that password is provided (not strength)
@@ -55,7 +68,8 @@ export function LoginScreen({ onNavigateToSignUp }: LoginScreenProps) {
 
     setLoading(true);
     try {
-      await signIn(sanitizeEmail(email), password);
+      // signIn now handles both username and email lookup
+      await signIn(identifier.trim(), password);
     } catch (error: unknown) {
       Alert.alert('Login Failed', getErrorMessage(error));
     } finally {
@@ -89,14 +103,14 @@ export function LoginScreen({ onNavigateToSignUp }: LoginScreenProps) {
 
           <View style={styles.form}>
             <TextInput
-              label="Email"
-              value={email}
-              onChangeText={setEmail}
-              error={errors.email}
+              label="Email or Username"
+              value={identifier}
+              onChangeText={setIdentifier}
+              error={errors.identifier}
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
-              placeholder="your@email.com"
+              placeholder="your@email.com or username"
               maxLength={MAX_LENGTHS.EMAIL}
             />
 

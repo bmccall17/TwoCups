@@ -1,8 +1,15 @@
 // User document in /users/{uid}
 export interface User {
-  displayName: string;
+  username: string;
   initial: string;
   activeCoupleId: string | null;
+  createdAt: Date;
+}
+
+// Username lookup document in /usernames/{username}
+export interface UsernameDoc {
+  uid: string;
+  email: string;
   createdAt: Date;
 }
 

@@ -16,10 +16,8 @@ import { createCouple, joinCouple } from '../../services/api';
 import { colors, spacing, typography, borderRadius } from '../../theme';
 import { getErrorMessage } from '../../types/utils';
 import {
-  validateDisplayName,
   validateInitial,
   validateInviteCode,
-  sanitizeText,
   sanitizeInitial,
   sanitizeInviteCode,
   MAX_LENGTHS,
@@ -28,21 +26,27 @@ import {
 type Mode = 'choice' | 'create' | 'join';
 
 export function PairingScreen() {
-  const { signOut, coupleData } = useAuth();
+  const { signOut, coupleData, userData } = useAuth();
   // If user already has a pending couple, show the invite code
   const existingInviteCode = coupleData?.status === 'pending' ? coupleData.inviteCode : null;
 
   const [mode, setMode] = useState<Mode>('choice');
-  const [displayName, setDisplayName] = useState('');
+  // Auto-derive initial from username
   const [initial, setInitial] = useState('');
   const [inviteCode, setInviteCode] = useState('');
   const [generatedCode, setGeneratedCode] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{
-    displayName?: string;
     initial?: string;
     inviteCode?: string;
   }>({});
+
+  // Auto-derive initial from username when entering create/join mode
+  useEffect(() => {
+    if ((mode === 'create' || mode === 'join') && !initial && userData?.username) {
+      setInitial(userData.username.charAt(0).toUpperCase());
+    }
+  }, [mode, initial, userData?.username]);
 
   // Update state when coupleData loads with existing pending couple
   useEffect(() => {
@@ -54,11 +58,6 @@ export function PairingScreen() {
 
   const validate = () => {
     const newErrors: typeof errors = {};
-
-    const displayNameValidation = validateDisplayName(displayName);
-    if (!displayNameValidation.isValid) {
-      newErrors.displayName = displayNameValidation.error;
-    }
 
     const initialValidation = validateInitial(initial);
     if (!initialValidation.isValid) {
@@ -82,7 +81,6 @@ export function PairingScreen() {
     setLoading(true);
     try {
       const result = await createCouple({
-        displayName: sanitizeText(displayName),
         initial: sanitizeInitial(initial),
       });
 
@@ -103,7 +101,6 @@ export function PairingScreen() {
       console.log('[PairingScreen] Joining couple with code:', sanitizedCode);
       const result = await joinCouple({
         inviteCode: sanitizedCode,
-        displayName: sanitizeText(displayName),
         initial: sanitizeInitial(initial),
       });
       console.log('[PairingScreen] Join successful:', result);
@@ -161,7 +158,7 @@ export function PairingScreen() {
     <View>
       <Text style={styles.title}>Create Couple</Text>
       <Text style={styles.subtitle}>
-        Set up your profile and get an invite code for your partner.
+        Choose your initial and get an invite code for your partner.
       </Text>
 
       {generatedCode ? (
@@ -182,22 +179,16 @@ export function PairingScreen() {
         </View>
       ) : (
         <View style={styles.form}>
-          <TextInput
-            label="Your Name"
-            value={displayName}
-            onChangeText={setDisplayName}
-            error={errors.displayName}
-            placeholder="How your partner knows you"
-            maxLength={MAX_LENGTHS.DISPLAY_NAME}
-            showCharacterCount
-          />
+          <Text style={styles.welcomeText}>
+            Welcome, {userData?.username || 'User'}!
+          </Text>
 
           <TextInput
             label="Your Initial"
             value={initial}
-            onChangeText={(text) => setInitial(text.slice(0, 1))}
+            onChangeText={(text) => setInitial(text.slice(0, 1).toUpperCase())}
             error={errors.initial}
-            placeholder="A single letter"
+            placeholder="A single letter (shown on cup)"
             maxLength={MAX_LENGTHS.INITIAL}
             autoCapitalize="characters"
           />
@@ -233,6 +224,10 @@ export function PairingScreen() {
       </Text>
 
       <View style={styles.form}>
+        <Text style={styles.welcomeText}>
+          Welcome, {userData?.username || 'User'}!
+        </Text>
+
         <TextInput
           label="Invite Code"
           value={inviteCode}
@@ -244,21 +239,11 @@ export function PairingScreen() {
         />
 
         <TextInput
-          label="Your Name"
-          value={displayName}
-          onChangeText={setDisplayName}
-          error={errors.displayName}
-          placeholder="How your partner knows you"
-          maxLength={MAX_LENGTHS.DISPLAY_NAME}
-          showCharacterCount
-        />
-
-        <TextInput
           label="Your Initial"
           value={initial}
-          onChangeText={(text) => setInitial(text.slice(0, 1))}
+          onChangeText={(text) => setInitial(text.slice(0, 1).toUpperCase())}
           error={errors.initial}
-          placeholder="A single letter"
+          placeholder="A single letter (shown on cup)"
           maxLength={MAX_LENGTHS.INITIAL}
           autoCapitalize="characters"
         />
@@ -335,6 +320,12 @@ const styles = StyleSheet.create({
   },
   form: {
     marginBottom: spacing.lg,
+  },
+  welcomeText: {
+    ...typography.body,
+    color: colors.textPrimary,
+    marginBottom: spacing.md,
+    textAlign: 'center',
   },
   submitButton: {
     marginTop: spacing.md,

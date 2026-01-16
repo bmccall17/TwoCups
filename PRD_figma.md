@@ -324,6 +324,34 @@ interface Attempt {
 
 ---
 
+## Design Considerations
+
+### Navigation Patterns (IMPORTANT)
+
+**Bottom Tab Navigator with Hidden Screens:**
+- When using React Navigation's Bottom Tab Navigator with hidden screens (screens with `tabBarButton: () => null`)
+- **DO NOT** use `tabBarItemStyle: { flex: 1 }` in `screenOptions`
+- This will create invisible tab slots for hidden screens, causing layout issues
+- Let React Navigation handle tab sizing automatically - it will only size visible tabs
+- Hidden screens should only be used for full-screen modals/overlays that need the navbar visible but shouldn't appear as tabs
+
+**Example (CORRECT):**
+```tsx
+<MainTab.Navigator
+  screenOptions={{
+    tabBarLabelStyle: { fontSize: 10 },
+    // NO tabBarItemStyle here
+  }}
+>
+  <MainTab.Screen name="Home" {...} />
+  <MainTab.Screen name="Settings" options={{ tabBarButton: () => null }} />
+</MainTab.Navigator>
+```
+
+**Reference Issue:** Fixed 2026-01-16 - Bottom tab bar had 3 invisible slots taking width
+
+---
+
 ## Technical Architecture
 
 ### Recommended Stack

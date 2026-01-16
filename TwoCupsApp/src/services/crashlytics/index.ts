@@ -77,7 +77,7 @@ export const setUserId = async (userId: string | null): Promise<void> => {
  * Set custom attributes for crash context
  */
 export const setUserAttributes = async (attributes: {
-  displayName?: string;
+  username?: string;
   coupleId?: string;
   coupleStatus?: string;
 }): Promise<void> => {
@@ -87,8 +87,8 @@ export const setUserAttributes = async (attributes: {
   try {
     const safeAttributes: Record<string, string> = {};
 
-    if (attributes.displayName) {
-      safeAttributes.displayName = attributes.displayName;
+    if (attributes.username) {
+      safeAttributes.username = attributes.username;
     }
     if (attributes.coupleId) {
       safeAttributes.coupleId = attributes.coupleId;

@@ -34,7 +34,7 @@ export function HomeScreen({
     setTimeout(() => setRefreshing(false), 500);
   }, [refresh]);
 
-  const myName = useMemo(() => userData?.displayName || 'Me', [userData?.displayName]);
+  const myName = useMemo(() => userData?.username || 'Me', [userData?.username]);
   const collectiveLevel = useMemo(() => coupleData?.collectiveCupLevel ?? 0, [coupleData?.collectiveCupLevel]);
   
   const myCupLevel = useMemo(() => myPlayer?.cupLevel ?? 0, [myPlayer?.cupLevel]);

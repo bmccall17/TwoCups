@@ -73,7 +73,7 @@ export function GemHistoryScreen({ onGoBack }: GemHistoryScreenProps) {
       for (const partnerId of coupleData.partnerIds) {
         const userDoc = await getDoc(doc(db, 'users', partnerId));
         if (userDoc.exists()) {
-          names[partnerId] = userDoc.data()?.displayName || 'Unknown';
+          names[partnerId] = userDoc.data()?.username || 'Unknown';
         }
       }
       setPlayerNames(names);

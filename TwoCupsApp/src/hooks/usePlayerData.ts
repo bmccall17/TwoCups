@@ -94,11 +94,11 @@ export function usePlayerData(): UsePlayerDataResult {
         }
       );
 
-      // Get partner's display name from users collection
+      // Get partner's username from users collection
       const partnerUserRef = doc(db, 'users', partnerId);
       unsubscribePartnerUser = onSnapshot(partnerUserRef, (snapshot) => {
         if (snapshot.exists()) {
-          setPartnerName(snapshot.data()?.displayName || 'Partner');
+          setPartnerName(snapshot.data()?.username || 'Partner');
         }
       });
     }

@@ -4,7 +4,6 @@ import React, {
   useEffect,
   useState,
   ReactNode,
-  useCallback,
 } from 'react';
 import {
   User as FirebaseUser,
@@ -19,14 +18,16 @@ import { doc, onSnapshot, setDoc, getDoc, Timestamp } from 'firebase/firestore';
 import { auth, db } from '../services/firebase/config';
 import { User, Couple } from '../types';
 import { setUserId, setUserAttributes } from '../services/crashlytics';
+import { reserveUsername, lookupUsername } from '../services/api/usernames';
+import { sanitizeEmail } from '../utils/validation';
 
 interface AuthContextType {
   user: FirebaseUser | null;
   userData: User | null;
   coupleData: Couple | null;
   loading: boolean;
-  signUp: (email: string, password: string) => Promise<UserCredential>;
-  signIn: (email: string, password: string) => Promise<UserCredential>;
+  signUp: (email: string, password: string, username: string) => Promise<UserCredential>;
+  signIn: (identifier: string, password: string) => Promise<UserCredential>;
   signInAnonymously: () => Promise<UserCredential>;
   signOut: () => Promise<void>;
 }
@@ -105,7 +106,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           if (!userDoc.exists()) {
             // Create minimal user document for new anonymous users
             await setDoc(userDocRef, {
-              displayName: '',
+              username: '',
               initial: '',
               activeCoupleId: null,
               createdAt: Timestamp.now(),
@@ -123,9 +124,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
             console.log('[AuthContext] User snapshot received, exists:', docSnapshot.exists());
             if (docSnapshot.exists()) {
               const data = docSnapshot.data();
-              console.log('[AuthContext] User data:', { displayName: data?.displayName, activeCoupleId: data?.activeCoupleId });
+              console.log('[AuthContext] User data:', { username: data?.username, activeCoupleId: data?.activeCoupleId });
               setUserData({
-                displayName: data?.displayName ?? '',
+                username: data?.username ?? '',
                 initial: data?.initial ?? '',
                 activeCoupleId: data?.activeCoupleId ?? null,
                 createdAt: data?.createdAt?.toDate() ?? new Date(),
@@ -133,7 +134,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
             } else {
               console.log('[AuthContext] User document does not exist, setting empty userData');
               setUserData({
-                displayName: '',
+                username: '',
                 initial: '',
                 activeCoupleId: null,
                 createdAt: new Date(),
@@ -179,7 +180,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const updateCrashlyticsAttributes = async () => {
       if (userData) {
         await setUserAttributes({
-          displayName: userData.displayName || undefined,
+          username: userData.username || undefined,
           coupleId: userData.activeCoupleId || undefined,
           coupleStatus: coupleData?.status || undefined,
         });
@@ -189,11 +190,46 @@ export function AuthProvider({ children }: AuthProviderProps) {
     void updateCrashlyticsAttributes();
   }, [userData, coupleData]);
 
-  const signUp = async (email: string, password: string) => {
-    return createUserWithEmailAndPassword(auth, email, password);
+  const signUp = async (email: string, password: string, username: string) => {
+    // First create the Firebase Auth user
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+
+    // Then reserve the username (this creates the username doc and updates user doc)
+    try {
+      await reserveUsername(username, userCredential.user.uid, email);
+
+      // Create the user document with username
+      const userDocRef = doc(db, 'users', userCredential.user.uid);
+      await setDoc(userDocRef, {
+        username: username.toLowerCase(),
+        initial: username.charAt(0).toUpperCase(),
+        activeCoupleId: null,
+        createdAt: Timestamp.now(),
+      });
+    } catch (error) {
+      // If username reservation fails, we should probably delete the auth user
+      // but for now just rethrow - the user can try again
+      console.error('Failed to reserve username:', error);
+      throw error;
+    }
+
+    return userCredential;
   };
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (identifier: string, password: string) => {
+    let email = identifier;
+
+    // If identifier doesn't contain @, it's a username - look up the email
+    if (!identifier.includes('@')) {
+      const lookedUpEmail = await lookupUsername(identifier);
+      if (!lookedUpEmail) {
+        throw new Error('Username not found');
+      }
+      email = lookedUpEmail;
+    } else {
+      email = sanitizeEmail(identifier);
+    }
+
     return signInWithEmailAndPassword(auth, email, password);
   };
 

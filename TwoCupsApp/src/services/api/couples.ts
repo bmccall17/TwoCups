@@ -10,7 +10,6 @@ import {
 } from 'firebase/firestore';
 import { db, getCurrentUserId } from '../firebase/config';
 import {
-  validateDisplayNameServer,
   validateInitialServer,
   validateInviteCodeServer,
 } from '../../utils/validation';
@@ -30,7 +29,6 @@ function generateInviteCode(): string {
 }
 
 export interface CreateCoupleParams {
-  displayName: string;
   initial: string;
 }
 
@@ -41,7 +39,6 @@ export interface CreateCoupleResult {
 
 export interface JoinCoupleParams {
   inviteCode: string;
-  displayName: string;
   initial: string;
 }
 
@@ -60,10 +57,9 @@ export async function createCouple(params: CreateCoupleParams): Promise<CreateCo
     throw new Error('Must be logged in');
   }
 
-  const { displayName, initial } = params;
+  const { initial } = params;
 
   // Validate and sanitize input (server-side)
-  const sanitizedDisplayName = validateDisplayNameServer(displayName);
   const sanitizedInitial = validateInitialServer(initial);
 
   // Check if user already has an active couple
@@ -116,21 +112,12 @@ export async function createCouple(params: CreateCoupleParams): Promise<CreateCo
     joinedAt: now,
   });
 
-  // Create/update user document
-  if (userDoc.exists()) {
-    batch.update(userDocRef, {
-      displayName: sanitizedDisplayName,
-      initial: sanitizedInitial,
-      activeCoupleId: coupleId,
-    });
-  } else {
-    batch.set(userDocRef, {
-      displayName: sanitizedDisplayName,
-      initial: sanitizedInitial,
-      activeCoupleId: coupleId,
-      createdAt: now,
-    });
-  }
+  // Update user document with initial and coupleId
+  // Username is already set from signup, so we only update initial and activeCoupleId
+  batch.update(userDocRef, {
+    initial: sanitizedInitial,
+    activeCoupleId: coupleId,
+  });
 
   // Create invite code document
   const inviteCodeDocRef = doc(db, 'inviteCodes', inviteCode);
@@ -159,11 +146,10 @@ export async function joinCouple(params: JoinCoupleParams): Promise<JoinCoupleRe
     throw new Error('Must be logged in');
   }
 
-  const { inviteCode, displayName, initial } = params;
+  const { inviteCode, initial } = params;
 
   // Validate and sanitize input (server-side)
   const sanitizedInviteCode = validateInviteCodeServer(inviteCode);
-  const sanitizedDisplayName = validateDisplayNameServer(displayName);
   const sanitizedInitial = validateInitialServer(initial);
 
   // Check if user already has an active couple
@@ -244,24 +230,15 @@ export async function joinCouple(params: JoinCoupleParams): Promise<JoinCoupleRe
     joinedAt: now,
   });
 
-  // Create/update user document
-  if (userDoc.exists()) {
-    batch.update(userDocRef, {
-      displayName: sanitizedDisplayName,
-      initial: sanitizedInitial,
-      activeCoupleId: inviteData.coupleId,
-    });
-  } else {
-    batch.set(userDocRef, {
-      displayName: sanitizedDisplayName,
-      initial: sanitizedInitial,
-      activeCoupleId: inviteData.coupleId,
-      createdAt: now,
-    });
-  }
+  // Update user document with initial and coupleId
+  // Username is already set from signup, so we only update initial and activeCoupleId
+  batch.update(userDocRef, {
+    initial: sanitizedInitial,
+    activeCoupleId: inviteData.coupleId,
+  });
 
   // Mark invite code as used
-  batch.update(inviteDocRef, { 
+  batch.update(inviteDocRef, {
     status: 'used',
     usedBy: uid,
     usedAt: now,
@@ -272,6 +249,6 @@ export async function joinCouple(params: JoinCoupleParams): Promise<JoinCoupleRe
   return {
     coupleId: inviteData.coupleId,
     partnerId,
-    partnerName: partnerData?.displayName ?? 'Partner',
+    partnerName: partnerData?.username ?? 'Partner',
   };
 }

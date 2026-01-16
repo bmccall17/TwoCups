@@ -1,5 +1,26 @@
 # Two Cups - Ship Log
 
+## 2026-01-16 - Bottom Tab Bar Layout Fix
+
+**Status:** Complete
+
+### Problem
+Bottom tab bar had invisible tab slots taking up space. React Navigation's `role="tablist"` had 8 children (5 visible tabs + 3 hidden screens), but all were using `flex: 1` which created equal-width slots for all 8 items, leaving 3 invisible gaps.
+
+### Root Cause
+The `tabBarItemStyle: { flex: 1 }` configuration in `App.tsx` was forcing all tab screens (including hidden ones with `tabBarButton: () => null`) to occupy equal flex space.
+
+### Fix Applied
+Removed `tabBarItemStyle` from MainTab.Navigator screenOptions in `App.tsx:108-110`. React Navigation now only renders and sizes the 5 visible tabs.
+
+### Files Modified
+- `TwoCupsApp/App.tsx` - Removed `tabBarItemStyle: { flex: 1 }`
+
+### Design Note Added
+Added warning to PRD_figma.md about avoiding fixed flex layouts when using hidden tab screens with `tabBarButton: () => null`.
+
+---
+
 ## 2026-01-16 - US-062: Crashlytics / Error Reporting Setup
 
 **Status:** Complete

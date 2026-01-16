@@ -11,6 +11,7 @@ export const MAX_LENGTHS = {
   // Auth fields
   EMAIL: 254, // RFC 5321 maximum
   PASSWORD: 128,
+  USERNAME: 20,
 
   // User profile
   DISPLAY_NAME: 50,
@@ -22,6 +23,10 @@ export const MAX_LENGTHS = {
 
   // Codes
   INVITE_CODE: 6,
+} as const;
+
+export const MIN_LENGTHS = {
+  USERNAME: 3,
 } as const;
 
 // ============================================================================
@@ -220,6 +225,45 @@ export function validateInviteCode(code: string): { isValid: boolean; error?: st
 }
 
 // ============================================================================
+// USERNAME VALIDATION
+// ============================================================================
+
+/**
+ * Username regex: lowercase letters, numbers, underscores
+ * Must start with a letter
+ */
+const USERNAME_REGEX = /^[a-z][a-z0-9_]*$/;
+
+/**
+ * Validates a username
+ * Rules: 3-20 chars, lowercase alphanumeric + underscores, must start with letter
+ */
+export function validateUsername(username: string): { isValid: boolean; error?: string } {
+  const trimmed = username.trim().toLowerCase();
+
+  if (!trimmed) {
+    return { isValid: false, error: 'Username is required' };
+  }
+
+  if (trimmed.length < MIN_LENGTHS.USERNAME) {
+    return { isValid: false, error: `Username must be at least ${MIN_LENGTHS.USERNAME} characters` };
+  }
+
+  if (trimmed.length > MAX_LENGTHS.USERNAME) {
+    return { isValid: false, error: `Username must be ${MAX_LENGTHS.USERNAME} characters or less` };
+  }
+
+  if (!USERNAME_REGEX.test(trimmed)) {
+    if (!/^[a-z]/.test(trimmed)) {
+      return { isValid: false, error: 'Username must start with a letter' };
+    }
+    return { isValid: false, error: 'Username can only contain letters, numbers, and underscores' };
+  }
+
+  return { isValid: true };
+}
+
+// ============================================================================
 // INPUT SANITIZATION
 // ============================================================================
 
@@ -286,6 +330,17 @@ export function sanitizeInviteCode(code: string): string {
     .substring(0, MAX_LENGTHS.INVITE_CODE);
 }
 
+/**
+ * Sanitizes and formats username
+ */
+export function sanitizeUsername(username: string): string {
+  return username
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_]/g, '')
+    .substring(0, MAX_LENGTHS.USERNAME);
+}
+
 // ============================================================================
 // COMBINED VALIDATION + SANITIZATION
 // ============================================================================
@@ -344,6 +399,20 @@ export function processDisplayName(displayName: string): ValidationResult {
 export function processEmail(email: string): ValidationResult {
   const sanitized = sanitizeEmail(email);
   const validation = validateEmail(sanitized);
+
+  return {
+    isValid: validation.isValid,
+    sanitizedValue: sanitized,
+    error: validation.error,
+  };
+}
+
+/**
+ * Validates and sanitizes a username
+ */
+export function processUsername(username: string): ValidationResult {
+  const sanitized = sanitizeUsername(username);
+  const validation = validateUsername(sanitized);
 
   return {
     isValid: validation.isValid,
@@ -418,4 +487,16 @@ export function validateInviteCodeServer(code: string): string {
     throw new Error(validation.error || 'Invalid invite code');
   }
   return sanitized;
+}
+
+/**
+ * Server-side validation for username
+ * Throws error if validation fails
+ */
+export function validateUsernameServer(username: string): string {
+  const result = processUsername(username);
+  if (!result.isValid) {
+    throw new Error(result.error || 'Invalid username');
+  }
+  return result.sanitizedValue;
 }

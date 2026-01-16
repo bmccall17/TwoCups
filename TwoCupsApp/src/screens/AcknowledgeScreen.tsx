@@ -129,7 +129,7 @@ export function AcknowledgeScreen() {
         if (partnerId !== myUid) {
           const userDoc = await getDoc(doc(db, 'users', partnerId));
           if (userDoc.exists()) {
-            names[partnerId] = userDoc.data()?.displayName || 'Partner';
+            names[partnerId] = userDoc.data()?.username || 'Partner';
           }
         }
       }

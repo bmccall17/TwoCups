@@ -105,9 +105,6 @@ function MainTabNavigator() {
           fontSize: 10,
           fontWeight: '500',
         },
-        tabBarItemStyle: {
-          flex: 1,
-        },
       }}
     >
       <MainTab.Screen

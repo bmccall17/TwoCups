@@ -1,9 +1,27 @@
-import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  SafeAreaView,
+  ScrollView,
+  Modal,
+  TouchableOpacity,
+  ActivityIndicator,
+  Alert,
+} from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { usePlayerData } from '../hooks';
-import { Button, ErrorState } from '../components/common';
+import { Button, ErrorState, TextInput } from '../components/common';
 import { colors, spacing, typography, borderRadius } from '../theme';
+import { isUsernameAvailable, updateUsername } from '../services/api/usernames';
+import {
+  validateUsername,
+  sanitizeUsername,
+  MAX_LENGTHS,
+  MIN_LENGTHS,
+} from '../utils/validation';
+import { auth } from '../services/firebase/config';
 
 interface SettingsScreenProps {
   onNavigateToManageSuggestions?: () => void;
@@ -19,9 +37,91 @@ export function SettingsScreen({
   const { userData, coupleData, signOut } = useAuth();
   const { partnerName, error, refresh } = usePlayerData();
 
-  const displayName = userData?.displayName || 'Guest';
+  const username = userData?.username || 'Guest';
   const inviteCode = coupleData?.inviteCode || '—';
   const isActive = coupleData?.status === 'active';
+
+  // Username change modal state
+  const [showUsernameModal, setShowUsernameModal] = useState(false);
+  const [newUsername, setNewUsername] = useState('');
+  const [checkingUsername, setCheckingUsername] = useState(false);
+  const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
+  const [usernameError, setUsernameError] = useState<string | undefined>();
+  const [savingUsername, setSavingUsername] = useState(false);
+
+  // Debounced username availability check
+  useEffect(() => {
+    if (!showUsernameModal) return;
+
+    const sanitized = sanitizeUsername(newUsername);
+    const validation = validateUsername(sanitized);
+
+    // Reset availability if username is invalid or same as current
+    if (!validation.isValid || sanitized.length < MIN_LENGTHS.USERNAME) {
+      setUsernameAvailable(null);
+      setUsernameError(validation.error);
+      return;
+    }
+
+    if (sanitized === userData?.username?.toLowerCase()) {
+      setUsernameAvailable(null);
+      setUsernameError('This is your current username');
+      return;
+    }
+
+    setUsernameError(undefined);
+    setCheckingUsername(true);
+    const timer = setTimeout(async () => {
+      try {
+        const available = await isUsernameAvailable(sanitized);
+        setUsernameAvailable(available);
+        if (!available) {
+          setUsernameError('Username is already taken');
+        }
+      } catch (err) {
+        console.error('Error checking username:', err);
+      } finally {
+        setCheckingUsername(false);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [newUsername, showUsernameModal, userData?.username]);
+
+  const handleOpenUsernameModal = () => {
+    setNewUsername('');
+    setUsernameAvailable(null);
+    setUsernameError(undefined);
+    setShowUsernameModal(true);
+  };
+
+  const handleSaveUsername = async () => {
+    if (!usernameAvailable || !userData?.username) return;
+
+    const uid = auth.currentUser?.uid;
+    const email = auth.currentUser?.email;
+    if (!uid || !email) {
+      Alert.alert('Error', 'You must be logged in to change your username');
+      return;
+    }
+
+    setSavingUsername(true);
+    try {
+      await updateUsername(
+        userData.username,
+        sanitizeUsername(newUsername),
+        uid,
+        email
+      );
+      setShowUsernameModal(false);
+      Alert.alert('Success', 'Username updated successfully');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to update username';
+      Alert.alert('Error', message);
+    } finally {
+      setSavingUsername(false);
+    }
+  };
 
   if (error) {
     return (
@@ -47,8 +147,18 @@ export function SettingsScreen({
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Profile</Text>
           <View style={styles.card}>
-            <Text style={styles.label}>Display Name</Text>
-            <Text style={styles.value}>{displayName}</Text>
+            <View style={styles.profileRow}>
+              <View>
+                <Text style={styles.label}>Username</Text>
+                <Text style={styles.value}>{username}</Text>
+              </View>
+              <Button
+                title="Change"
+                onPress={handleOpenUsernameModal}
+                variant="secondary"
+                style={styles.changeButton}
+              />
+            </View>
           </View>
         </View>
 
@@ -105,6 +215,62 @@ export function SettingsScreen({
           />
         </View>
       </ScrollView>
+
+      {/* Username Change Modal */}
+      <Modal
+        visible={showUsernameModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowUsernameModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Change Username</Text>
+            <Text style={styles.modalSubtitle}>
+              Current: {username}
+            </Text>
+
+            <View style={styles.usernameInputContainer}>
+              <TextInput
+                label="New Username"
+                value={newUsername}
+                onChangeText={setNewUsername}
+                error={usernameError}
+                autoCapitalize="none"
+                autoCorrect={false}
+                placeholder="letters, numbers, underscores"
+                maxLength={MAX_LENGTHS.USERNAME}
+              />
+              {checkingUsername && (
+                <View style={styles.usernameStatus}>
+                  <ActivityIndicator size="small" color={colors.primary} />
+                </View>
+              )}
+              {!checkingUsername && usernameAvailable === true && (
+                <View style={styles.usernameStatus}>
+                  <Text style={styles.availableText}>Available</Text>
+                </View>
+              )}
+            </View>
+
+            <View style={styles.modalButtons}>
+              <Button
+                title="Cancel"
+                onPress={() => setShowUsernameModal(false)}
+                variant="outline"
+                style={styles.modalButton}
+              />
+              <Button
+                title="Save"
+                onPress={handleSaveUsername}
+                loading={savingUsername}
+                disabled={!usernameAvailable}
+                style={styles.modalButton}
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -138,6 +304,15 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
     padding: spacing.md,
   },
+  profileRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  changeButton: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+  },
   label: {
     ...typography.caption,
     color: colors.textSecondary,
@@ -161,5 +336,53 @@ const styles = StyleSheet.create({
   },
   signOutButton: {
     opacity: 0.7,
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.lg,
+  },
+  modalContent: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    padding: spacing.xl,
+    width: '100%',
+    maxWidth: 400,
+  },
+  modalTitle: {
+    ...typography.h2,
+    color: colors.textPrimary,
+    textAlign: 'center',
+    marginBottom: spacing.xs,
+  },
+  modalSubtitle: {
+    ...typography.body,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: spacing.lg,
+  },
+  usernameInputContainer: {
+    position: 'relative',
+    marginBottom: spacing.lg,
+  },
+  usernameStatus: {
+    position: 'absolute',
+    right: 12,
+    top: 38,
+  },
+  availableText: {
+    ...typography.caption,
+    color: colors.success,
+    fontWeight: '600',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  modalButton: {
+    flex: 1,
   },
 });
