@@ -84,6 +84,14 @@ npx expo run:android  # or npx expo run:ios
 - Crashlytics will NOT work in Expo Go - requires development build
 - US-041 (Remove Debug Console Statements) and US-045 (Fix Silent Failures) are now unblocked
 
+### Native Build Setup (2026-01-16)
+Firebase config files added and prebuild completed:
+- ✅ `google-services.json` → `TwoCupsApp/` → copied to `android/app/`
+- ✅ `GoogleService-Info.plist` → `TwoCupsApp/` → copied to `ios/TwoCups/`
+- ✅ iOS `AppDelegate.swift`: `FirebaseApp.configure()` injected (line 28)
+- ✅ Android `build.gradle`: `google-services` and `crashlytics` plugins applied
+- 🔜 Next: Run `npx expo run:android` or `npx expo run:ios` to test on device
+
 ---
 
 ## 2026-01-16 - US-040: Fix Type Mismatches Between Functions and Mobile
