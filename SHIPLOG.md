@@ -1,5 +1,114 @@
 # Two Cups - Ship Log
 
+## 2026-01-15 - UX Improvements & Navigation Consistency
+
+**Status:** Complete
+
+### Problems Solved
+1. **Inconsistent form UX** - LogAttemptScreen and MakeRequestScreen showed forms by default, unlike ManageSuggestionsScreen's clean "+ Add" button pattern
+2. **Missing bottom navbar** - MakeRequest, ManageSuggestions, and GemHistory screens didn't show the bottom navbar, creating dead ends
+3. **Delete buttons not working** - Alert.alert() doesn't work on web, causing delete buttons to fail silently
+4. **Inconsistent delete UI** - Delete buttons had different styles across screens
+5. **Firestore permission errors** - Delete requests failing due to security rules only allowing status updates
+6. **Cluttered first-time UX** - Info boxes remained visible even after users created their first items
+
+### Changes Made
+
+#### 1. Unified Form UX Pattern
+Applied ManageSuggestionsScreen's clean pattern to LogAttemptScreen and MakeRequestScreen:
+- Added `showForm` state (starts as `false`)
+- Added prominent "+ Add Request" / "+ Log an Attempt" buttons
+- Forms only appear when button clicked or item tapped
+- Cancel/Submit buttons properly sized (flex 1:2 ratio)
+- Form disappears after successful submission
+
+**Files Modified:**
+- `TwoCupsApp/src/screens/LogAttemptScreen.tsx` - Added showForm toggle, Cancel button
+- `TwoCupsApp/src/screens/MakeRequestScreen.tsx` - Added showForm toggle, Cancel button
+
+#### 2. Persistent Bottom Navbar
+Moved hidden screens into MainTab navigator for consistent navigation safety:
+- Moved `MakeRequest`, `ManageSuggestions`, `GemHistory` from AppStack → MainTab
+- Added `tabBarButton: () => null` to hide them from tab bar
+- Bottom navbar now visible on ALL post-login screens
+- Users can always navigate home or to other main screens
+
+**Files Modified:**
+- `TwoCupsApp/App.tsx` - Restructured navigation hierarchy
+
+#### 3. Web-Compatible Delete Functionality
+Fixed delete buttons to work on both web and mobile:
+- Added Platform.OS detection
+- Web: Uses `window.confirm()` for confirmation dialogs
+- Mobile: Uses React Native's `Alert.alert()` (for future native apps)
+- Both suggestions and requests now delete properly
+
+**Files Modified:**
+- `TwoCupsApp/src/screens/ManageSuggestionsScreen.tsx` - Added platform detection
+- `TwoCupsApp/src/screens/MakeRequestScreen.tsx` - Added platform detection
+
+#### 4. Consistent Delete Button UI
+Standardized delete button appearance across all screens:
+- Simple "✕" button in top-right of cards
+- fontSize: 18 for consistency
+- Same padding and color scheme
+- Clean, minimal design
+
+**Files Modified:**
+- `TwoCupsApp/src/screens/ManageSuggestionsScreen.tsx` - Updated styles
+- `TwoCupsApp/src/screens/MakeRequestScreen.tsx` - Updated styles
+
+#### 5. Fixed Request Deletion (Firestore Rules)
+Changed delete behavior to match Firestore security rules:
+- Requests can't be truly deleted (per rules: `allow delete: if false`)
+- Changed `deleteRequest()` to update status to 'canceled' instead
+- Filtered out canceled requests from all displays
+- User sees same result (item disappears) without permission errors
+
+**Files Modified:**
+- `TwoCupsApp/src/services/api/actions.ts` - Changed deleteDoc → updateDoc
+- `TwoCupsApp/src/screens/MakeRequestScreen.tsx` - Filter out canceled requests
+
+#### 6. Context-Aware Info Boxes
+Info boxes now only show for first-time users:
+- ManageSuggestionsScreen: Hidden when `suggestions.length > 0`
+- MakeRequestScreen: Hidden when `visibleRequests.length > 0`
+- Cleaner UI after users understand the feature
+
+**Files Modified:**
+- `TwoCupsApp/src/screens/ManageSuggestionsScreen.tsx` - Conditional rendering
+- `TwoCupsApp/src/screens/MakeRequestScreen.tsx` - Conditional rendering
+
+### User Flow Improvements
+
+**Before:**
+- Forms always visible (cluttered)
+- No navbar on some screens (dead ends)
+- Delete buttons don't work on web
+- Info boxes always showing
+
+**After:**
+- Clean "+ Add" buttons → form appears → submit → form disappears
+- Bottom navbar persistent everywhere (safety & user confidence)
+- Delete works on all platforms
+- Info boxes only for first-time users
+
+### Verification
+- ✅ TypeScript compilation passes
+- ✅ Web build successful
+- ✅ All three screens follow identical UX pattern
+- ✅ Bottom navbar visible on all post-login screens
+- ✅ Delete buttons functional on web (window.confirm)
+- ✅ Requests marked as canceled (no permission errors)
+- ✅ Info boxes hide after first use
+
+### Deployed
+- Build: `npm run build:web`
+- Deploy: `firebase deploy --only hosting`
+- Live at: https://twocups-2026.web.app
+
+---
+
 ## 2026-01-15 - US-039: TypeScript Type Safety Improvements
 
 **Status:** Complete
