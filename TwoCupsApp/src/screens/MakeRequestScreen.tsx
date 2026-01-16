@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Alert,
   RefreshControl,
+  Platform,
 } from 'react-native';
 import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
 import { db } from '../services/firebase/config';
@@ -152,31 +153,35 @@ export function MakeRequestScreen({ onGoBack }: MakeRequestScreenProps) {
     }
   };
 
-  const handleDeleteRequest = (request: Request) => {
-    Alert.alert(
-      'Delete Request',
-      `Are you sure you want to delete "${request.action}"?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            if (!coupleId) return;
-            setDeleting(request.id);
-            try {
-              await deleteRequest({ coupleId, requestId: request.id });
-              await loadRequestsInfo();
-              showSuccess('Request deleted');
-            } catch (error: unknown) {
-              showError(getErrorMessage(error) || 'Failed to delete request');
-            } finally {
-              setDeleting(null);
-            }
-          },
-        },
-      ]
-    );
+  const handleDeleteRequest = async (request: Request) => {
+    const doDelete = async () => {
+      if (!coupleId) return;
+      setDeleting(request.id);
+      try {
+        await deleteRequest({ coupleId, requestId: request.id });
+        await loadRequestsInfo();
+        showSuccess('Request deleted');
+      } catch (error: unknown) {
+        showError(getErrorMessage(error) || 'Failed to delete request');
+      } finally {
+        setDeleting(null);
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm(`Are you sure you want to delete "${request.action}"?`)) {
+        await doDelete();
+      }
+    } else {
+      Alert.alert(
+        'Delete Request',
+        `Are you sure you want to delete "${request.action}"?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Delete', style: 'destructive', onPress: doDelete },
+        ]
+      );
+    }
   };
 
   const filteredRequests = requests.filter(request => {
@@ -395,9 +400,22 @@ export function MakeRequestScreen({ onGoBack }: MakeRequestScreenProps) {
                       {request.status === 'fulfilled' ? '✓ Fulfilled' : '● Active'}
                     </Text>
                   </View>
-                  <Text style={styles.requestTime}>
-                    {formatDate(request.createdAt)}
-                  </Text>
+                  <View style={styles.requestHeaderRight}>
+                    <Text style={styles.requestTime}>
+                      {formatDate(request.createdAt)}
+                    </Text>
+                    {request.status === 'active' && (
+                      <TouchableOpacity
+                        style={styles.deleteButton}
+                        onPress={() => handleDeleteRequest(request)}
+                        disabled={deleting === request.id}
+                      >
+                        <Text style={styles.deleteButtonText}>
+                          {deleting === request.id ? '...' : '✕'}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
                 </View>
 
                 <Text style={styles.requestAction}>{request.action}</Text>
@@ -418,18 +436,6 @@ export function MakeRequestScreen({ onGoBack }: MakeRequestScreenProps) {
                       Fulfilled {formatDate(request.fulfilledAt)}
                     </Text>
                   </View>
-                )}
-
-                {request.status === 'active' && (
-                  <TouchableOpacity
-                    style={styles.deleteButton}
-                    onPress={() => handleDeleteRequest(request)}
-                    disabled={deleting === request.id}
-                  >
-                    <Text style={styles.deleteButtonText}>
-                      {deleting === request.id ? 'Deleting...' : 'Delete'}
-                    </Text>
-                  </TouchableOpacity>
                 )}
               </View>
             ))
@@ -610,6 +616,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: spacing.sm,
   },
+  requestHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
   statusBadge: {
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
@@ -669,15 +680,12 @@ const styles = StyleSheet.create({
     color: colors.success,
   },
   deleteButton: {
-    marginTop: spacing.sm,
-    paddingVertical: spacing.sm,
-    alignItems: 'center',
-    backgroundColor: colors.error + '15',
-    borderRadius: borderRadius.sm,
+    padding: spacing.sm,
   },
   deleteButtonText: {
-    ...typography.bodySmall,
+    ...typography.body,
     color: colors.error,
     fontWeight: '600',
+    fontSize: 18,
   },
 });

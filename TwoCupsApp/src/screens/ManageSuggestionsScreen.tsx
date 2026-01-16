@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Alert,
   RefreshControl,
+  Platform,
 } from 'react-native';
 import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
 import { db } from '../services/firebase/config';
@@ -126,24 +127,32 @@ export function ManageSuggestionsScreen({ onGoBack }: ManageSuggestionsScreenPro
   const handleDelete = async (suggestionId: string) => {
     if (!coupleId) return;
 
-    Alert.alert(
-      'Delete Suggestion',
-      'Are you sure you want to delete this suggestion?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteSuggestion({ coupleId, suggestionId });
-            } catch (error: unknown) {
-              Alert.alert('Error', getErrorMessage(error) || 'Failed to delete');
-            }
-          },
-        },
-      ]
-    );
+    const doDelete = async () => {
+      try {
+        await deleteSuggestion({ coupleId, suggestionId });
+      } catch (error: unknown) {
+        if (Platform.OS === 'web') {
+          alert(getErrorMessage(error) || 'Failed to delete');
+        } else {
+          Alert.alert('Error', getErrorMessage(error) || 'Failed to delete');
+        }
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm('Are you sure you want to delete this suggestion?')) {
+        await doDelete();
+      }
+    } else {
+      Alert.alert(
+        'Delete Suggestion',
+        'Are you sure you want to delete this suggestion?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Delete', style: 'destructive', onPress: doDelete },
+        ]
+      );
+    }
   };
 
   const groupedSuggestions = suggestions.reduce((acc, suggestion) => {
@@ -448,5 +457,6 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.error,
     fontWeight: '600',
+    fontSize: 18,
   },
 });
