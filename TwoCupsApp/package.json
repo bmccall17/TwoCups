@@ -7,12 +7,15 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "build:web": "expo export --platform web && node scripts/post-build.js",
+    "clean": "rm -rf dist",
+    "build:web": "npm run clean && expo export --platform web && node scripts/post-build.js",
     "build:android": "eas build --platform android --profile preview",
     "build:android:local": "npx expo prebuild --platform android && cd android && ./gradlew assembleDebug",
     "prebuild:android": "npx expo prebuild --platform android --clean",
     "typecheck": "tsc --noEmit",
-    "deploy": "npm run build:web && cd .. && firebase deploy --only hosting"
+    "deploy": "npm run build:web && cd .. && firebase deploy --only hosting",
+    "deploy:preview": "npm run build:web && cd .. && firebase hosting:channel:deploy preview --expires 7d",
+    "verify:prod": "node scripts/verify-deploy.js"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "^2.2.0",

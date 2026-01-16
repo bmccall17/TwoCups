@@ -1,8 +1,9 @@
 // Two Cups Service Worker
 // Handles caching and automatic updates
 
-const CACHE_NAME = 'two-cups-v1';
-const RUNTIME_CACHE = 'two-cups-runtime';
+// BUILD_TIMESTAMP is replaced by post-build script with actual build time
+const CACHE_NAME = 'two-cups-BUILD_TIMESTAMP';
+const RUNTIME_CACHE = 'two-cups-runtime-BUILD_TIMESTAMP';
 
 // Files to cache immediately on install
 const PRECACHE_URLS = [
