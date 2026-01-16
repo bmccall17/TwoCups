@@ -412,10 +412,12 @@ exports.acknowledgeAttempt = (0, https_1.onCall)(async (request) => {
         gemCount: firestore_1.FieldValue.increment(ACK_GEM_AWARD),
         cupLevel: finalCupLevel,
     });
-    // Update collective cup
-    const newCollectiveCup = Math.min(coupleData.collectiveCupLevel + ACK_COLLECTIVE_CUP_AWARD, 100);
+    // Update collective cup (with overflow handling)
+    const newCollectiveCupRaw = coupleData.collectiveCupLevel + ACK_COLLECTIVE_CUP_AWARD;
+    const collectiveCupOverflow = newCollectiveCupRaw >= 100;
+    const finalCollectiveCup = collectiveCupOverflow ? newCollectiveCupRaw - 100 : newCollectiveCupRaw;
     batch.update(coupleRef, {
-        collectiveCupLevel: newCollectiveCup,
+        collectiveCupLevel: finalCollectiveCup,
         lastActivityAt: now,
     });
     await batch.commit();
@@ -423,6 +425,7 @@ exports.acknowledgeAttempt = (0, https_1.onCall)(async (request) => {
         success: true,
         gemsAwarded: ACK_GEM_AWARD * 2, // Total for both players
         cupOverflow,
+        collectiveCupOverflow,
     };
 });
 //# sourceMappingURL=index.js.map

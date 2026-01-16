@@ -24,6 +24,7 @@ export interface Player {
   cupLevel: number; // 0–100
   gemCount: number;
   joinedAt: Timestamp;
+  achievedMilestones?: number[]; // Milestones the player has achieved
 }
 
 // Attempt document in /couples/{coupleId}/attempts/{attemptId}
@@ -54,12 +55,10 @@ export interface Request {
 
 // Suggestion document in /couples/{coupleId}/suggestions/{suggestionId}
 export interface Suggestion {
-  forPlayerId: string;
-  createdByPlayerId: string;
+  byPlayerId: string; // Who created the suggestion
   action: string;
+  description?: string;
   category?: string;
-  isRecurring: boolean;
-  usageCount: number;
   createdAt: Timestamp;
 }
 
@@ -116,4 +115,5 @@ export interface AcknowledgeAttemptResponse {
   success: boolean;
   gemsAwarded: number;
   cupOverflow: boolean;
+  collectiveCupOverflow: boolean;
 }

@@ -1,5 +1,49 @@
 # Two Cups - Ship Log
 
+## 2026-01-16 - US-040: Fix Type Mismatches Between Functions and Mobile
+
+**Status:** Complete
+
+### Overview
+Aligned type definitions between Cloud Functions (`functions/src/types.ts`) and the mobile app (`TwoCupsApp/src/types/index.ts`). The Cloud Functions exist but are not deployed (requires Blaze plan) - the app uses client-side API. Types now match for future compatibility.
+
+### Type Mismatches Fixed
+
+**1. Suggestion Interface - Major Fix**
+```
+Before (Functions):
+  forPlayerId, createdByPlayerId, isRecurring, usageCount
+
+After (Both):
+  byPlayerId, action, description?, category?, createdAt
+```
+
+**2. Player Interface**
+- Added `achievedMilestones?: number[]` to Functions types (matches app)
+
+**3. AcknowledgeAttemptResponse**
+- Added `collectiveCupOverflow: boolean` to both projects (was returned by app API but not in types)
+
+**4. Cloud Functions Code**
+- Updated `acknowledgeAttempt` to properly handle collective cup overflow (matching app behavior)
+
+### Files Modified
+- `functions/src/types.ts` - Fixed Suggestion, Player, AcknowledgeAttemptResponse
+- `functions/src/index.ts` - Added collectiveCupOverflow return value
+- `TwoCupsApp/src/types/index.ts` - Added collectiveCupOverflow to response type
+
+### Acceptance Criteria Met
+- [x] Shared type definitions between functions and mobile
+- [x] Suggestion interface consistent across codebase
+- [x] Request interface consistent across codebase
+- [x] TypeScript compilation passes in both projects
+
+### Verification
+- ✅ Functions TypeScript compilation passes (`npm run build`)
+- ✅ App TypeScript compilation passes (`npm run build:web`)
+
+---
+
 ## 2026-01-16 - US-043: Input Validation Improvements
 
 **Status:** Complete

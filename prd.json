@@ -57,10 +57,28 @@
         "TypeScript compilation passes in both projects"
       ],
       "priority": 3,
+      "passes": true,
+      "blocked": false,
+      "blockedReason": null,
+      "completedDate": "2026-01-16",
+      "notes": "Fixed Suggestion interface mismatch (removed unused isRecurring/usageCount, aligned field names). Added achievedMilestones to Player. Added collectiveCupOverflow to AcknowledgeAttemptResponse. Both projects compile."
+    },
+    {
+      "id": "US-062",
+      "title": "Crashlytics / Error Reporting Setup",
+      "description": "Set up crash reporting to monitor production issues.",
+      "acceptanceCriteria": [
+        "Firebase Crashlytics integrated",
+        "Crashes automatically reported with stack traces",
+        "Non-fatal errors can be logged",
+        "User ID associated with crashes (for debugging)",
+        "Dashboard accessible in Firebase Console"
+      ],
+      "priority": 3,
       "passes": false,
       "blocked": false,
       "blockedReason": null
-    },
+    },    
     {
       "id": "US-041",
       "title": "Remove Debug Console Statements",
@@ -103,9 +121,11 @@
         "Server-side validation matches client-side"
       ],
       "priority": 6,
-      "passes": false,
+      "passes": true,
       "blocked": false,
-      "blockedReason": null
+      "blockedReason": null,
+      "completedDate": "2026-01-16",
+      "notes": "Created validation utilities with RFC 5322 email regex, sanitization, and max lengths. Enhanced TextInput with character counter. Applied client & server-side validation to all screens."
     },
     {
       "id": "US-044",

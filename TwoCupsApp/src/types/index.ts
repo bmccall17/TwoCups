@@ -85,4 +85,5 @@ export interface AcknowledgeAttemptResponse {
   success: boolean;
   gemsAwarded: number;
   cupOverflow: boolean;
+  collectiveCupOverflow: boolean;
 }
