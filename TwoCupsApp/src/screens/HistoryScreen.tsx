@@ -191,10 +191,10 @@ export function HistoryScreen() {
     [attempts, user?.uid]
   );
 
-  // Total pending for metrics
-  const totalPendingCount = useMemo(
-    () => attempts.filter((a) => !a.acknowledged).length,
-    [attempts]
+  // Open Loops: Total actionable items for ME (things to do + things to acknowledge)
+  const openLoopsCount = useMemo(
+    () => waitingCount + needsAcknowledgementCount,
+    [waitingCount, needsAcknowledgementCount]
   );
 
   const acknowledgedCount = useMemo(
@@ -290,7 +290,7 @@ export function HistoryScreen() {
       <HealthInsightsCard
         responsivenessPercentage={responsivenessPercent}
         gemCount={totalGems}
-        openLoopsCount={totalPendingCount}
+        openLoopsCount={openLoopsCount}
         onResponsivenessPress={handleResponsivenessPress}
         onGemsPress={handleGemsPress}
         onOpenLoopsPress={handleOpenLoopsPress}
@@ -312,7 +312,7 @@ export function HistoryScreen() {
     needsAcknowledgementCount,
     responsivenessPercent,
     totalGems,
-    totalPendingCount,
+    openLoopsCount,
     dateFilter,
     statusFilter,
     handleWaitingPress,
