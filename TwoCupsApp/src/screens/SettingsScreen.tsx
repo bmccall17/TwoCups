@@ -14,7 +14,7 @@ import { useAuth } from '../context/AuthContext';
 import { usePlayerData } from '../hooks';
 import { Button, ErrorState, TextInput } from '../components/common';
 import { colors, spacing, typography, borderRadius } from '../theme';
-import { isUsernameAvailable, updateUsername } from '../services/api/usernames';
+import { isUsernameAvailable, setUsername, updateUsername } from '../services/api/usernames';
 import {
   validateUsername,
   sanitizeUsername,
@@ -96,10 +96,20 @@ export function SettingsScreen({
   };
 
   const handleSaveUsername = async () => {
-    if (!usernameAvailable || !userData?.username) return;
+    console.log('[SettingsScreen] Save clicked, usernameAvailable:', usernameAvailable, 'newUsername:', newUsername);
+
+    // Relaxed check - just need a non-empty username
+    const sanitizedNewUsername = sanitizeUsername(newUsername);
+    if (!sanitizedNewUsername) {
+      console.log('[SettingsScreen] No username entered');
+      Alert.alert('Error', 'Please enter a username');
+      return;
+    }
 
     const uid = auth.currentUser?.uid;
     const email = auth.currentUser?.email;
+    console.log('[SettingsScreen] Auth state:', { uid, email });
+
     if (!uid || !email) {
       Alert.alert('Error', 'You must be logged in to change your username');
       return;
@@ -107,15 +117,28 @@ export function SettingsScreen({
 
     setSavingUsername(true);
     try {
-      await updateUsername(
-        userData.username,
-        sanitizeUsername(newUsername),
-        uid,
-        email
-      );
+      console.log('[SettingsScreen] Calling username update...');
+
+      if (userData?.username) {
+        // User has existing username - update it
+        console.log('[SettingsScreen] Updating existing username:', userData.username, '->', sanitizedNewUsername);
+        await updateUsername(
+          userData.username,
+          sanitizedNewUsername,
+          uid,
+          email
+        );
+      } else {
+        // User doesn't have a username yet - set it for the first time
+        console.log('[SettingsScreen] Setting new username:', sanitizedNewUsername);
+        await setUsername(sanitizedNewUsername, uid, email);
+      }
+
+      console.log('[SettingsScreen] Username update successful!');
       setShowUsernameModal(false);
       Alert.alert('Success', 'Username updated successfully');
     } catch (err) {
+      console.error('[SettingsScreen] Username update failed:', err);
       const message = err instanceof Error ? err.message : 'Failed to update username';
       Alert.alert('Error', message);
     } finally {

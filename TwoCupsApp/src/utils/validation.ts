@@ -26,7 +26,7 @@ export const MAX_LENGTHS = {
 } as const;
 
 export const MIN_LENGTHS = {
-  USERNAME: 3,
+  USERNAME: 1, // Relaxed for testing
 } as const;
 
 // ============================================================================
@@ -229,14 +229,14 @@ export function validateInviteCode(code: string): { isValid: boolean; error?: st
 // ============================================================================
 
 /**
- * Username regex: lowercase letters, numbers, underscores
- * Must start with a letter
+ * Username regex: letters, numbers, underscores (relaxed for testing)
+ * No longer requires starting with a letter
  */
-const USERNAME_REGEX = /^[a-z][a-z0-9_]*$/;
+const USERNAME_REGEX = /^[a-z0-9_]+$/;
 
 /**
  * Validates a username
- * Rules: 3-20 chars, lowercase alphanumeric + underscores, must start with letter
+ * Rules: 1-20 chars, alphanumeric + underscores (relaxed for testing)
  */
 export function validateUsername(username: string): { isValid: boolean; error?: string } {
   const trimmed = username.trim().toLowerCase();
@@ -246,7 +246,7 @@ export function validateUsername(username: string): { isValid: boolean; error?: 
   }
 
   if (trimmed.length < MIN_LENGTHS.USERNAME) {
-    return { isValid: false, error: `Username must be at least ${MIN_LENGTHS.USERNAME} characters` };
+    return { isValid: false, error: `Username must be at least ${MIN_LENGTHS.USERNAME} character` };
   }
 
   if (trimmed.length > MAX_LENGTHS.USERNAME) {
@@ -254,9 +254,6 @@ export function validateUsername(username: string): { isValid: boolean; error?: 
   }
 
   if (!USERNAME_REGEX.test(trimmed)) {
-    if (!/^[a-z]/.test(trimmed)) {
-      return { isValid: false, error: 'Username must start with a letter' };
-    }
     return { isValid: false, error: 'Username can only contain letters, numbers, and underscores' };
   }
 

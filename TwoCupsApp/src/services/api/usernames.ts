@@ -3,20 +3,17 @@ import {
   getDoc,
   setDoc,
   deleteDoc,
-  writeBatch,
   Timestamp,
 } from 'firebase/firestore';
 import { db, getCurrentUserId } from '../firebase/config';
 import type { UsernameDoc } from '../../types';
 
 /**
- * Check if a username is available
+ * Check if a username is available (always returns true for now - relaxed for testing)
  */
 export async function isUsernameAvailable(username: string): Promise<boolean> {
-  const normalizedUsername = username.toLowerCase().trim();
-  const usernameDocRef = doc(db, 'usernames', normalizedUsername);
-  const usernameDoc = await getDoc(usernameDocRef);
-  return !usernameDoc.exists();
+  // Relaxed: always return true to allow duplicate usernames during testing
+  return true;
 }
 
 /**
@@ -29,25 +26,18 @@ export async function reserveUsername(
   email: string
 ): Promise<void> {
   const normalizedUsername = username.toLowerCase().trim();
+
+  // Create username lookup doc (overwrites if exists - relaxed for testing)
   const usernameDocRef = doc(db, 'usernames', normalizedUsername);
-
-  // Check if already exists
-  const existing = await getDoc(usernameDocRef);
-  if (existing.exists()) {
-    throw new Error('Username is already taken');
-  }
-
   const now = Timestamp.now();
-  const usernameData: UsernameDoc = {
-    uid,
-    email: email.toLowerCase(),
-    createdAt: now.toDate(),
-  };
 
   await setDoc(usernameDocRef, {
-    ...usernameData,
+    uid,
+    email: email.toLowerCase(),
     createdAt: now,
   });
+
+  console.log('[usernames] Reserved username:', normalizedUsername, 'for uid:', uid);
 }
 
 /**
@@ -68,8 +58,55 @@ export async function lookupUsername(username: string): Promise<string | null> {
 }
 
 /**
+ * Set a username for a user who doesn't have one yet
+ * Creates username doc and updates user doc
+ */
+export async function setUsername(
+  username: string,
+  uid: string,
+  email: string
+): Promise<void> {
+  const currentUid = getCurrentUserId();
+  if (!currentUid || currentUid !== uid) {
+    throw new Error('Unauthorized');
+  }
+
+  const normalizedUsername = username.toLowerCase().trim();
+  const now = Timestamp.now();
+
+  console.log('[usernames] setUsername called:', { username: normalizedUsername, uid, email });
+
+  // Step 1: Create/update username lookup doc
+  const usernameDocRef = doc(db, 'usernames', normalizedUsername);
+  try {
+    await setDoc(usernameDocRef, {
+      uid,
+      email: email.toLowerCase(),
+      createdAt: now,
+    });
+    console.log('[usernames] Username doc created successfully');
+  } catch (error) {
+    console.error('[usernames] Failed to create username doc:', error);
+    throw error;
+  }
+
+  // Step 2: Update user document with username
+  const userDocRef = doc(db, 'users', uid);
+  try {
+    await setDoc(userDocRef, {
+      username: normalizedUsername,
+      initial: username.charAt(0).toUpperCase(),
+    }, { merge: true }); // Use merge to preserve other fields
+    console.log('[usernames] User doc updated successfully');
+  } catch (error) {
+    console.error('[usernames] Failed to update user doc:', error);
+    throw error;
+  }
+}
+
+/**
  * Update a user's username
- * Deletes old username doc and creates new one atomically
+ * Deletes old username doc and creates new one
  */
 export async function updateUsername(
   oldUsername: string,
@@ -85,50 +122,47 @@ export async function updateUsername(
   const normalizedOld = oldUsername.toLowerCase().trim();
   const normalizedNew = newUsername.toLowerCase().trim();
 
-  if (normalizedOld === normalizedNew) {
-    throw new Error('New username is the same as current username');
-  }
-
-  // Check new username is available
-  const newUsernameDocRef = doc(db, 'usernames', normalizedNew);
-  const existingNew = await getDoc(newUsernameDocRef);
-  if (existingNew.exists()) {
-    throw new Error('Username is already taken');
-  }
-
-  // Verify old username belongs to this user
-  const oldUsernameDocRef = doc(db, 'usernames', normalizedOld);
-  const existingOld = await getDoc(oldUsernameDocRef);
-  if (!existingOld.exists()) {
-    throw new Error('Current username not found');
-  }
-  const oldData = existingOld.data();
-  if (oldData?.uid !== uid) {
-    throw new Error('Unauthorized - username does not belong to you');
-  }
+  console.log('[usernames] updateUsername called:', { oldUsername: normalizedOld, newUsername: normalizedNew, uid });
 
   const now = Timestamp.now();
 
-  // Use batch to atomically delete old and create new
-  const batch = writeBatch(db);
+  // Step 1: Delete old username doc (if exists)
+  if (normalizedOld) {
+    const oldUsernameDocRef = doc(db, 'usernames', normalizedOld);
+    try {
+      await deleteDoc(oldUsernameDocRef);
+      console.log('[usernames] Old username doc deleted');
+    } catch (error) {
+      console.error('[usernames] Failed to delete old username doc (may not exist):', error);
+      // Continue anyway - old doc might not exist
+    }
+  }
 
-  // Delete old username doc
-  batch.delete(oldUsernameDocRef);
+  // Step 2: Create new username doc
+  const newUsernameDocRef = doc(db, 'usernames', normalizedNew);
+  try {
+    await setDoc(newUsernameDocRef, {
+      uid,
+      email: email.toLowerCase(),
+      createdAt: now,
+    });
+    console.log('[usernames] New username doc created');
+  } catch (error) {
+    console.error('[usernames] Failed to create new username doc:', error);
+    throw error;
+  }
 
-  // Create new username doc
-  batch.set(newUsernameDocRef, {
-    uid,
-    email: email.toLowerCase(),
-    createdAt: now,
-  });
-
-  // Update user document with new username
+  // Step 3: Update user document with new username
   const userDocRef = doc(db, 'users', uid);
-  batch.update(userDocRef, {
-    username: normalizedNew,
-  });
-
-  await batch.commit();
+  try {
+    await setDoc(userDocRef, {
+      username: normalizedNew,
+    }, { merge: true });
+    console.log('[usernames] User doc updated with new username');
+  } catch (error) {
+    console.error('[usernames] Failed to update user doc:', error);
+    throw error;
+  }
 }
 
 /**

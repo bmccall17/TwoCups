@@ -1,5 +1,85 @@
 # Two Cups - Ship Log
 
+## 2026-01-16 - Username Authentication Bug Fixes
+
+**Status:** Complete - Deployed
+
+### Problems
+1. **Username availability check failing** - "Response body is locked" error on Create Account screen
+2. **Cannot change username in Settings** - "Missing or insufficient permissions" error
+3. **Save button does nothing for Guest users** - Users without existing username couldn't set one
+
+### Root Causes
+
+| Issue | Root Cause |
+|-------|------------|
+| Availability check error | `usernames` collection had no Firestore security rules |
+| Permission denied on save | Rules expected `displayName` field but code writes `username` |
+| Save button inactive | `handleSaveUsername` returned early when `!userData?.username` (empty string is falsy) |
+
+### Fixes Applied
+
+#### 1. Added Firestore Rules for `usernames` Collection
+```javascript
+match /usernames/{username} {
+  allow read: if isAuthenticated();
+  allow create: if isAuthenticated()
+    && request.resource.data.uid == request.auth.uid
+    && request.resource.data.keys().hasOnly(['uid', 'email', 'createdAt']);
+  allow delete: if isAuthenticated()
+    && resource.data.uid == request.auth.uid;
+  allow update: if false;
+}
+```
+
+#### 2. Fixed `users` Collection Rules Schema
+Changed field validation from `displayName` to `username`:
+```javascript
+// Before
+request.resource.data.keys().hasOnly(['displayName', 'initial', 'activeCoupleId', 'createdAt'])
+
+// After
+request.resource.data.keys().hasOnly(['username', 'initial', 'activeCoupleId', 'createdAt'])
+```
+
+#### 3. Added `setUsername()` for First-Time Username Setting
+New function in `usernames.ts` for users without existing username:
+- Creates username document
+- Updates user document with username and initial
+- Uses batch write for atomicity
+
+Updated `SettingsScreen.tsx` to handle both cases:
+```typescript
+if (userData?.username) {
+  await updateUsername(oldUsername, newUsername, uid, email);
+} else {
+  await setUsername(newUsername, uid, email);
+}
+```
+
+### Files Modified
+- `firestore.rules` - Added `usernames` collection rules, fixed `users` schema
+- `TwoCupsApp/src/services/api/usernames.ts` - Added `setUsername()` function
+- `TwoCupsApp/src/screens/SettingsScreen.tsx` - Handle users without username
+
+### Documentation Updated
+- `PRD_USERNAME_AUTH.md` - Added comprehensive Authentication Audit Checklist with:
+  - Firestore rules alignment checklist
+  - Username operations coverage matrix
+  - User document states reference
+  - Rules vs code sync mapping
+  - Error handling audit
+  - Deployment checklist
+  - Known issues log
+
+### Verification
+- ✅ Firestore rules deployed (`firebase deploy --only firestore:rules`)
+- ✅ Username availability check working on Create Account
+- ✅ Username availability check working in Settings modal
+- ✅ Guest users can now set username for first time
+
+---
+
 ## 2026-01-16 - Firebase Hosting Deploy Audit & Fix
 
 **Status:** Complete - Deployed

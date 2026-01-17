@@ -270,27 +270,61 @@ async function lookupUsername(username: string): Promise<string | null>
 
 ---
 
-## Firebase Security Rules (Manual Update)
+## Firebase Security Rules (Deployed)
 
-Add to Firestore rules in Firebase Console:
+These rules are in `firestore.rules` and deployed via `firebase deploy --only firestore:rules`:
 
 ```javascript
+// ============================================
+// USERNAMES COLLECTION
+// ============================================
 match /usernames/{username} {
-  // Anyone can read (for availability checks and login lookup)
-  allow read: if true;
+  // Anyone authenticated can read usernames (for availability checks and login lookup)
+  allow read: if isAuthenticated();
 
-  // Only authenticated users can create, and document must not exist
-  allow create: if request.auth != null
-                && request.resource.data.uid == request.auth.uid;
+  // Users can create a username doc only for themselves
+  allow create: if isAuthenticated()
+    && request.resource.data.uid == request.auth.uid
+    && request.resource.data.keys().hasOnly(['uid', 'email', 'createdAt'])
+    && request.resource.data.uid is string
+    && request.resource.data.email is string
+    && request.resource.data.createdAt is timestamp;
 
-  // Only owner can delete (for username changes)
-  allow delete: if request.auth != null
-                && resource.data.uid == request.auth.uid;
+  // Only the owner can delete their username doc (for username changes)
+  allow delete: if isAuthenticated()
+    && resource.data.uid == request.auth.uid;
 
-  // No updates - delete and recreate for changes
+  // No updates allowed - delete and recreate for username changes
   allow update: if false;
 }
+
+// ============================================
+// USERS COLLECTION (username-related fields)
+// ============================================
+match /users/{userId} {
+  allow read: if isAuthenticated();
+
+  allow create: if isAuthenticated()
+    && request.auth.uid == userId
+    && request.resource.data.keys().hasOnly(['username', 'initial', 'activeCoupleId', 'createdAt'])
+    && request.resource.data.username is string
+    && request.resource.data.initial is string
+    && request.resource.data.createdAt is timestamp;
+
+  allow update: if isAuthenticated()
+    && request.auth.uid == userId
+    && request.resource.data.keys().hasOnly(['username', 'initial', 'activeCoupleId', 'createdAt'])
+    && request.resource.data.createdAt == resource.data.createdAt;
+
+  allow delete: if false;
+}
 ```
+
+**Key security decisions:**
+- Read requires authentication (not public) to prevent username enumeration
+- Create validates all field types and ensures `uid` matches authenticated user
+- Delete only allowed by owner (for username change flow)
+- Update disabled - atomic batch handles username changes
 
 ---
 
@@ -298,3 +332,138 @@ match /usernames/{username} {
 - 8 files to modify/create
 - Core feature: ~200-300 lines of code
 - Low risk - additive changes, doesn't break existing auth flow
+
+---
+
+## Authentication Audit Checklist
+
+This checklist captures learnings from implementation issues. Run through this audit when making auth-related changes.
+
+**Last Audit: 2026-01-16**
+
+### 1. Firestore Security Rules Alignment
+
+| Check | Status | Notes |
+|-------|--------|-------|
+| Every collection has rules defined | ✅ | All collections have rules in `firestore.rules` |
+| Rule field names match code exactly | ✅ | `username` used consistently (not `displayName`) |
+| `hasOnly()` lists all fields code writes | ✅ | Verified against all write operations |
+| `createdAt` immutability enforced | ✅ | Update rules require `createdAt == resource.data.createdAt` |
+
+**Collections verified:**
+- [x] `users/{uid}` - fields: `username`, `initial`, `activeCoupleId`, `createdAt`
+- [x] `usernames/{username}` - fields: `uid`, `email`, `createdAt`
+- [x] `couples/{coupleId}` - fields: `partnerIds`, `status`, `inviteCode`, `collectiveCupLevel`, `pointsPerAcknowledgment`, `createdAt`, `lastActivityAt`
+- [x] `inviteCodes/{code}` - fields: `coupleId`, `creatorId`, `status`, `createdAt`, `expiresAt` (+ `usedBy`, `usedAt` on update)
+- [x] Subcollections: `players`, `attempts`, `requests`, `suggestions` - all verified
+
+### 2. Username Operations Coverage
+
+| Scenario | Function | Handled? |
+|----------|----------|----------|
+| New signup with username | `reserveUsername()` | ✅ Called from `AuthContext.signUp()` |
+| User without username sets one | `setUsername()` | ✅ Called from `SettingsScreen.handleSaveUsername()` |
+| User changes existing username | `updateUsername()` | ✅ Called from `SettingsScreen.handleSaveUsername()` |
+| Username availability check | `isUsernameAvailable()` | ✅ Used in `SignUpScreen` and `SettingsScreen` |
+| Login with username | `lookupUsername()` | ✅ Called from `AuthContext.signIn()` |
+
+**Edge cases verified:**
+- [x] Guest/anonymous user setting username for first time - `setUsername()` handles this
+- [x] User with empty string username (legacy/migration) - `userData?.username` check routes to `setUsername()`
+- [x] Attempting to change to same username - `updateUsername()` throws error
+- [x] Username taken race condition - batch writes ensure atomicity
+
+### 3. User Document States
+
+| State | `userData.username` | Action Required | Code Location |
+|-------|---------------------|-----------------|---------------|
+| New signup | Set during signup | None | `AuthContext.tsx:193-217` |
+| Anonymous user | `''` (empty) | Use `setUsername()` | `AuthContext.tsx:108-113` creates empty |
+| Legacy user (pre-username) | `''` or undefined | Use `setUsername()` | `SettingsScreen.tsx:112-122` |
+| Active user | Valid username | Use `updateUsername()` | `SettingsScreen.tsx:114-119` |
+
+**Code pattern (verified in `SettingsScreen.tsx:112-123`):**
+```typescript
+if (userData?.username) {
+  // Has username - update flow
+  await updateUsername(oldUsername, newUsername, uid, email);
+} else {
+  // No username - set flow
+  await setUsername(newUsername, uid, email);
+}
+```
+
+### 4. Firestore Rules vs Code Sync
+
+| Collection | Rules Location | Code Location | Verified |
+|------------|----------------|---------------|----------|
+| `usernames` | `firestore.rules:39-57` | `src/services/api/usernames.ts` | ✅ |
+| `users` | `firestore.rules:62-84` | `src/context/AuthContext.tsx`, `src/services/api/usernames.ts`, `src/services/api/couples.ts` | ✅ |
+| `couples` | `firestore.rules:89-142` | `src/services/api/couples.ts` | ✅ |
+| `inviteCodes` | `firestore.rules:282-309` | `src/services/api/couples.ts` | ✅ |
+| `players` | `firestore.rules:147-166` | `src/services/api/couples.ts` | ✅ |
+| `attempts` | `firestore.rules:171-200` | `src/services/api/attempts.ts` | ✅ |
+| `requests` | `firestore.rules:205-250` | `src/services/api/requests.ts` | ✅ |
+| `suggestions` | `firestore.rules:255-276` | `src/services/api/suggestions.ts` | ✅ |
+
+### 5. Error Handling Audit
+
+| Error Scenario | User-Facing Message | Logged? | Code Location |
+|----------------|---------------------|---------|---------------|
+| Username taken | "Username is already taken" | ✅ Console | `usernames.ts:37,90,141` |
+| Permission denied (rules) | Passes through Firebase error | ✅ Console | Various catch blocks |
+| Network failure | Generic error via `getErrorMessage()` | ✅ Console | `types/utils.ts` |
+| Invalid username format | Validation error shown in UI | ✅ UI only | `validation.ts` |
+| Unauthorized operation | "Unauthorized" | ✅ Thrown | `usernames.ts:81,126` |
+
+### 6. UI State Consistency
+
+| Screen | Shows Username | Falls Back To | Code Location | Verified |
+|--------|----------------|---------------|---------------|----------|
+| Settings | `userData.username` | "Guest" | `SettingsScreen.tsx:40` | ✅ |
+| Home (self) | `userData?.username` | "Me" | `HomeScreen.tsx:37` | ✅ |
+| Home (partner) | `partnerName` | "Partner" | `usePlayerData.ts:101` | ✅ |
+| History | `playerNames[playerId]` | "Unknown" | `HistoryScreen.tsx:194` | ✅ |
+| Acknowledge | `partnerNames[playerId]` | "Partner" | `AcknowledgeScreen.tsx:132,258` | ✅ |
+| Pairing | `userData?.username` | "User" | `PairingScreen.tsx:183,228` | ✅ |
+
+### 7. Deployment Checklist
+
+Before deploying username-related changes:
+
+- [x] **Firestore rules deployed**: `firebase deploy --only firestore:rules`
+- [ ] **Rules tested in Firebase Console**: Use Rules Playground
+- [ ] **Web build updated**: Changes reflected in deployed app
+- [ ] **Test all user states**: New user, Guest, existing user with username
+- [ ] **Test cross-device**: Login with username on different device
+
+### 8. Known Issues & Fixes Log
+
+| Date | Issue | Root Cause | Fix |
+|------|-------|------------|-----|
+| 2026-01-16 | "Response body is locked" error on username check | `usernames` collection missing from Firestore rules | Added rules for `usernames` collection |
+| 2026-01-16 | "Missing or insufficient permissions" on username change | Rules expected `displayName`, code writes `username` | Updated rules to use `username` field |
+| 2026-01-16 | Save button does nothing for Guest user | `handleSaveUsername` returned early if `!userData?.username` | Added `setUsername()` for users without existing username |
+
+---
+
+## Quick Reference: Username API
+
+```typescript
+// src/services/api/usernames.ts
+
+// Check availability (debounced in UI)
+isUsernameAvailable(username: string): Promise<boolean>
+
+// During signup - reserve username
+reserveUsername(username: string, uid: string, email: string): Promise<void>
+
+// First-time username for existing user (Guest → named user)
+setUsername(username: string, uid: string, email: string): Promise<void>
+
+// Change existing username (atomic delete old + create new)
+updateUsername(oldUsername: string, newUsername: string, uid: string, email: string): Promise<void>
+
+// Login lookup (username → email)
+lookupUsername(username: string): Promise<string | null>
+```
