@@ -1,5 +1,38 @@
 # Two Cups - Ship Log
 
+## 2026-01-17 - Account Creation 400 Error (RESOLVED)
+
+**Status:** ✅ FIXED
+
+### Problem
+New account creation failed with HTTP 400 error.
+
+### Root Cause
+**Email/Password sign-in method was not enabled in Firebase Console.**
+
+Firebase Authentication → Sign-in method → Email/Password was disabled.
+
+### Fix
+Enabled Email/Password in Firebase Console: Authentication → Sign-in method → Email/Password → Enable
+
+### Additional Fix Applied (May Have Contributed)
+Added `activeCoupleId` type validation to Firestore security rules:
+```javascript
+&& (request.resource.data.activeCoupleId == null || request.resource.data.activeCoupleId is string)
+```
+This was added to both `users` create and update rules and deployed via `firebase deploy --only firestore:rules`.
+
+### Lesson Learned
+When Firebase Auth operations fail with 400 errors, always check Firebase Console → Authentication → Sign-in method to ensure the authentication method is enabled.
+
+### Verification
+- ✅ New account creation working
+- ✅ Email/password login working
+- ✅ Username login working
+- ✅ All existing flows still working
+
+---
+
 ## 2026-01-16 - Username Authentication Bug Fixes
 
 **Status:** Complete - Deployed
