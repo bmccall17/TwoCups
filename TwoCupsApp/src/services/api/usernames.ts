@@ -4,6 +4,7 @@ import {
   setDoc,
   deleteDoc,
   Timestamp,
+  runTransaction,
 } from 'firebase/firestore';
 import { db, getCurrentUserId } from '../firebase/config';
 import type { UsernameDoc } from '../../types';
@@ -59,7 +60,7 @@ export async function lookupUsername(username: string): Promise<string | null> {
 
 /**
  * Set a username for a user who doesn't have one yet
- * Creates username doc and updates user doc
+ * Creates username doc and updates user doc atomically in a transaction
  */
 export async function setUsername(
   username: string,
@@ -72,41 +73,41 @@ export async function setUsername(
   }
 
   const normalizedUsername = username.toLowerCase().trim();
-  const now = Timestamp.now();
 
   console.log('[usernames] setUsername called:', { username: normalizedUsername, uid, email });
 
-  // Step 1: Create/update username lookup doc
   const usernameDocRef = doc(db, 'usernames', normalizedUsername);
-  try {
-    await setDoc(usernameDocRef, {
+  const userDocRef = doc(db, 'users', uid);
+
+  await runTransaction(db, async (transaction) => {
+    // Read user doc first to get existing data
+    const userDoc = await transaction.get(userDocRef);
+    const existingData = userDoc.exists() ? userDoc.data() : null;
+    const now = Timestamp.now();
+    const createdAt = existingData?.createdAt ?? now;
+
+    // Write username lookup doc
+    transaction.set(usernameDocRef, {
       uid,
       email: email.toLowerCase(),
       createdAt: now,
     });
-    console.log('[usernames] Username doc created successfully');
-  } catch (error) {
-    console.error('[usernames] Failed to create username doc:', error);
-    throw error;
-  }
 
-  // Step 2: Update user document with username
-  const userDocRef = doc(db, 'users', uid);
-  try {
-    await setDoc(userDocRef, {
+    // Write user doc with username
+    transaction.set(userDocRef, {
       username: normalizedUsername,
       initial: username.charAt(0).toUpperCase(),
-    }, { merge: true }); // Use merge to preserve other fields
-    console.log('[usernames] User doc updated successfully');
-  } catch (error) {
-    console.error('[usernames] Failed to update user doc:', error);
-    throw error;
-  }
+      createdAt: createdAt,
+      ...(existingData?.activeCoupleId && { activeCoupleId: existingData.activeCoupleId }),
+    });
+
+    console.log('[usernames] Transaction completed successfully');
+  });
 }
 
 /**
  * Update a user's username
- * Deletes old username doc and creates new one
+ * Deletes old username doc and creates new one atomically in a transaction
  */
 export async function updateUsername(
   oldUsername: string,
@@ -124,45 +125,40 @@ export async function updateUsername(
 
   console.log('[usernames] updateUsername called:', { oldUsername: normalizedOld, newUsername: normalizedNew, uid });
 
-  const now = Timestamp.now();
-
-  // Step 1: Delete old username doc (if exists)
-  if (normalizedOld) {
-    const oldUsernameDocRef = doc(db, 'usernames', normalizedOld);
-    try {
-      await deleteDoc(oldUsernameDocRef);
-      console.log('[usernames] Old username doc deleted');
-    } catch (error) {
-      console.error('[usernames] Failed to delete old username doc (may not exist):', error);
-      // Continue anyway - old doc might not exist
-    }
-  }
-
-  // Step 2: Create new username doc
+  const userDocRef = doc(db, 'users', uid);
   const newUsernameDocRef = doc(db, 'usernames', normalizedNew);
-  try {
-    await setDoc(newUsernameDocRef, {
+  const oldUsernameDocRef = normalizedOld ? doc(db, 'usernames', normalizedOld) : null;
+
+  await runTransaction(db, async (transaction) => {
+    // Read user doc first to get existing data
+    const userDoc = await transaction.get(userDocRef);
+    const existingData = userDoc.exists() ? userDoc.data() : null;
+    const now = Timestamp.now();
+    const createdAt = existingData?.createdAt ?? now;
+
+    // Delete old username doc (if exists)
+    if (oldUsernameDocRef) {
+      transaction.delete(oldUsernameDocRef);
+      console.log('[usernames] Old username doc marked for deletion');
+    }
+
+    // Create new username doc
+    transaction.set(newUsernameDocRef, {
       uid,
       email: email.toLowerCase(),
       createdAt: now,
     });
-    console.log('[usernames] New username doc created');
-  } catch (error) {
-    console.error('[usernames] Failed to create new username doc:', error);
-    throw error;
-  }
 
-  // Step 3: Update user document with new username
-  const userDocRef = doc(db, 'users', uid);
-  try {
-    await setDoc(userDocRef, {
+    // Update user doc with new username
+    transaction.set(userDocRef, {
       username: normalizedNew,
-    }, { merge: true });
-    console.log('[usernames] User doc updated with new username');
-  } catch (error) {
-    console.error('[usernames] Failed to update user doc:', error);
-    throw error;
-  }
+      initial: newUsername.charAt(0).toUpperCase(),
+      createdAt: createdAt,
+      ...(existingData?.activeCoupleId && { activeCoupleId: existingData.activeCoupleId }),
+    });
+
+    console.log('[usernames] Transaction completed successfully');
+  });
 }
 
 /**

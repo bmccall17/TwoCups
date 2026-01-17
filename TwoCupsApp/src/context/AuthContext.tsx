@@ -14,11 +14,11 @@ import {
   signOut as firebaseSignOut,
   UserCredential,
 } from 'firebase/auth';
-import { doc, onSnapshot, setDoc, getDoc, Timestamp } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc, getDoc, Timestamp, runTransaction } from 'firebase/firestore';
 import { auth, db } from '../services/firebase/config';
 import { User, Couple } from '../types';
 import { setUserId, setUserAttributes } from '../services/crashlytics';
-import { reserveUsername, lookupUsername } from '../services/api/usernames';
+import { lookupUsername } from '../services/api/usernames';
 import { sanitizeEmail } from '../utils/validation';
 
 interface AuthContextType {
@@ -100,18 +100,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (firebaseUser) {
         const userDocRef = doc(db, 'users', firebaseUser.uid);
 
-        // Check if user document exists, create if not (for anonymous auth)
+        // Only create user document for anonymous users
+        // Email users get their doc created in signUp() with proper username
         try {
           const userDoc = await getDoc(userDocRef);
-          if (!userDoc.exists()) {
-            // Create minimal user document for new anonymous users
+          if (!userDoc.exists() && firebaseUser.isAnonymous) {
+            // Create minimal user document for new anonymous users only
             await setDoc(userDocRef, {
               username: '',
               initial: '',
               activeCoupleId: null,
               createdAt: Timestamp.now(),
             });
-            console.log('Created user document for:', firebaseUser.uid);
+            console.log('Created user document for anonymous user:', firebaseUser.uid);
           }
         } catch (error) {
           console.error('Error checking/creating user document:', error);
@@ -193,19 +194,34 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const signUp = async (email: string, password: string, username: string) => {
     // First create the Firebase Auth user
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const uid = userCredential.user.uid;
+    const normalizedUsername = username.toLowerCase().trim();
 
-    // Then reserve the username (this creates the username doc and updates user doc)
+    // Use transaction to atomically create username doc + user doc
     try {
-      await reserveUsername(username, userCredential.user.uid, email);
+      const usernameDocRef = doc(db, 'usernames', normalizedUsername);
+      const userDocRef = doc(db, 'users', uid);
 
-      // Create the user document with username
-      const userDocRef = doc(db, 'users', userCredential.user.uid);
-      await setDoc(userDocRef, {
-        username: username.toLowerCase(),
-        initial: username.charAt(0).toUpperCase(),
-        activeCoupleId: null,
-        createdAt: Timestamp.now(),
+      await runTransaction(db, async (transaction) => {
+        const now = Timestamp.now();
+
+        // Create username lookup doc
+        transaction.set(usernameDocRef, {
+          uid,
+          email: email.toLowerCase(),
+          createdAt: now,
+        });
+
+        // Create user document with username
+        transaction.set(userDocRef, {
+          username: normalizedUsername,
+          initial: username.charAt(0).toUpperCase(),
+          activeCoupleId: null,
+          createdAt: now,
+        });
       });
+
+      console.log('[AuthContext] Created username and user docs for:', uid);
     } catch (error) {
       // If username reservation fails, we should probably delete the auth user
       // but for now just rethrow - the user can try again

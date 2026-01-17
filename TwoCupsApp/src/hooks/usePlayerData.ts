@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { doc, onSnapshot, collection } from 'firebase/firestore';
 import { db } from '../services/firebase/config';
 import { useAuth } from '../context/AuthContext';
@@ -31,6 +31,12 @@ export function usePlayerData(): UsePlayerDataResult {
   const myUid = user?.uid;
   const partnerIds = coupleData?.partnerIds ?? [];
 
+  // Compute stable partnerId to prevent unnecessary listener restarts
+  const partnerId = useMemo(() => {
+    if (!myUid || partnerIds.length === 0) return null;
+    return partnerIds.find(id => id !== myUid) ?? null;
+  }, [myUid, partnerIds]);
+
   const refresh = useCallback(() => {
     setError(null);
     setLoading(true);
@@ -38,12 +44,10 @@ export function usePlayerData(): UsePlayerDataResult {
   }, []);
 
   useEffect(() => {
-    if (!coupleId || !myUid || partnerIds.length === 0) {
+    if (!coupleId || !myUid) {
       setLoading(false);
       return;
     }
-
-    const partnerId = partnerIds.find(id => id !== myUid) ?? null;
 
     // Listen to my player document
     const myPlayerRef = doc(db, 'couples', coupleId, 'players', myUid);
@@ -108,7 +112,7 @@ export function usePlayerData(): UsePlayerDataResult {
       if (unsubscribePartner) unsubscribePartner();
       if (unsubscribePartnerUser) unsubscribePartnerUser();
     };
-  }, [coupleId, myUid, partnerIds.join(','), refreshKey]);
+  }, [coupleId, myUid, partnerId, refreshKey]);
 
   return { myPlayer, partnerPlayer, partnerName, loading, error, refresh };
 }

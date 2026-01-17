@@ -7,6 +7,7 @@ import {
   Timestamp,
   arrayUnion,
   collection,
+  runTransaction,
 } from 'firebase/firestore';
 import { db, getCurrentUserId } from '../firebase/config';
 import {
@@ -50,6 +51,7 @@ export interface JoinCoupleResult {
 
 /**
  * Create a new couple with the current user as first partner
+ * Uses transaction to atomically check invite code uniqueness and create all docs
  */
 export async function createCouple(params: CreateCoupleParams): Promise<CreateCoupleResult> {
   const uid = getCurrentUserId();
@@ -62,83 +64,101 @@ export async function createCouple(params: CreateCoupleParams): Promise<CreateCo
   // Validate and sanitize input (server-side)
   const sanitizedInitial = validateInitialServer(initial);
 
-  // Check if user already has an active couple
   const userDocRef = doc(db, 'users', uid);
-  const userDoc = await getDoc(userDocRef);
-  if (userDoc.exists()) {
-    const userData = userDoc.data();
-    if (userData?.activeCoupleId) {
-      throw new Error('You are already in a couple');
-    }
-  }
 
-  // Generate unique invite code
-  let inviteCode: string = '';
-  let inviteCodeExists = true;
-  while (inviteCodeExists) {
-    inviteCode = generateInviteCode();
-    const inviteDocRef = doc(db, 'inviteCodes', inviteCode);
-    const existing = await getDoc(inviteDocRef);
-    inviteCodeExists = existing.exists();
-  }
-
-  const now = Timestamp.now();
-  const expiresAt = Timestamp.fromDate(
-    new Date(Date.now() + INVITE_CODE_EXPIRATION_HOURS * 60 * 60 * 1000)
-  );
-
-  // Create couple document with auto-generated ID
+  // Pre-generate couple ID outside transaction
   const coupleDocRef = doc(collection(db, 'couples'));
   const coupleId = coupleDocRef.id;
 
-  const batch = writeBatch(db);
+  // Try up to 5 times to find unique invite code
+  const MAX_RETRIES = 5;
+  let lastError: Error | null = null;
 
-  // Create couple
-  batch.set(coupleDocRef, {
-    partnerIds: [uid],
-    status: 'pending',
-    inviteCode,
-    pointsPerAcknowledgment: DEFAULT_POINTS_PER_ACK,
-    collectiveCupLevel: 0,
-    createdAt: now,
-    lastActivityAt: now,
-  });
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    const inviteCode = generateInviteCode();
+    const inviteCodeDocRef = doc(db, 'inviteCodes', inviteCode);
 
-  // Create player document
-  const playerDocRef = doc(db, 'couples', coupleId, 'players', uid);
-  batch.set(playerDocRef, {
-    cupLevel: 0,
-    gemCount: 0,
-    joinedAt: now,
-  });
+    try {
+      await runTransaction(db, async (transaction) => {
+        // Read all docs first
+        const userDoc = await transaction.get(userDocRef);
+        const inviteDoc = await transaction.get(inviteCodeDocRef);
 
-  // Update user document with initial and coupleId
-  // Username is already set from signup, so we only update initial and activeCoupleId
-  batch.update(userDocRef, {
-    initial: sanitizedInitial,
-    activeCoupleId: coupleId,
-  });
+        // Check if user already has an active couple
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          if (userData?.activeCoupleId) {
+            throw new Error('You are already in a couple');
+          }
+        }
 
-  // Create invite code document
-  const inviteCodeDocRef = doc(db, 'inviteCodes', inviteCode);
-  batch.set(inviteCodeDocRef, {
-    coupleId,
-    creatorId: uid,
-    status: 'active',
-    createdAt: now,
-    expiresAt,
-  });
+        // Check if invite code already exists (race condition protection)
+        if (inviteDoc.exists()) {
+          throw new Error('INVITE_CODE_EXISTS');
+        }
 
-  await batch.commit();
+        const now = Timestamp.now();
+        const expiresAt = Timestamp.fromDate(
+          new Date(Date.now() + INVITE_CODE_EXPIRATION_HOURS * 60 * 60 * 1000)
+        );
 
-  return {
-    coupleId,
-    inviteCode,
-  };
+        // Create couple
+        transaction.set(coupleDocRef, {
+          partnerIds: [uid],
+          status: 'pending',
+          inviteCode,
+          pointsPerAcknowledgment: DEFAULT_POINTS_PER_ACK,
+          collectiveCupLevel: 0,
+          createdAt: now,
+          lastActivityAt: now,
+        });
+
+        // Create player document
+        const playerDocRef = doc(db, 'couples', coupleId, 'players', uid);
+        transaction.set(playerDocRef, {
+          cupLevel: 0,
+          gemCount: 0,
+          joinedAt: now,
+        });
+
+        // Update user document with initial and coupleId
+        transaction.update(userDocRef, {
+          initial: sanitizedInitial,
+          activeCoupleId: coupleId,
+        });
+
+        // Create invite code document
+        transaction.set(inviteCodeDocRef, {
+          coupleId,
+          creatorId: uid,
+          status: 'active',
+          createdAt: now,
+          expiresAt,
+        });
+      });
+
+      // Transaction succeeded
+      return {
+        coupleId,
+        inviteCode,
+      };
+    } catch (error) {
+      if (error instanceof Error && error.message === 'INVITE_CODE_EXISTS') {
+        // Retry with new invite code
+        lastError = error;
+        continue;
+      }
+      // Other error - rethrow
+      throw error;
+    }
+  }
+
+  throw lastError || new Error('Failed to generate unique invite code');
 }
 
 /**
  * Join an existing couple using an invite code
+ * Uses transaction to atomically validate and join
  */
 export async function joinCouple(params: JoinCoupleParams): Promise<JoinCoupleResult> {
   const uid = getCurrentUserId();
@@ -152,103 +172,101 @@ export async function joinCouple(params: JoinCoupleParams): Promise<JoinCoupleRe
   const sanitizedInviteCode = validateInviteCodeServer(inviteCode);
   const sanitizedInitial = validateInitialServer(initial);
 
-  // Check if user already has an active couple
   const userDocRef = doc(db, 'users', uid);
-  const userDoc = await getDoc(userDocRef);
-  if (userDoc.exists()) {
-    const userData = userDoc.data();
-    if (userData?.activeCoupleId) {
-      throw new Error('You are already in a couple');
-    }
-  }
-
-  // Validate invite code
   const inviteDocRef = doc(db, 'inviteCodes', sanitizedInviteCode);
-  const inviteDoc = await getDoc(inviteDocRef);
 
-  if (!inviteDoc.exists()) {
-    throw new Error('Invalid invite code');
-  }
+  return await runTransaction(db, async (transaction) => {
+    // Read all docs first (transaction requirement)
+    const userDoc = await transaction.get(userDocRef);
+    const inviteDoc = await transaction.get(inviteDocRef);
 
-  const inviteData = inviteDoc.data();
-  if (!inviteData) {
-    throw new Error('Invalid invite code');
-  }
+    // Check if user already has an active couple
+    if (userDoc.exists()) {
+      const userData = userDoc.data();
+      if (userData?.activeCoupleId) {
+        throw new Error('You are already in a couple');
+      }
+    }
 
-  if (inviteData.status !== 'active') {
-    throw new Error('Invite code has already been used');
-  }
+    // Validate invite code
+    if (!inviteDoc.exists()) {
+      throw new Error('Invalid invite code');
+    }
 
-  if (inviteData.expiresAt.toDate() < new Date()) {
-    throw new Error('Invite code has expired');
-  }
+    const inviteData = inviteDoc.data();
+    if (!inviteData) {
+      throw new Error('Invalid invite code');
+    }
 
-  if (inviteData.creatorId === uid) {
-    throw new Error('Cannot join your own couple');
-  }
+    if (inviteData.status !== 'active') {
+      throw new Error('Invite code has already been used');
+    }
 
-  // Get couple and verify it only has one partner
-  const coupleDocRef = doc(db, 'couples', inviteData.coupleId);
-  const coupleDoc = await getDoc(coupleDocRef);
+    if (inviteData.expiresAt.toDate() < new Date()) {
+      throw new Error('Invite code has expired');
+    }
 
-  if (!coupleDoc.exists()) {
-    throw new Error('Couple not found');
-  }
+    if (inviteData.creatorId === uid) {
+      throw new Error('Cannot join your own couple');
+    }
 
-  const coupleData = coupleDoc.data();
-  if (!coupleData) {
-    throw new Error('Couple not found');
-  }
+    // Get couple and verify it only has one partner
+    const coupleDocRef = doc(db, 'couples', inviteData.coupleId);
+    const coupleDoc = await transaction.get(coupleDocRef);
 
-  if (coupleData.partnerIds.length >= 2) {
-    throw new Error('Couple already has two partners');
-  }
+    if (!coupleDoc.exists()) {
+      throw new Error('Couple not found');
+    }
 
-  // Get partner info for response
-  const partnerId = coupleData.partnerIds[0];
-  const partnerDocRef = doc(db, 'users', partnerId);
-  const partnerDoc = await getDoc(partnerDocRef);
-  const partnerData = partnerDoc.data();
+    const coupleData = coupleDoc.data();
+    if (!coupleData) {
+      throw new Error('Couple not found');
+    }
 
-  const now = Timestamp.now();
+    if (coupleData.partnerIds.length >= 2) {
+      throw new Error('Couple already has two partners');
+    }
 
-  // Join couple in a batch
-  const batch = writeBatch(db);
+    // Get partner info for response
+    const partnerId = coupleData.partnerIds[0];
+    const partnerDocRef = doc(db, 'users', partnerId);
+    const partnerDoc = await transaction.get(partnerDocRef);
+    const partnerData = partnerDoc.data();
 
-  // Update couple - add second partner
-  batch.update(coupleDocRef, {
-    partnerIds: arrayUnion(uid),
-    status: 'active',
-    lastActivityAt: now,
+    const now = Timestamp.now();
+
+    // Update couple - add second partner
+    transaction.update(coupleDocRef, {
+      partnerIds: arrayUnion(uid),
+      status: 'active',
+      lastActivityAt: now,
+    });
+
+    // Create player document for joining user
+    const playerDocRef = doc(db, 'couples', inviteData.coupleId, 'players', uid);
+    transaction.set(playerDocRef, {
+      cupLevel: 0,
+      gemCount: 0,
+      joinedAt: now,
+    });
+
+    // Update user document with initial and coupleId
+    transaction.update(userDocRef, {
+      initial: sanitizedInitial,
+      activeCoupleId: inviteData.coupleId,
+    });
+
+    // Mark invite code as used
+    transaction.update(inviteDocRef, {
+      status: 'used',
+      usedBy: uid,
+      usedAt: now,
+    });
+
+    return {
+      coupleId: inviteData.coupleId,
+      partnerId,
+      partnerName: partnerData?.username ?? 'Partner',
+    };
   });
-
-  // Create player document for joining user
-  const playerDocRef = doc(db, 'couples', inviteData.coupleId, 'players', uid);
-  batch.set(playerDocRef, {
-    cupLevel: 0,
-    gemCount: 0,
-    joinedAt: now,
-  });
-
-  // Update user document with initial and coupleId
-  // Username is already set from signup, so we only update initial and activeCoupleId
-  batch.update(userDocRef, {
-    initial: sanitizedInitial,
-    activeCoupleId: inviteData.coupleId,
-  });
-
-  // Mark invite code as used
-  batch.update(inviteDocRef, {
-    status: 'used',
-    usedBy: uid,
-    usedAt: now,
-  });
-
-  await batch.commit();
-
-  return {
-    coupleId: inviteData.coupleId,
-    partnerId,
-    partnerName: partnerData?.username ?? 'Partner',
-  };
 }

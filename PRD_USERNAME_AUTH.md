@@ -1,5 +1,288 @@
 # PRD: Persistent User Accounts with Username Login
 
+# new notes from Claude:
+ Plan: Fix Account Creation Failure
+
+ Problem
+
+ After implementing Firestore transactions, new account creation fails with a 400
+ error.
+
+ Root Cause Analysis
+
+ Issue 1: Missing Type Validation for activeCoupleId in Security Rules
+
+ Location: firestore.rules, lines 68-74
+
+ Current rules for users collection create:
+ allow create: if isAuthenticated()
+   && request.auth.uid == userId
+   && request.resource.data.keys().hasOnly(['username', 'initial', 'activeCoupleId',
+  'createdAt'])
+   && request.resource.data.username is string
+   && request.resource.data.initial is string
+   && request.resource.data.createdAt is timestamp;
+
+ The code writes:
+ transaction.set(userDocRef, {
+   username: normalizedUsername,      // string ✓
+   initial: username.charAt(0).toUpperCase(),  // string ✓
+   activeCoupleId: null,              // null - NOT VALIDATED IN RULES!
+   createdAt: now,                    // timestamp ✓
+ });
+
+ Problem: The security rules don't validate activeCoupleId type. While hasOnly()
+ allows the key to be present, Firestore requires explicit type validation to accept
+  null values.
+
+ Issue 2: Same Problem in Anonymous User Creation
+
+ Location: AuthContext.tsx, lines 109-114
+
+ The same issue exists for anonymous user doc creation:
+ await setDoc(userDocRef, {
+   username: '',
+   initial: '',
+   activeCoupleId: null,  // Same problem
+   createdAt: Timestamp.now(),
+ });
+
+ ---
+ Solution
+
+ Fix 1: Update Firestore Security Rules
+
+ File: firestore.rules
+
+ Add explicit type validation for activeCoupleId that allows null OR string:
+
+ For users create rule (line 74):
+   && (request.resource.data.activeCoupleId == null ||
+ request.resource.data.activeCoupleId is string)
+
+ For users update rule:
+ Also verify the update rule handles this properly (it uses hasOnly() without type
+ checks for activeCoupleId).
+
+ Fix 2: Deploy Updated Rules
+
+ After updating the rules file, deploy with:
+ firebase deploy --only firestore:rules
+
+ ---
+ Files to Modify
+ File: firestore.rules
+ Change: Add activeCoupleId type validation (null OR string) for create and update
+   rules
+ ---
+ Detailed Changes
+
+ firestore.rules - Users Collection
+
+ Current (lines 68-74):
+ allow create: if isAuthenticated()
+   && request.auth.uid == userId
+   && request.resource.data.keys().hasOnly(['username', 'initial', 'activeCoupleId',
+  'createdAt'])
+   && request.resource.data.username is string
+   && request.resource.data.initial is string
+   && request.resource.data.createdAt is timestamp;
+
+ Updated:
+ allow create: if isAuthenticated()
+   && request.auth.uid == userId
+   && request.resource.data.keys().hasOnly(['username', 'initial', 'activeCoupleId',
+  'createdAt'])
+   && request.resource.data.username is string
+   && request.resource.data.initial is string
+   && (request.resource.data.activeCoupleId == null ||
+ request.resource.data.activeCoupleId is string)
+   && request.resource.data.createdAt is timestamp;
+
+ Update rule (lines 77-80) - verify it also handles null:
+ allow update: if isAuthenticated()
+   && request.auth.uid == userId
+   && request.resource.data.keys().hasOnly(['username', 'initial', 'activeCoupleId',
+  'createdAt'])
+   && (request.resource.data.activeCoupleId == null ||
+ request.resource.data.activeCoupleId is string)
+   && request.resource.data.createdAt == resource.data.createdAt;
+
+ ---
+ Verification Plan
+
+ 1. Deploy rules:
+ cd /mnt/c/Users/brett/Documents/GitHub/TwoCups
+ firebase deploy --only firestore:rules
+ 2. Test account creation:
+   - Go to the app
+   - Create a new account with email/password/username
+   - Verify no 400 error
+   - Check Firestore Console to confirm both usernames/{username} and users/{uid}
+ docs were created
+ 3. Test anonymous login:
+   - Sign out
+   - Use "Continue as Guest"
+   - Verify user doc is created
+ 4. Test existing flows:
+   - Username change in settings
+   - Couple creation/join
+╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+
+ Requested permissions:
+   · Bash(prompt: deploy firestore rules)
+
+
+# old notes from Claude:
+Plan: Firestore Transaction Fixes & Query Optimization
+
+ Summary
+
+ Fix critical data consistency issues (missing transactions) and eliminate
+ bloated/duplicate Firestore calls across the TwoCups app.
+
+ ---
+ Phase 1: Username Atomicity (CRITICAL)
+
+ File: TwoCupsApp/src/services/api/usernames.ts
+
+ 1.1 setUsername() (lines 64-112)
+ - Problem: 2 separate operations without transaction - if second fails, orphaned
+ username doc
+ - Fix: Wrap in runTransaction - read user doc first, then write both docs
+ atomically
+
+ 1.2 updateUsername() (lines 118-181)
+ - Problem: 3 separate operations (delete old → create new → update user) - any
+ failure corrupts state
+ - Fix: Wrap in runTransaction - all reads first, then delete/create/update
+ atomically
+
+ Imports to add: runTransaction from firebase/firestore
+
+ ---
+ Phase 2: Couples Atomicity (CRITICAL)
+
+ File: TwoCupsApp/src/services/api/couples.ts
+
+ 2.1 createCouple() (lines 75-83)
+ - Problem: Invite code check-then-create race condition
+ - Fix: Use runTransaction to atomically check uniqueness and create all docs
+
+ 2.2 joinCouple() (lines 155-213)
+ - Problem: 4 reads outside batch, then 4 writes in batch - stale data risk
+ - Fix: Move all reads inside runTransaction, then write atomically
+
+ ---
+ Phase 3: Auth Context Cleanup (HIGH)
+
+ File: TwoCupsApp/src/context/AuthContext.tsx
+
+ 3.1 Double user doc creation (lines 103-118, 202-208)
+ - Problem: onAuthStateChanged creates user doc, then signUp creates it again
+ - Fix: Only create user doc for anonymous users in onAuthStateChanged; let signUp
+ be authoritative for email users
+
+ 3.2 signUp() transaction
+ - Fix: Use runTransaction to atomically create username doc + user doc after Auth
+ creation
+
+ ---
+ Phase 4: Query Optimization (HIGH)
+
+ File: TwoCupsApp/src/services/api/actions.ts
+
+ 4.1 getDailyGemEarnings() (lines 117-160)
+ - Problem: 3 separate queries to same collection
+ - Fix: Single query for today's attempts, filter in-memory by
+ byPlayerId/forPlayerId
+ - Savings: 2 reads per call
+
+ 4.2 getWeeklyGemStats() (lines 511-570)
+ - Problem: 6 queries (3 per player × 2 players)
+ - Fix: Single query for week's attempts, calculate both players' gems in-memory
+ - Savings: 5 reads per call
+
+ ---
+ Phase 5: Hook Optimization (MEDIUM)
+
+ File: TwoCupsApp/src/hooks/usePlayerData.ts
+
+ 5.1 Dependency array (line 111)
+ - Problem: partnerIds.join(',') creates new string every render, causing listener
+ restarts
+ - Fix: Use useMemo to compute stable partnerId reference
+
+ 5.2 Partner username listener (optional)
+ - Consider: Change partnerUser from onSnapshot to one-time getDoc since username
+ rarely changes
+
+ ---
+ Phase 6: PRD Corrections
+
+ File: PRD_USERNAME_AUTH.md
+
+ Correct false claims:
+ - Line 99: Remove "atomic create" - will be atomic after fixes
+ - Line 327: Change to "username changes use delete + create within transaction"
+ - Line 374: Change "batch writes ensure atomicity" → "transactions with
+ read-then-write ensure atomicity"
+
+ Add section documenting transaction patterns after implementation
+
+ ---
+ Files to Modify
+ File: TwoCupsApp/src/services/api/usernames.ts
+ Priority: CRITICAL
+ Changes: Add transactions to setUsername, updateUsername
+ ────────────────────────────────────────
+ File: TwoCupsApp/src/services/api/couples.ts
+ Priority: CRITICAL
+ Changes: Add transactions to createCouple, joinCouple
+ ────────────────────────────────────────
+ File: TwoCupsApp/src/context/AuthContext.tsx
+ Priority: HIGH
+ Changes: Remove double doc creation, add signUp transaction
+ ────────────────────────────────────────
+ File: TwoCupsApp/src/services/api/actions.ts
+ Priority: HIGH
+ Changes: Consolidate 3→1 and 6→1 queries
+ ────────────────────────────────────────
+ File: TwoCupsApp/src/hooks/usePlayerData.ts
+ Priority: MEDIUM
+ Changes: Fix dependency array
+ ────────────────────────────────────────
+ File: PRD_USERNAME_AUTH.md
+ Priority: LOW
+ Changes: Correct false atomicity claims
+ ---
+ NOT in Scope
+
+ - isUsernameAvailable() - intentionally returns true for testing (per user request)
+
+ ---
+ Verification Plan
+
+ Manual Testing
+
+ 1. Username operations
+   - Sign up → verify both usernames/{name} and users/{uid} created
+   - Change username → verify old deleted, new created, user doc updated
+   - Simulate failure (disconnect network mid-operation) → verify no orphaned docs
+ 2. Couple operations
+   - Create couple rapidly 10x → verify no duplicate invite codes
+   - Two users join same code simultaneously → exactly one succeeds
+ 3. Query optimization
+   - Check Firebase Console usage metrics before/after
+   - Compare read counts for daily gems and weekly stats
+
+ Code Verification
+
+ - Run TypeScript build: cd TwoCupsApp && npm run build
+ - Run linter: npm run lint
+ - Test on device/simulator with network throttling
+ 
+
 ## Objective
 Enable users to log into their TwoCups couple account from any device using **username OR email** plus password.
 
@@ -96,7 +379,7 @@ Firebase Auth: signInWithEmailAndPassword(email, password)
 // Check if username is available
 async function isUsernameAvailable(username: string): Promise<boolean>
 
-// Reserve username for user (atomic create)
+// Reserve username for user (creates username doc)
 async function reserveUsername(username: string, uid: string, email: string): Promise<void>
 
 // Update username (change from old to new)
@@ -324,7 +607,7 @@ match /users/{userId} {
 - Read requires authentication (not public) to prevent username enumeration
 - Create validates all field types and ensures `uid` matches authenticated user
 - Delete only allowed by owner (for username change flow)
-- Update disabled - atomic batch handles username changes
+- Update disabled - transactions handle username changes (delete old + create new atomically)
 
 ---
 
@@ -371,7 +654,7 @@ This checklist captures learnings from implementation issues. Run through this a
 - [x] Guest/anonymous user setting username for first time - `setUsername()` handles this
 - [x] User with empty string username (legacy/migration) - `userData?.username` check routes to `setUsername()`
 - [x] Attempting to change to same username - `updateUsername()` throws error
-- [x] Username taken race condition - batch writes ensure atomicity
+- [x] Username taken race condition - transactions with read-then-write ensure atomicity
 
 ### 3. User Document States
 
@@ -461,7 +744,7 @@ reserveUsername(username: string, uid: string, email: string): Promise<void>
 // First-time username for existing user (Guest → named user)
 setUsername(username: string, uid: string, email: string): Promise<void>
 
-// Change existing username (atomic delete old + create new)
+// Change existing username (transaction: delete old + create new + update user doc)
 updateUsername(oldUsername: string, newUsername: string, uid: string, email: string): Promise<void>
 
 // Login lookup (username → email)

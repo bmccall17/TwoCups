@@ -71,12 +71,14 @@ service cloud.firestore {
         && request.resource.data.keys().hasOnly(['username', 'initial', 'activeCoupleId', 'createdAt'])
         && request.resource.data.username is string
         && request.resource.data.initial is string
+        && (request.resource.data.activeCoupleId == null || request.resource.data.activeCoupleId is string)
         && request.resource.data.createdAt is timestamp;
 
       // Users can only update their own document, cannot change createdAt
       allow update: if isAuthenticated()
         && request.auth.uid == userId
         && request.resource.data.keys().hasOnly(['username', 'initial', 'activeCoupleId', 'createdAt'])
+        && (request.resource.data.activeCoupleId == null || request.resource.data.activeCoupleId is string)
         && request.resource.data.createdAt == resource.data.createdAt;
 
       // No delete allowed
