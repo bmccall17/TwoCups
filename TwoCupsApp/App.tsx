@@ -16,7 +16,7 @@ import { GemAnimationProvider } from './src/context/GemAnimationContext';
 import { MilestoneCelebrationProvider } from './src/context/MilestoneCelebrationContext';
 import { NetworkProvider } from './src/context/NetworkContext';
 import { LoadingSpinner, InstallAppModal, ToastContainer, OfflineBanner, ErrorBoundary, UpdatePrompt } from './src/components/common';
-import { useInstallPrompt } from './src/hooks';
+import { useInstallPrompt, usePendingAcknowledgments } from './src/hooks';
 import { LoginScreen, SignUpScreen, PairingScreen } from './src/screens/auth';
 import { HomeScreen } from './src/screens/HomeScreen';
 import { LogAttemptScreen } from './src/screens/LogAttemptScreen';
@@ -59,10 +59,15 @@ const AppStack = createNativeStackNavigator<AppStackParamList>();
 const MainStack = createNativeStackNavigator<MainStackParamList>();
 const MainTab = createBottomTabNavigator<MainTabParamList>();
 
-function TabIcon({ icon, focused }: { icon: string; focused: boolean }) {
+function TabIcon({ icon, focused, badgeCount }: { icon: string; focused: boolean; badgeCount?: number }) {
   return (
     <View style={styles.tabIconContainer}>
       <Text style={[styles.tabIcon, focused && styles.tabIconFocused]}>{icon}</Text>
+      {badgeCount !== undefined && badgeCount > 0 && (
+        <View style={styles.badge}>
+          <View style={styles.badgeDot} />
+        </View>
+      )}
     </View>
   );
 }
@@ -92,6 +97,8 @@ function AuthNavigator() {
 }
 
 function TabNavigator() {
+  const { pendingCount } = usePendingAcknowledgments();
+
   return (
     <MainTab.Navigator
       screenOptions={{
@@ -133,7 +140,7 @@ function TabNavigator() {
       <MainTab.Screen
         name="LogTab"
         options={{
-          tabBarLabel: 'Log',
+          tabBarLabel: 'Give',
           tabBarIcon: ({ focused }) => <TabIcon icon="💝" focused={focused} />,
         }}
       >
@@ -143,8 +150,8 @@ function TabNavigator() {
       <MainTab.Screen
         name="AcknowledgeTab"
         options={{
-          tabBarLabel: 'Ack',
-          tabBarIcon: ({ focused }) => <TabIcon icon="✅" focused={focused} />,
+          tabBarLabel: 'Receive',
+          tabBarIcon: ({ focused }) => <TabIcon icon="📨" focused={focused} badgeCount={pendingCount} />,
         }}
       >
         {() => <AcknowledgeScreen />}
@@ -265,6 +272,7 @@ const styles = StyleSheet.create({
   tabIconContainer: {
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative',
   },
   tabIcon: {
     fontSize: 20,
@@ -272,6 +280,23 @@ const styles = StyleSheet.create({
   },
   tabIconFocused: {
     opacity: 1,
+  },
+  badge: {
+    position: 'absolute',
+    top: -4,
+    right: -8,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.textOnPrimary,
   },
 });
 

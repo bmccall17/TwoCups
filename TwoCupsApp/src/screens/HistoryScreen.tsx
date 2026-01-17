@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -6,51 +6,30 @@ import {
   SafeAreaView,
   FlatList,
   RefreshControl,
-  ActivityIndicator,
-  TouchableOpacity,
-  ScrollView,
   ListRenderItemInfo,
 } from 'react-native';
 import {
   collection,
   query,
   orderBy,
-  limit,
-  startAfter,
-  getDocs,
-  doc,
-  getDoc,
   where,
   Timestamp,
-  QueryDocumentSnapshot,
-  DocumentData,
-  QueryConstraint,
+  onSnapshot,
 } from 'firebase/firestore';
 import { db } from '../services/firebase/config';
 import { useAuth } from '../context/AuthContext';
-import { LoadingSpinner, EmptyState, ErrorState, GemLeaderboard } from '../components/common';
-import { colors, spacing, typography, borderRadius } from '../theme';
-import { Attempt, Request } from '../types';
+import { LoadingSpinner, EmptyState, ErrorState } from '../components/common';
+import { colors, spacing, typography } from '../theme';
+import { Attempt } from '../types';
 import { usePlayerData } from '../hooks/usePlayerData';
-
-const PAGE_SIZE = 20;
-
-const CATEGORIES = [
-  'Words of Affirmation',
-  'Acts of Service',
-  'Quality Time',
-  'Physical Touch',
-  'Gifts',
-  'Support & Encouragement',
-  'Listening & Presence',
-  'Shared Activities',
-  'Surprises & Thoughtfulness',
-];
-
-type PlayerFilterType = 'all' | 'byMe' | 'forMe' | 'byPartner' | 'forPartner';
-type StatusFilterType = 'all' | 'pending' | 'acknowledged';
-type CategoryFilterType = 'all' | string;
-type DateRangeFilterType = 'today' | 'last7days' | 'last30days' | 'alltime';
+import {
+  StatusSnapshotCard,
+  HealthInsightsCard,
+  CollapsibleFilterControls,
+  TimelineEntryCard,
+  DateRangeFilterType,
+  StatusFilterType,
+} from '../components/history';
 
 const getDateRangeStart = (filter: DateRangeFilterType): Date | null => {
   const now = new Date();
@@ -74,1292 +53,261 @@ const getDateRangeStart = (filter: DateRangeFilterType): Date | null => {
   }
 };
 
-const formatDateRange = (filter: DateRangeFilterType): string => {
-  const now = new Date();
-  switch (filter) {
-    case 'today':
-      return `Today (${now.toLocaleDateString()})`;
-    case 'last7days':
-      const sevenDaysAgo = new Date(now);
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-      return `${sevenDaysAgo.toLocaleDateString()} – ${now.toLocaleDateString()}`;
-    case 'last30days':
-      const thirtyDaysAgo = new Date(now);
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      return `${thirtyDaysAgo.toLocaleDateString()} – ${now.toLocaleDateString()}`;
-    case 'alltime':
-      return 'All Time';
-  }
-};
-
-interface HistoryAttemptCardProps {
-  attempt: Attempt;
-  getPlayerName: (playerId: string) => string;
-  formatDate: (date: Date) => string;
-}
-
-const HistoryAttemptCard = memo(function HistoryAttemptCard({
-  attempt,
-  getPlayerName,
-  formatDate,
-}: HistoryAttemptCardProps) {
-  return (
-    <View
-      style={[
-        styles.attemptCard,
-        attempt.acknowledged && styles.attemptCardAcknowledged,
-      ]}
-    >
-      <View style={styles.attemptHeader}>
-        <View style={styles.playerInfo}>
-          <Text style={styles.byPlayer}>
-            {getPlayerName(attempt.byPlayerId)}
-          </Text>
-          <Text style={styles.arrowText}> → </Text>
-          <Text style={styles.forPlayer}>
-            {getPlayerName(attempt.forPlayerId)}
-          </Text>
-        </View>
-        <Text style={styles.attemptTime}>
-          {formatDate(attempt.createdAt)}
-        </Text>
-      </View>
-
-      <Text style={styles.attemptAction}>{attempt.action}</Text>
-
-      {attempt.description && (
-        <Text style={styles.attemptDescription}>{attempt.description}</Text>
-      )}
-
-      <View style={styles.badgeRow}>
-        {attempt.category && (
-          <View style={styles.categoryBadge}>
-            <Text style={styles.categoryText}>{attempt.category}</Text>
-          </View>
-        )}
-
-        {attempt.fulfilledRequestId && (
-          <View style={styles.fulfilledBadge}>
-            <Text style={styles.fulfilledText}>Fulfilled request</Text>
-          </View>
-        )}
-
-        {attempt.acknowledged ? (
-          <View style={styles.acknowledgedBadge}>
-            <Text style={styles.acknowledgedText}>✓ Acknowledged</Text>
-          </View>
-        ) : (
-          <View style={styles.pendingBadge}>
-            <Text style={styles.pendingText}>Pending</Text>
-          </View>
-        )}
-      </View>
-    </View>
-  );
-});
-
 export function HistoryScreen() {
-  const { user, userData, coupleData } = useAuth();
+  const { user, userData } = useAuth();
+  const coupleId = userData?.activeCoupleId;
   const { myPlayer, partnerPlayer, partnerName } = usePlayerData();
+  const myPlayerName = userData?.username || 'You';
+
+  // State
   const [attempts, setAttempts] = useState<Attempt[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
-  const [lastDoc, setLastDoc] = useState<QueryDocumentSnapshot<DocumentData> | null>(null);
-  const [playerNames, setPlayerNames] = useState<Record<string, string>>({});
-  const [playerFilter, setPlayerFilter] = useState<PlayerFilterType>('all');
+
+  // Filters
+  const [dateFilter, setDateFilter] = useState<DateRangeFilterType>('last7days');
   const [statusFilter, setStatusFilter] = useState<StatusFilterType>('all');
-  const [categoryFilter, setCategoryFilter] = useState<CategoryFilterType>('all');
-  const [dateRangeFilter, setDateRangeFilter] = useState<DateRangeFilterType>('last7days');
-  const [showLeaderboard, setShowLeaderboard] = useState(false);
-  const [showAnalytics, setShowAnalytics] = useState(true);
-  const [showCategoryBreakdown, setShowCategoryBreakdown] = useState(false);
-  const [showRequestStats, setShowRequestStats] = useState(false);
-  const [requests, setRequests] = useState<Request[]>([]);
 
-  const coupleId = userData?.activeCoupleId;
-  const myUid = user?.uid;
-  const partnerId = coupleData?.partnerIds?.find(id => id !== myUid);
-
+  // Fetch attempts
   useEffect(() => {
-    if (!coupleData?.partnerIds) return;
+    if (!coupleId || !user?.uid) return;
 
-    const fetchNames = async () => {
-      const names: Record<string, string> = {};
-      for (const partnerId of coupleData.partnerIds) {
-        const userDoc = await getDoc(doc(db, 'users', partnerId));
-        if (userDoc.exists()) {
-          names[partnerId] = userDoc.data()?.username || 'Unknown';
-        }
-      }
-      setPlayerNames(names);
-    };
-
-    fetchNames();
-  }, [coupleData?.partnerIds]);
-
-  // Fetch all requests for analytics
-  useEffect(() => {
-    if (!coupleId) return;
-
-    const fetchRequests = async () => {
-      try {
-        const requestsRef = collection(db, 'couples', coupleId, 'requests');
-        const dateStart = getDateRangeStart(dateRangeFilter);
-        
-        const constraints: QueryConstraint[] = [orderBy('createdAt', 'desc')];
-        if (dateStart) {
-          constraints.unshift(where('createdAt', '>=', Timestamp.fromDate(dateStart)));
-        }
-        
-        const q = query(requestsRef, ...constraints);
-        const snapshot = await getDocs(q);
-        
-        const requestsList: Request[] = snapshot.docs.map(docSnap => ({
-          id: docSnap.id,
-          ...docSnap.data(),
-          createdAt: docSnap.data().createdAt?.toDate() ?? new Date(),
-          fulfilledAt: docSnap.data().fulfilledAt?.toDate(),
-        })) as Request[];
-        
-        setRequests(requestsList);
-      } catch (error) {
-        console.error('Error fetching requests:', error);
-      }
-    };
-
-    fetchRequests();
-  }, [coupleId, dateRangeFilter]);
-
-  const fetchAttempts = useCallback(async (isRefresh = false) => {
-    if (!coupleId) return;
-
-    if (isRefresh) {
-      setRefreshing(true);
-    } else {
-      setLoading(true);
-    }
     setError(null);
+    const attemptsRef = collection(db, 'couples', coupleId, 'attempts');
+    const dateStart = getDateRangeStart(dateFilter);
 
-    try {
-      const attemptsRef = collection(db, 'couples', coupleId, 'attempts');
-      const dateStart = getDateRangeStart(dateRangeFilter);
-      
-      const constraints: QueryConstraint[] = [orderBy('createdAt', 'desc'), limit(PAGE_SIZE)];
-      if (dateStart) {
-        constraints.unshift(where('createdAt', '>=', Timestamp.fromDate(dateStart)));
-      }
-      
-      const q = query(attemptsRef, ...constraints);
-
-      const snapshot = await getDocs(q);
-      const attemptsList: Attempt[] = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate() ?? new Date(),
-        acknowledgedAt: doc.data().acknowledgedAt?.toDate(),
-      })) as Attempt[];
-
-      setAttempts(attemptsList);
-      setLastDoc(snapshot.docs[snapshot.docs.length - 1] || null);
-      setHasMore(snapshot.docs.length === PAGE_SIZE);
-    } catch (err: unknown) {
-      console.error('Error fetching attempts:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load history';
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
+    let q;
+    if (dateStart) {
+      q = query(
+        attemptsRef,
+        where('createdAt', '>=', Timestamp.fromDate(dateStart)),
+        orderBy('createdAt', 'desc')
+      );
+    } else {
+      q = query(attemptsRef, orderBy('createdAt', 'desc'));
     }
-  }, [coupleId, dateRangeFilter]);
 
-  const loadMore = useCallback(async () => {
-    if (!coupleId || loadingMore || !hasMore || !lastDoc) return;
-
-    setLoadingMore(true);
-
-    try {
-      const attemptsRef = collection(db, 'couples', coupleId, 'attempts');
-      const dateStart = getDateRangeStart(dateRangeFilter);
-      
-      const constraints: QueryConstraint[] = [
-        orderBy('createdAt', 'desc'),
-        startAfter(lastDoc),
-        limit(PAGE_SIZE),
-      ];
-      if (dateStart) {
-        constraints.unshift(where('createdAt', '>=', Timestamp.fromDate(dateStart)));
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const attemptsList: Attempt[] = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+          createdAt: doc.data().createdAt?.toDate() ?? new Date(),
+          acknowledgedAt: doc.data().acknowledgedAt?.toDate(),
+        })) as Attempt[];
+        setAttempts(attemptsList);
+        setLoading(false);
+        setRefreshing(false);
+      },
+      (err) => {
+        console.error('Error fetching attempts:', err);
+        setError(err.message || 'Failed to load history');
+        setLoading(false);
+        setRefreshing(false);
       }
-      
-      const q = query(attemptsRef, ...constraints);
+    );
 
-      const snapshot = await getDocs(q);
-      const newAttempts: Attempt[] = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate() ?? new Date(),
-        acknowledgedAt: doc.data().acknowledgedAt?.toDate(),
-      })) as Attempt[];
+    return unsubscribe;
+  }, [coupleId, user?.uid, dateFilter]);
 
-      setAttempts(prev => [...prev, ...newAttempts]);
-      setLastDoc(snapshot.docs[snapshot.docs.length - 1] || null);
-      setHasMore(snapshot.docs.length === PAGE_SIZE);
-    } catch (error) {
-      console.error('Error loading more attempts:', error);
-    } finally {
-      setLoadingMore(false);
+  // Filter attempts by status
+  const filteredAttempts = useMemo(() => {
+    let filtered = attempts;
+
+    if (statusFilter === 'pending') {
+      filtered = filtered.filter((a) => !a.acknowledged);
+    } else if (statusFilter === 'acknowledged') {
+      filtered = filtered.filter((a) => a.acknowledged);
     }
-  }, [coupleId, loadingMore, hasMore, lastDoc, dateRangeFilter]);
 
-  useEffect(() => {
-    fetchAttempts();
-  }, [fetchAttempts]);
+    return filtered;
+  }, [attempts, statusFilter]);
+
+  // Calculate metrics
+  const pendingCount = useMemo(
+    () => attempts.filter((a) => !a.acknowledged).length,
+    [attempts]
+  );
+
+  const acknowledgedCount = useMemo(
+    () => attempts.filter((a) => a.acknowledged).length,
+    [attempts]
+  );
+
+  const responsivenessPercent = useMemo(() => {
+    const total = attempts.length;
+    return total > 0 ? Math.round((acknowledgedCount / total) * 100) : 0;
+  }, [attempts.length, acknowledgedCount]);
+
+  const totalGems = useMemo(
+    () => (myPlayer?.gemCount ?? 0) + (partnerPlayer?.gemCount ?? 0),
+    [myPlayer, partnerPlayer]
+  );
+
+  // Helper functions
+  const getPlayerName = useCallback(
+    (playerId: string): string => {
+      if (playerId === user?.uid) return myPlayerName;
+      return partnerName;
+    },
+    [user?.uid, myPlayerName, partnerName]
+  );
 
   const handleRefresh = useCallback(() => {
-    fetchAttempts(true);
-  }, [fetchAttempts]);
-
-  const formatDate = useCallback((date: Date) => {
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-
-    if (days === 0) {
-      const hours = Math.floor(diff / (1000 * 60 * 60));
-      if (hours === 0) {
-        const minutes = Math.floor(diff / (1000 * 60));
-        return minutes <= 1 ? 'Just now' : `${minutes}m ago`;
-      }
-      return `${hours}h ago`;
-    } else if (days === 1) {
-      return 'Yesterday';
-    } else if (days < 7) {
-      return `${days}d ago`;
-    }
-    return date.toLocaleDateString();
+    setRefreshing(true);
+    // Firestore listener will automatically update
   }, []);
 
-  const getPlayerName = useCallback((playerId: string) => {
-    if (playerId === myUid) return 'You';
-    return playerNames[playerId] || 'Partner';
-  }, [myUid, playerNames]);
-
-  // Filter attempts by player, status, and category
-  const filteredAttempts = useMemo(() => {
-    return attempts.filter(attempt => {
-      // Player filter
-      let matchesPlayer = true;
-      switch (playerFilter) {
-        case 'byMe':
-          matchesPlayer = attempt.byPlayerId === myUid;
-          break;
-        case 'forMe':
-          matchesPlayer = attempt.forPlayerId === myUid;
-          break;
-        case 'byPartner':
-          matchesPlayer = attempt.byPlayerId === partnerId;
-          break;
-        case 'forPartner':
-          matchesPlayer = attempt.forPlayerId === partnerId;
-          break;
-      }
-      if (!matchesPlayer) return false;
-
-      // Status filter
-      let matchesStatus = true;
-      switch (statusFilter) {
-        case 'pending':
-          matchesStatus = !attempt.acknowledged;
-          break;
-        case 'acknowledged':
-          matchesStatus = attempt.acknowledged === true;
-          break;
-      }
-      if (!matchesStatus) return false;
-
-      // Category filter
-      if (categoryFilter !== 'all') {
-        return attempt.category === categoryFilter;
-      }
-
-      return true;
-    });
-  }, [attempts, playerFilter, statusFilter, categoryFilter, myUid, partnerId]);
-
-  // Helper functions for filtering
-  const applyPlayerFilter = (a: Attempt, filter: PlayerFilterType) => {
-    switch (filter) {
-      case 'byMe': return a.byPlayerId === myUid;
-      case 'forMe': return a.forPlayerId === myUid;
-      case 'byPartner': return a.byPlayerId === partnerId;
-      case 'forPartner': return a.forPlayerId === partnerId;
-      default: return true;
+  const handleStatusCardPress = useCallback((type: 'waiting' | 'acknowledged') => {
+    if (type === 'waiting') {
+      setStatusFilter('pending');
+    } else {
+      setStatusFilter('acknowledged');
     }
-  };
+  }, []);
 
-  const applyStatusFilter = (a: Attempt, filter: StatusFilterType) => {
-    switch (filter) {
-      case 'pending': return !a.acknowledged;
-      case 'acknowledged': return a.acknowledged === true;
-      default: return true;
-    }
-  };
+  const renderAttemptCard = useCallback(
+    ({ item }: ListRenderItemInfo<Attempt>) => {
+      const isInitiatedByMe = item.byPlayerId === user?.uid;
+      const initiatorName = getPlayerName(item.byPlayerId);
+      const recipientName = getPlayerName(item.forPlayerId);
 
-  const applyCategoryFilter = (a: Attempt, filter: CategoryFilterType) => {
-    if (filter === 'all') return true;
-    return a.category === filter;
-  };
+      return (
+        <TimelineEntryCard
+          attempt={item}
+          isInitiatedByMe={isInitiatedByMe}
+          initiatorName={initiatorName}
+          recipientName={recipientName}
+        />
+      );
+    },
+    [user?.uid, getPlayerName]
+  );
 
-  // Calculate counts for each filter (respecting other filters)
-  const playerFilterCounts = useMemo(() => {
-    const applyOthers = (a: Attempt) =>
-      applyStatusFilter(a, statusFilter) && applyCategoryFilter(a, categoryFilter);
-    return {
-      all: attempts.filter(applyOthers).length,
-      byMe: attempts.filter(a => a.byPlayerId === myUid && applyOthers(a)).length,
-      forMe: attempts.filter(a => a.forPlayerId === myUid && applyOthers(a)).length,
-      byPartner: attempts.filter(a => a.byPlayerId === partnerId && applyOthers(a)).length,
-      forPartner: attempts.filter(a => a.forPlayerId === partnerId && applyOthers(a)).length,
-    };
-  }, [attempts, statusFilter, categoryFilter, myUid, partnerId]);
-
-  // Calculate status counts (respecting other filters)
-  const statusFilterCounts = useMemo(() => {
-    const applyOthers = (a: Attempt) =>
-      applyPlayerFilter(a, playerFilter) && applyCategoryFilter(a, categoryFilter);
-    return {
-      all: attempts.filter(applyOthers).length,
-      pending: attempts.filter(a => !a.acknowledged && applyOthers(a)).length,
-      acknowledged: attempts.filter(a => a.acknowledged === true && applyOthers(a)).length,
-    };
-  }, [attempts, playerFilter, categoryFilter, myUid, partnerId]);
-
-  // Calculate category counts (respecting other filters) - only categories with attempts
-  const categoryFilterData = useMemo(() => {
-    const applyOthers = (a: Attempt) =>
-      applyPlayerFilter(a, playerFilter) && applyStatusFilter(a, statusFilter);
-    
-    const counts: Record<string, number> = {};
-    attempts.filter(applyOthers).forEach(a => {
-      if (a.category) {
-        counts[a.category] = (counts[a.category] || 0) + 1;
-      }
-    });
-
-    // Only include categories that have attempts
-    const categoriesWithAttempts = CATEGORIES.filter(cat => counts[cat] > 0);
-    const totalCount = attempts.filter(applyOthers).length;
-
-    return {
-      categories: categoriesWithAttempts,
-      counts,
-      totalCount,
-    };
-  }, [attempts, playerFilter, statusFilter, myUid, partnerId]);
-
-  // Analytics stats - calculated from loaded attempts (respects date range filter)
-  const analyticsStats = useMemo(() => {
-    const myAttempts = attempts.filter(a => a.byPlayerId === myUid);
-    const partnerAttempts = attempts.filter(a => a.byPlayerId === partnerId);
-    
-    const totalAttempts = attempts.length;
-    const acknowledgedAttempts = attempts.filter(a => a.acknowledged).length;
-    const acknowledgeRate = totalAttempts > 0 ? Math.round((acknowledgedAttempts / totalAttempts) * 100) : 0;
-
-    return {
-      totalAttempts,
-      myAttemptsCount: myAttempts.length,
-      partnerAttemptsCount: partnerAttempts.length,
-      acknowledgedCount: acknowledgedAttempts,
-      pendingCount: totalAttempts - acknowledgedAttempts,
-      acknowledgeRate,
-    };
-  }, [attempts, myUid, partnerId]);
-
-  // Category breakdown stats - separate for "by me" and "for me"
-  const categoryBreakdownStats = useMemo(() => {
-    type CategoryStat = { category: string; count: number; percentage: number };
-
-    const byMeAttempts = attempts.filter(a => a.byPlayerId === myUid);
-    const forMeAttempts = attempts.filter(a => a.forPlayerId === myUid);
-
-    const calculateBreakdown = (attemptList: Attempt[]): CategoryStat[] => {
-      const counts: Record<string, number> = {};
-      attemptList.forEach(a => {
-        if (a.category) {
-          counts[a.category] = (counts[a.category] || 0) + 1;
-        }
-      });
-
-      const total = attemptList.length;
-      return Object.entries(counts)
-        .map(([category, count]) => ({
-          category,
-          count,
-          percentage: total > 0 ? Math.round((count / total) * 100) : 0,
-        }))
-        .sort((a, b) => b.count - a.count);
-    };
-
-    return {
-      byMe: calculateBreakdown(byMeAttempts),
-      byMeTotal: byMeAttempts.length,
-      forMe: calculateBreakdown(forMeAttempts),
-      forMeTotal: forMeAttempts.length,
-    };
-  }, [attempts, myUid]);
-
-  // Request stats - calculated from loaded requests
-  const requestStats = useMemo(() => {
-    const myRequests = requests.filter(r => r.byPlayerId === myUid);
-    const partnerRequests = requests.filter(r => r.byPlayerId === partnerId);
-    
-    const totalRequests = requests.length;
-    const fulfilledRequests = requests.filter(r => r.status === 'fulfilled');
-    const fulfilledCount = fulfilledRequests.length;
-    const fulfillmentRate = totalRequests > 0 ? Math.round((fulfilledCount / totalRequests) * 100) : 0;
-    
-    // Calculate average time to fulfill (in hours)
-    let avgFulfillmentTime: number | null = null;
-    const fulfilledWithTime = fulfilledRequests.filter(r => r.fulfilledAt && r.createdAt);
-    if (fulfilledWithTime.length > 0) {
-      const totalMs = fulfilledWithTime.reduce((sum, r) => {
-        const created = r.createdAt instanceof Date ? r.createdAt.getTime() : 0;
-        const fulfilled = r.fulfilledAt instanceof Date ? r.fulfilledAt.getTime() : 0;
-        return sum + (fulfilled - created);
-      }, 0);
-      avgFulfillmentTime = Math.round((totalMs / fulfilledWithTime.length) / (1000 * 60 * 60)); // hours
-    }
-    
-    // Most requested categories
-    type CategoryStat = { category: string; count: number; percentage: number };
-    const categoryCounts: Record<string, number> = {};
-    requests.forEach(r => {
-      if (r.category) {
-        categoryCounts[r.category] = (categoryCounts[r.category] || 0) + 1;
-      }
-    });
-    const mostRequestedCategories: CategoryStat[] = Object.entries(categoryCounts)
-      .map(([category, count]) => ({
-        category,
-        count,
-        percentage: totalRequests > 0 ? Math.round((count / totalRequests) * 100) : 0,
-      }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 5);
-
-    return {
-      totalRequests,
-      myRequestsCount: myRequests.length,
-      partnerRequestsCount: partnerRequests.length,
-      fulfilledCount,
-      activeCount: totalRequests - fulfilledCount - requests.filter(r => r.status === 'canceled').length,
-      fulfillmentRate,
-      avgFulfillmentTime,
-      mostRequestedCategories,
-    };
-  }, [requests, myUid, partnerId]);
-
-  const playerFilterOptions: { key: PlayerFilterType; label: string }[] = [
-    { key: 'all', label: 'All' },
-    { key: 'byMe', label: 'By Me' },
-    { key: 'forMe', label: 'For Me' },
-    { key: 'byPartner', label: 'By Partner' },
-    { key: 'forPartner', label: 'For Partner' },
-  ];
-
-  const statusFilterOptions: { key: StatusFilterType; label: string }[] = [
-    { key: 'all', label: 'All' },
-    { key: 'pending', label: 'Pending' },
-    { key: 'acknowledged', label: 'Acknowledged' },
-  ];
-
-  const dateRangeFilterOptions: { key: DateRangeFilterType; label: string }[] = [
-    { key: 'today', label: 'Today' },
-    { key: 'last7days', label: 'Last 7 Days' },
-    { key: 'last30days', label: 'Last 30 Days' },
-    { key: 'alltime', label: 'All Time' },
-  ];
-
-  const renderAttemptCard = useCallback(({ item: attempt }: ListRenderItemInfo<Attempt>) => (
-    <HistoryAttemptCard
-      attempt={attempt}
-      getPlayerName={getPlayerName}
-      formatDate={formatDate}
-    />
-  ), [getPlayerName, formatDate]);
-
-  const keyExtractor = useCallback((item: Attempt) => item.id, []);
-
-  const renderFooter = useCallback(() => {
-    if (!loadingMore) return null;
-    return (
-      <View style={styles.footerLoader}>
-        <ActivityIndicator size="small" color={colors.primary} />
-        <Text style={styles.loadingMoreText}>Loading more...</Text>
+  const renderHeader = useCallback(() => (
+    <View style={styles.headerContainer}>
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.headerEmoji}>💫</Text>
+        <Text style={styles.headerTitle}>History</Text>
       </View>
-    );
-  }, [loadingMore]);
+
+      {/* Status Snapshot */}
+      <View style={styles.statusSnapshot}>
+        <StatusSnapshotCard
+          type="waiting"
+          count={pendingCount}
+          onPress={() => handleStatusCardPress('waiting')}
+        />
+        <StatusSnapshotCard
+          type="acknowledged"
+          count={acknowledgedCount}
+          onPress={() => handleStatusCardPress('acknowledged')}
+        />
+      </View>
+
+      {/* Health Insights */}
+      <HealthInsightsCard
+        responsivenessPercentage={responsivenessPercent}
+        gemCount={totalGems}
+        openLoopsCount={pendingCount}
+      />
+
+      {/* Collapsible Filters */}
+      <CollapsibleFilterControls
+        dateFilter={dateFilter}
+        statusFilter={statusFilter}
+        onDateFilterChange={setDateFilter}
+        onStatusFilterChange={setStatusFilter}
+      />
+
+      {/* Timeline Header */}
+      <Text style={styles.timelineHeader}>Timeline</Text>
+    </View>
+  ), [
+    pendingCount,
+    acknowledgedCount,
+    responsivenessPercent,
+    totalGems,
+    dateFilter,
+    statusFilter,
+    handleStatusCardPress,
+  ]);
 
   if (loading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <LoadingSpinner message="Loading history..." />
-      </SafeAreaView>
-    );
+    return <LoadingSpinner />;
   }
 
   if (error) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.title}>History</Text>
-        </View>
-        <View style={{ flex: 1, paddingHorizontal: spacing.lg }}>
-          <ErrorState error={error} onRetry={() => fetchAttempts()} />
-        </View>
-      </SafeAreaView>
-    );
+    return <ErrorState error={error} onRetry={() => setError(null)} />;
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>History</Text>
-        <Text style={styles.subtitle}>
-          {filteredAttempts.length > 0
-            ? `${filteredAttempts.length}${hasMore && playerFilter === 'all' ? '+' : ''} attempts`
-            : 'No attempts yet'}
-        </Text>
-        <Text style={styles.dateRangeText}>{formatDateRange(dateRangeFilter)}</Text>
-      </View>
-
-      {/* Filters Container */}
-      <View style={styles.filtersContainer}>
-        {/* Date Range Filter */}
-        <View style={styles.filterRow}>
-          <Text style={styles.filterLabel}>📅 Period</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.filterChipsRow}
-          >
-            {dateRangeFilterOptions.map(option => (
-              <TouchableOpacity
-                key={option.key}
-                style={[
-                  styles.filterChip,
-                  dateRangeFilter === option.key && styles.filterChipActiveDate,
-                ]}
-                onPress={() => setDateRangeFilter(option.key)}
-              >
-                <Text
-                  style={[
-                    styles.filterChipText,
-                    dateRangeFilter === option.key && styles.filterChipTextActiveDate,
-                  ]}
-                >
-                  {option.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-
-        {/* Player Filter */}
-        <View style={styles.filterRow}>
-          <Text style={styles.filterLabel}>👤 Who</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.filterChipsRow}
-          >
-            {playerFilterOptions.map(option => (
-              <TouchableOpacity
-                key={option.key}
-                style={[
-                  styles.filterChip,
-                  playerFilter === option.key && styles.filterChipActivePlayer,
-                ]}
-                onPress={() => setPlayerFilter(option.key)}
-              >
-                <Text
-                  style={[
-                    styles.filterChipText,
-                    playerFilter === option.key && styles.filterChipTextActivePlayer,
-                  ]}
-                >
-                  {option.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-
-        {/* Status Filter */}
-        <View style={styles.filterRow}>
-          <Text style={styles.filterLabel}>📊 Status</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.filterChipsRow}
-          >
-            {statusFilterOptions.map(option => (
-              <TouchableOpacity
-                key={option.key}
-                style={[
-                  styles.filterChip,
-                  statusFilter === option.key && (
-                    option.key === 'pending' ? styles.filterChipActivePending :
-                    option.key === 'acknowledged' ? styles.filterChipActiveAcknowledged :
-                    styles.filterChipActiveStatus
-                  ),
-                ]}
-                onPress={() => setStatusFilter(option.key)}
-              >
-                <Text
-                  style={[
-                    styles.filterChipText,
-                    statusFilter === option.key && styles.filterChipTextActiveStatus,
-                  ]}
-                >
-                  {option.label} ({statusFilterCounts[option.key]})
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-
-        {/* Category Filter - only show if there are categories with attempts */}
-        {categoryFilterData.categories.length > 0 && (
-          <View style={styles.filterRow}>
-            <Text style={styles.filterLabel}>🏷️ Category</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.filterChipsRow}
-            >
-              <TouchableOpacity
-                style={[
-                  styles.filterChip,
-                  categoryFilter === 'all' && styles.filterChipActiveCategory,
-                ]}
-                onPress={() => setCategoryFilter('all')}
-              >
-                <Text
-                  style={[
-                    styles.filterChipText,
-                    categoryFilter === 'all' && styles.filterChipTextActiveCategory,
-                  ]}
-                >
-                  All
-                </Text>
-              </TouchableOpacity>
-              {categoryFilterData.categories.map(cat => (
-                <TouchableOpacity
-                  key={cat}
-                  style={[
-                    styles.filterChip,
-                    categoryFilter === cat && styles.filterChipActiveCategory,
-                  ]}
-                  onPress={() => setCategoryFilter(categoryFilter === cat ? 'all' : cat)}
-                >
-                  <Text
-                    style={[
-                      styles.filterChipText,
-                      categoryFilter === cat && styles.filterChipTextActiveCategory,
-                    ]}
-                    numberOfLines={1}
-                  >
-                    {cat.split(' ')[0]}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        )}
-      </View>
-
-      {/* Leaderboard Drawer */}
-      <TouchableOpacity
-        style={styles.analyticsHeader}
-        onPress={() => setShowLeaderboard(!showLeaderboard)}
-      >
-        <Text style={styles.analyticsTitle}>💫 Our Journey</Text>
-        <Text style={styles.analyticsToggle}>{showLeaderboard ? '▼' : '▶'}</Text>
-      </TouchableOpacity>
-
-      {showLeaderboard && myUid && partnerId && (
-        <View style={styles.leaderboardContainer}>
-          <GemLeaderboard
-            myGems={myPlayer?.gemCount ?? 0}
-            partnerGems={partnerPlayer?.gemCount ?? 0}
-            myPlayerId={myUid}
-            partnerPlayerId={partnerId}
-            myName="Me"
-            partnerName={partnerName}
+    <SafeAreaView style={styles.safeArea}>
+      <FlatList
+        data={filteredAttempts}
+        renderItem={renderAttemptCard}
+        keyExtractor={(item) => item.id}
+        ListHeaderComponent={renderHeader}
+        ListEmptyComponent={
+          <EmptyState
+            icon="🌙"
+            title="No entries for this period"
+            subtitle="Try adjusting your filters"
           />
-        </View>
-      )}
-
-      {/* Analytics Section */}
-      <TouchableOpacity
-        style={styles.analyticsHeader}
-        onPress={() => setShowAnalytics(!showAnalytics)}
-      >
-        <Text style={styles.analyticsTitle}>📊 Analytics</Text>
-        <Text style={styles.analyticsToggle}>{showAnalytics ? '▼' : '▶'}</Text>
-      </TouchableOpacity>
-
-      {showAnalytics && (
-        <View style={styles.analyticsContainer}>
-          <View style={styles.analyticsRow}>
-            <View style={styles.analyticsStat}>
-              <Text style={styles.analyticsValue}>{analyticsStats.totalAttempts}</Text>
-              <Text style={styles.analyticsLabel}>Total Attempts</Text>
-            </View>
-            <View style={styles.analyticsStat}>
-              <Text style={styles.analyticsValue}>{analyticsStats.acknowledgedCount}</Text>
-              <Text style={styles.analyticsLabel}>Acknowledged</Text>
-            </View>
-            <View style={styles.analyticsStat}>
-              <Text style={[styles.analyticsValue, { color: colors.primary }]}>
-                {analyticsStats.acknowledgeRate}%
-              </Text>
-              <Text style={styles.analyticsLabel}>Seen & Received</Text>
-            </View>
-          </View>
-
-          <View style={styles.analyticsRow}>
-            <View style={styles.analyticsStat}>
-              <Text style={[styles.analyticsValue, { color: colors.warning }]}>
-                {analyticsStats.pendingCount}
-              </Text>
-              <Text style={styles.analyticsLabel}>Awaiting Acknowledgment</Text>
-            </View>
-            <View style={styles.analyticsStat}>
-              <Text style={[styles.analyticsValue, { color: colors.gem }]}>
-                💎 {(myPlayer?.gemCount ?? 0) + (partnerPlayer?.gemCount ?? 0)}
-              </Text>
-              <Text style={styles.analyticsLabel}>Gems Together</Text>
-            </View>
-          </View>
-        </View>
-      )}
-
-      {/* Category Breakdown Section */}
-      <TouchableOpacity
-        style={styles.analyticsHeader}
-        onPress={() => setShowCategoryBreakdown(!showCategoryBreakdown)}
-      >
-        <Text style={styles.analyticsTitle}>📊 Category Breakdown</Text>
-        <Text style={styles.analyticsToggle}>{showCategoryBreakdown ? '▼' : '▶'}</Text>
-      </TouchableOpacity>
-
-      {showCategoryBreakdown && (
-        <View style={styles.categoryBreakdownContainer}>
-          {/* Attempts I Logged */}
-          <View style={styles.breakdownSection}>
-            <Text style={styles.breakdownSectionTitle}>
-              Attempts I Logged ({categoryBreakdownStats.byMeTotal})
-            </Text>
-            {categoryBreakdownStats.byMe.length === 0 ? (
-              <Text style={styles.breakdownEmpty}>No attempts logged yet</Text>
-            ) : (
-              categoryBreakdownStats.byMe.map((stat) => (
-                <View key={`byMe-${stat.category}`} style={styles.breakdownRow}>
-                  <View style={styles.breakdownLabelContainer}>
-                    <Text style={styles.breakdownLabel} numberOfLines={1}>
-                      {stat.category}
-                    </Text>
-                    <Text style={styles.breakdownCount}>
-                      {stat.count} ({stat.percentage}%)
-                    </Text>
-                  </View>
-                  <View style={styles.breakdownBarContainer}>
-                    <View
-                      style={[
-                        styles.breakdownBar,
-                        { width: `${stat.percentage}%`, backgroundColor: colors.primary },
-                      ]}
-                    />
-                  </View>
-                </View>
-              ))
-            )}
-          </View>
-
-          {/* Attempts For Me */}
-          <View style={styles.breakdownSection}>
-            <Text style={styles.breakdownSectionTitle}>
-              Attempts For Me ({categoryBreakdownStats.forMeTotal})
-            </Text>
-            {categoryBreakdownStats.forMe.length === 0 ? (
-              <Text style={styles.breakdownEmpty}>No attempts for you yet</Text>
-            ) : (
-              categoryBreakdownStats.forMe.map((stat) => (
-                <View key={`forMe-${stat.category}`} style={styles.breakdownRow}>
-                  <View style={styles.breakdownLabelContainer}>
-                    <Text style={styles.breakdownLabel} numberOfLines={1}>
-                      {stat.category}
-                    </Text>
-                    <Text style={styles.breakdownCount}>
-                      {stat.count} ({stat.percentage}%)
-                    </Text>
-                  </View>
-                  <View style={styles.breakdownBarContainer}>
-                    <View
-                      style={[
-                        styles.breakdownBar,
-                        { width: `${stat.percentage}%`, backgroundColor: colors.success },
-                      ]}
-                    />
-                  </View>
-                </View>
-              ))
-            )}
-          </View>
-        </View>
-      )}
-
-      {/* Request Stats Section */}
-      <TouchableOpacity
-        style={styles.analyticsHeader}
-        onPress={() => setShowRequestStats(!showRequestStats)}
-      >
-        <Text style={styles.analyticsTitle}>📋 Request Stats</Text>
-        <Text style={styles.analyticsToggle}>{showRequestStats ? '▼' : '▶'}</Text>
-      </TouchableOpacity>
-
-      {showRequestStats && (
-        <View style={styles.analyticsContainer}>
-          {/* Request counts - collaborative framing */}
-          <View style={styles.analyticsRow}>
-            <View style={styles.analyticsStat}>
-              <Text style={styles.analyticsValue}>{requestStats.totalRequests}</Text>
-              <Text style={styles.analyticsLabel}>Total Requests</Text>
-            </View>
-            <View style={styles.analyticsStat}>
-              <Text style={[styles.analyticsValue, { color: colors.success }]}>
-                {requestStats.fulfilledCount}
-              </Text>
-              <Text style={styles.analyticsLabel}>Fulfilled</Text>
-            </View>
-            <View style={styles.analyticsStat}>
-              <Text style={[styles.analyticsValue, { color: colors.primary }]}>
-                {requestStats.fulfillmentRate}%
-              </Text>
-              <Text style={styles.analyticsLabel}>Completion Rate</Text>
-            </View>
-          </View>
-
-          {/* Active requests */}
-          <View style={styles.analyticsRow}>
-            <View style={styles.analyticsStat}>
-              <Text style={[styles.analyticsValue, { color: colors.warning }]}>
-                {requestStats.activeCount}
-              </Text>
-              <Text style={styles.analyticsLabel}>Active Requests</Text>
-            </View>
-          </View>
-
-          {/* Average fulfillment time */}
-          {requestStats.avgFulfillmentTime !== null && (
-            <View style={styles.analyticsRow}>
-              <View style={styles.analyticsStat}>
-                <Text style={[styles.analyticsValue, { color: colors.textPrimary }]}>
-                  {requestStats.avgFulfillmentTime < 24
-                    ? `${requestStats.avgFulfillmentTime}h`
-                    : `${Math.round(requestStats.avgFulfillmentTime / 24)}d`}
-                </Text>
-                <Text style={styles.analyticsLabel}>Avg Time to Fulfill</Text>
-              </View>
-            </View>
-          )}
-
-          {/* Most requested categories */}
-          {requestStats.mostRequestedCategories.length > 0 && (
-            <View style={styles.breakdownSection}>
-              <Text style={styles.breakdownSectionTitle}>Most Requested Categories</Text>
-              {requestStats.mostRequestedCategories.map((stat) => (
-                <View key={`request-${stat.category}`} style={styles.breakdownRow}>
-                  <View style={styles.breakdownLabelContainer}>
-                    <Text style={styles.breakdownLabel} numberOfLines={1}>
-                      {stat.category}
-                    </Text>
-                    <Text style={styles.breakdownCount}>
-                      {stat.count} ({stat.percentage}%)
-                    </Text>
-                  </View>
-                  <View style={styles.breakdownBarContainer}>
-                    <View
-                      style={[
-                        styles.breakdownBar,
-                        { width: `${stat.percentage}%`, backgroundColor: colors.primaryLight },
-                      ]}
-                    />
-                  </View>
-                </View>
-              ))}
-            </View>
-          )}
-        </View>
-      )}
-
-      {filteredAttempts.length === 0 ? (
-        <EmptyState
-          icon="📜"
-          title={playerFilter === 'all' && statusFilter === 'all' && categoryFilter === 'all' && dateRangeFilter === 'alltime' ? 'No history yet' : 'No matching attempts'}
-          subtitle={
-            playerFilter === 'all' && statusFilter === 'all' && categoryFilter === 'all' && dateRangeFilter === 'alltime'
-              ? 'Start logging attempts to see your relationship timeline!'
-              : 'Try a different filter or date range to see more attempts.'
-          }
-        />
-      ) : (
-        <FlatList
-          data={filteredAttempts}
-          renderItem={renderAttemptCard}
-          keyExtractor={keyExtractor}
-          contentContainerStyle={styles.listContent}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={handleRefresh}
-              tintColor={colors.primary}
-              colors={[colors.primary]}
-            />
-          }
-          onEndReached={loadMore}
-          onEndReachedThreshold={0.3}
-          ListFooterComponent={renderFooter}
-          initialNumToRender={10}
-          maxToRenderPerBatch={10}
-          windowSize={10}
-          removeClippedSubviews={true}
-        />
-      )}
+        }
+        contentContainerStyle={styles.listContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
+          />
+        }
+        initialNumToRender={10}
+        maxToRenderPerBatch={10}
+        windowSize={10}
+        removeClippedSubviews={true}
+      />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
     backgroundColor: colors.background,
   },
-  header: {
-    padding: spacing.lg,
-    paddingBottom: spacing.md,
-  },
-  title: {
-    ...typography.h1,
-    color: colors.primary,
-    marginBottom: spacing.xs,
-  },
-  subtitle: {
-    ...typography.body,
-    color: colors.textSecondary,
-  },
-  dateRangeText: {
-    ...typography.caption,
-    color: colors.textMuted,
-    marginTop: spacing.xs,
-  },
-  filtersContainer: {
-    backgroundColor: colors.surface,
-    marginHorizontal: spacing.lg,
-    marginBottom: spacing.md,
-    borderRadius: borderRadius.md,
-    padding: spacing.sm,
-  },
-  filterRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing.xs,
-  },
-  filterLabel: {
-    ...typography.caption,
-    color: colors.textPrimary,
-    fontWeight: '600',
-    width: 70,
-    marginRight: spacing.xs,
-  },
-  filterChipsRow: {
-    flexDirection: 'row',
-    gap: spacing.xs,
-    paddingRight: spacing.sm,
-  },
-  filterChip: {
-    backgroundColor: colors.card,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    borderRadius: borderRadius.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  filterChipText: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    fontWeight: '500',
-  },
-  // Date filter active state
-  filterChipActiveDate: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  filterChipTextActiveDate: {
-    color: colors.textOnPrimary,
-    fontWeight: '600',
-  },
-  // Player filter active state
-  filterChipActivePlayer: {
-    backgroundColor: colors.primaryLight,
-    borderColor: colors.primaryLight,
-  },
-  filterChipTextActivePlayer: {
-    color: colors.textOnPrimary,
-    fontWeight: '600',
-  },
-  // Status filter active states
-  filterChipActiveStatus: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  filterChipActivePending: {
-    backgroundColor: colors.warning,
-    borderColor: colors.warning,
-  },
-  filterChipActiveAcknowledged: {
-    backgroundColor: colors.success,
-    borderColor: colors.success,
-  },
-  filterChipTextActiveStatus: {
-    color: colors.textOnPrimary,
-    fontWeight: '600',
-  },
-  // Category filter active state
-  filterChipActiveCategory: {
-    backgroundColor: colors.gem,
-    borderColor: colors.gem,
-  },
-  filterChipTextActiveCategory: {
-    color: colors.textOnPrimary,
-    fontWeight: '600',
-  },
-  leaderboardContainer: {
-    marginHorizontal: spacing.lg,
-    marginBottom: spacing.md,
-  },
   listContent: {
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xl,
+    paddingBottom: 100,
   },
-  attemptCard: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.md,
+  headerContainer: {
     padding: spacing.md,
-    borderLeftWidth: 4,
-    borderLeftColor: colors.warning,
-    marginBottom: spacing.md,
+    gap: spacing.md,
   },
-  attemptCardAcknowledged: {
-    borderLeftColor: colors.success,
-  },
-  attemptHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.sm,
-  },
-  playerInfo: {
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  byPlayer: {
-    ...typography.bodySmall,
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  arrowText: {
-    ...typography.bodySmall,
-    color: colors.textMuted,
-  },
-  forPlayer: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-    fontWeight: '500',
-  },
-  attemptTime: {
-    ...typography.caption,
-    color: colors.textMuted,
-  },
-  attemptAction: {
-    ...typography.body,
-    color: colors.textPrimary,
-    fontWeight: '600',
+    gap: spacing.sm,
     marginBottom: spacing.xs,
   },
-  attemptDescription: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-    marginBottom: spacing.sm,
+  headerEmoji: {
+    fontSize: 32,
   },
-  badgeRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.xs,
-    marginTop: spacing.sm,
-  },
-  categoryBadge: {
-    backgroundColor: colors.card,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    borderRadius: borderRadius.full,
-  },
-  categoryText: {
-    ...typography.caption,
-    color: colors.textSecondary,
-  },
-  fulfilledBadge: {
-    backgroundColor: colors.success + '20',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    borderRadius: borderRadius.full,
-  },
-  fulfilledText: {
-    ...typography.caption,
-    color: colors.success,
-    fontWeight: '600',
-  },
-  acknowledgedBadge: {
-    backgroundColor: colors.success + '20',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    borderRadius: borderRadius.full,
-  },
-  acknowledgedText: {
-    ...typography.caption,
-    color: colors.success,
-    fontWeight: '600',
-  },
-  pendingBadge: {
-    backgroundColor: colors.warning + '20',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    borderRadius: borderRadius.full,
-  },
-  pendingText: {
-    ...typography.caption,
-    color: colors.warning,
-    fontWeight: '600',
-  },
-  footerLoader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing.lg,
-    gap: spacing.sm,
-  },
-  loadingMoreText: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-  },
-  analyticsHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    backgroundColor: colors.surface,
-    marginHorizontal: spacing.lg,
-    marginBottom: spacing.sm,
-    borderRadius: borderRadius.md,
-  },
-  analyticsTitle: {
-    ...typography.h3,
-    color: colors.textPrimary,
-  },
-  analyticsToggle: {
-    ...typography.body,
-    color: colors.textMuted,
-  },
-  analyticsContainer: {
-    marginHorizontal: spacing.lg,
-    marginBottom: spacing.md,
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
-  },
-  analyticsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: spacing.md,
-  },
-  analyticsStat: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  analyticsValue: {
+  headerTitle: {
     ...typography.h2,
     color: colors.textPrimary,
-    fontWeight: '700',
   },
-  analyticsLabel: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    marginTop: spacing.xs,
-  },
-  categoryBreakdownContainer: {
-    marginHorizontal: spacing.lg,
-    marginBottom: spacing.md,
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
-  },
-  breakdownSection: {
-    marginBottom: spacing.md,
-  },
-  breakdownSectionTitle: {
-    ...typography.bodySmall,
-    color: colors.textPrimary,
-    fontWeight: '600',
-    marginBottom: spacing.sm,
-  },
-  breakdownEmpty: {
-    ...typography.caption,
-    color: colors.textMuted,
-    fontStyle: 'italic',
-  },
-  breakdownRow: {
-    marginBottom: spacing.sm,
-  },
-  breakdownLabelContainer: {
+  statusSnapshot: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.xs,
+    gap: spacing.sm,
   },
-  breakdownLabel: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    flex: 1,
-  },
-  breakdownCount: {
-    ...typography.caption,
-    color: colors.textMuted,
-    marginLeft: spacing.sm,
-  },
-  breakdownBarContainer: {
-    height: 8,
-    backgroundColor: colors.card,
-    borderRadius: borderRadius.sm,
-    overflow: 'hidden',
-  },
-  breakdownBar: {
-    height: '100%',
-    borderRadius: borderRadius.sm,
+  timelineHeader: {
+    ...typography.h3,
+    color: colors.textPrimary,
+    marginTop: spacing.sm,
   },
 });

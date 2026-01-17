@@ -20,6 +20,13 @@ export const colors = {
   warning: '#F59E0B',
   error: '#EF4444',
 
+  // Additional color variants for History redesign
+  amber400: '#FBBF24',
+  amber500: '#F59E0B',
+  emerald400: '#34D399',
+  emerald500: '#10B981',
+  backgroundDeep: '#0a0a0f',
+
   // Cup colors
   cupEmpty: '#333333',
   cupFilled: '#FFD700',
