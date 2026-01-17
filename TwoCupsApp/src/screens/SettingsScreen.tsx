@@ -34,7 +34,7 @@ export function SettingsScreen({
   onNavigateToMakeRequest,
   onNavigateToGemHistory,
 }: SettingsScreenProps) {
-  const { userData, coupleData, signOut } = useAuth();
+  const { user, userData, coupleData, signOut } = useAuth();
   const { partnerName, error, refresh } = usePlayerData();
 
   const username = userData?.username || 'Guest';
@@ -106,11 +106,11 @@ export function SettingsScreen({
       return;
     }
 
-    const uid = auth.currentUser?.uid;
-    const email = auth.currentUser?.email;
-    console.log('[SettingsScreen] Auth state:', { uid, email });
+    const uid = user?.uid;
+    const email = user?.email || 'anonymous@guest.local'; // Fallback for anonymous users
+    console.log('[SettingsScreen] Auth state:', { uid, email, isAnonymous: user?.isAnonymous });
 
-    if (!uid || !email) {
+    if (!uid) {
       Alert.alert('Error', 'You must be logged in to change your username');
       return;
     }
