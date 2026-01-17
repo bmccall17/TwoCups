@@ -1,33 +1,49 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { colors, spacing, borderRadius, typography } from '../../theme';
 
 interface HealthInsightsCardProps {
   responsivenessPercentage: number;
   gemCount: number;
   openLoopsCount: number;
+  onResponsivenessPress?: () => void;
+  onGemsPress?: () => void;
+  onOpenLoopsPress?: () => void;
 }
 
 export const HealthInsightsCard = React.memo(function HealthInsightsCard({
   responsivenessPercentage,
   gemCount,
   openLoopsCount,
+  onResponsivenessPress,
+  onGemsPress,
+  onOpenLoopsPress,
 }: HealthInsightsCardProps) {
   return (
     <View style={styles.card}>
       <View style={styles.metricsContainer}>
         {/* Responsiveness */}
-        <View style={styles.metric}>
+        <TouchableOpacity
+          style={styles.metric}
+          onPress={onResponsivenessPress}
+          activeOpacity={0.7}
+          disabled={!onResponsivenessPress}
+        >
           <Text style={styles.icon}>🤝</Text>
           <Text style={styles.value}>{responsivenessPercentage}%</Text>
           <Text style={styles.label}>RESPONSE</Text>
           <View style={styles.indicatorContainer}>
             <View style={[styles.trendBar, { width: `${Math.min(responsivenessPercentage, 100)}%` }]} />
           </View>
-        </View>
+        </TouchableOpacity>
 
         {/* Gems */}
-        <View style={styles.metric}>
+        <TouchableOpacity
+          style={styles.metric}
+          onPress={onGemsPress}
+          activeOpacity={0.7}
+          disabled={!onGemsPress}
+        >
           <Text style={styles.icon}>💎</Text>
           <Text style={styles.value}>{gemCount}</Text>
           <Text style={styles.label}>GEMS</Text>
@@ -36,10 +52,15 @@ export const HealthInsightsCard = React.memo(function HealthInsightsCard({
               <View key={i} style={styles.gemDot} />
             ))}
           </View>
-        </View>
+        </TouchableOpacity>
 
         {/* Open Loops */}
-        <View style={styles.metric}>
+        <TouchableOpacity
+          style={styles.metric}
+          onPress={onOpenLoopsPress}
+          activeOpacity={0.7}
+          disabled={!onOpenLoopsPress}
+        >
           <Text style={styles.icon}>⭕</Text>
           <Text style={styles.value}>{openLoopsCount}</Text>
           <Text style={styles.label}>OPEN</Text>
@@ -48,7 +69,7 @@ export const HealthInsightsCard = React.memo(function HealthInsightsCard({
               <View key={i} style={styles.loopDot} />
             ))}
           </View>
-        </View>
+        </TouchableOpacity>
       </View>
     </View>
   );

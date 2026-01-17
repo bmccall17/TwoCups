@@ -40,7 +40,7 @@ export const StatusSnapshotCard = React.memo(function StatusSnapshotCard({
 
   const isWaiting = type === 'waiting';
   const icon = isWaiting ? '⏳' : '✨';
-  const label = isWaiting ? 'Waiting' : 'Acknowledged';
+  const label = isWaiting ? 'Waiting' : 'Acknowledgements';
 
   return (
     <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>

@@ -16,11 +16,12 @@ import {
   Timestamp,
   onSnapshot,
 } from 'firebase/firestore';
+import { useNavigation } from '@react-navigation/native';
 import { db } from '../services/firebase/config';
 import { useAuth } from '../context/AuthContext';
 import { LoadingSpinner, EmptyState, ErrorState } from '../components/common';
 import { colors, spacing, typography } from '../theme';
-import { Attempt } from '../types';
+import { Attempt, Request, Suggestion } from '../types';
 import { usePlayerData } from '../hooks/usePlayerData';
 import {
   StatusSnapshotCard,
@@ -54,13 +55,16 @@ const getDateRangeStart = (filter: DateRangeFilterType): Date | null => {
 };
 
 export function HistoryScreen() {
-  const { user, userData } = useAuth();
+  const navigation = useNavigation<any>();
+  const { user, userData, coupleData } = useAuth();
   const coupleId = userData?.activeCoupleId;
   const { myPlayer, partnerPlayer, partnerName } = usePlayerData();
   const myPlayerName = userData?.username || 'You';
 
   // State
   const [attempts, setAttempts] = useState<Attempt[]>([]);
+  const [partnerRequests, setPartnerRequests] = useState<Request[]>([]);
+  const [partnerSuggestions, setPartnerSuggestions] = useState<Suggestion[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -68,6 +72,10 @@ export function HistoryScreen() {
   // Filters
   const [dateFilter, setDateFilter] = useState<DateRangeFilterType>('last7days');
   const [statusFilter, setStatusFilter] = useState<StatusFilterType>('all');
+
+  const myUid = user?.uid;
+  const partnerIds = coupleData?.partnerIds ?? [];
+  const partnerId = partnerIds.find(id => id !== myUid);
 
   // Fetch attempts
   useEffect(() => {
@@ -112,6 +120,51 @@ export function HistoryScreen() {
     return unsubscribe;
   }, [coupleId, user?.uid, dateFilter]);
 
+  // Fetch partner's active requests (things partner requested ME to do)
+  useEffect(() => {
+    if (!coupleId || !myUid) return;
+
+    const requestsRef = collection(db, 'couples', coupleId, 'requests');
+    const q = query(
+      requestsRef,
+      where('forPlayerId', '==', myUid),
+      where('status', '==', 'active')
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const requests: Request[] = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate() ?? new Date(),
+      })) as Request[];
+      setPartnerRequests(requests);
+    });
+
+    return unsubscribe;
+  }, [coupleId, myUid]);
+
+  // Fetch partner's suggestions (things partner suggested I could do)
+  useEffect(() => {
+    if (!coupleId || !partnerId) return;
+
+    const suggestionsRef = collection(db, 'couples', coupleId, 'suggestions');
+    const q = query(
+      suggestionsRef,
+      where('byPlayerId', '==', partnerId)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const suggestions: Suggestion[] = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate() ?? new Date(),
+      })) as Suggestion[];
+      setPartnerSuggestions(suggestions);
+    });
+
+    return unsubscribe;
+  }, [coupleId, partnerId]);
+
   // Filter attempts by status
   const filteredAttempts = useMemo(() => {
     let filtered = attempts;
@@ -126,7 +179,20 @@ export function HistoryScreen() {
   }, [attempts, statusFilter]);
 
   // Calculate metrics
-  const pendingCount = useMemo(
+  // Waiting: Active requests + suggestions from partner (things waiting for ME to do)
+  const waitingCount = useMemo(
+    () => partnerRequests.length + partnerSuggestions.length,
+    [partnerRequests, partnerSuggestions]
+  );
+
+  // Acknowledgements: Items partner logged for me that I need to acknowledge
+  const needsAcknowledgementCount = useMemo(
+    () => attempts.filter((a) => a.forPlayerId === user?.uid && !a.acknowledged).length,
+    [attempts, user?.uid]
+  );
+
+  // Total pending for metrics
+  const totalPendingCount = useMemo(
     () => attempts.filter((a) => !a.acknowledged).length,
     [attempts]
   );
@@ -160,13 +226,25 @@ export function HistoryScreen() {
     // Firestore listener will automatically update
   }, []);
 
-  const handleStatusCardPress = useCallback((type: 'waiting' | 'acknowledged') => {
-    if (type === 'waiting') {
-      setStatusFilter('pending');
-    } else {
-      setStatusFilter('acknowledged');
-    }
-  }, []);
+  const handleWaitingPress = useCallback(() => {
+    navigation.navigate('LogTab');
+  }, [navigation]);
+
+  const handleAcknowledgementsPress = useCallback(() => {
+    navigation.navigate('AcknowledgeTab');
+  }, [navigation]);
+
+  const handleResponsivenessPress = useCallback(() => {
+    navigation.navigate('AcknowledgeTab');
+  }, [navigation]);
+
+  const handleGemsPress = useCallback(() => {
+    navigation.getParent()?.navigate('GemHistory');
+  }, [navigation]);
+
+  const handleOpenLoopsPress = useCallback(() => {
+    navigation.navigate('LogTab');
+  }, [navigation]);
 
   const renderAttemptCard = useCallback(
     ({ item }: ListRenderItemInfo<Attempt>) => {
@@ -198,13 +276,13 @@ export function HistoryScreen() {
       <View style={styles.statusSnapshot}>
         <StatusSnapshotCard
           type="waiting"
-          count={pendingCount}
-          onPress={() => handleStatusCardPress('waiting')}
+          count={waitingCount}
+          onPress={handleWaitingPress}
         />
         <StatusSnapshotCard
           type="acknowledged"
-          count={acknowledgedCount}
-          onPress={() => handleStatusCardPress('acknowledged')}
+          count={needsAcknowledgementCount}
+          onPress={handleAcknowledgementsPress}
         />
       </View>
 
@@ -212,7 +290,10 @@ export function HistoryScreen() {
       <HealthInsightsCard
         responsivenessPercentage={responsivenessPercent}
         gemCount={totalGems}
-        openLoopsCount={pendingCount}
+        openLoopsCount={totalPendingCount}
+        onResponsivenessPress={handleResponsivenessPress}
+        onGemsPress={handleGemsPress}
+        onOpenLoopsPress={handleOpenLoopsPress}
       />
 
       {/* Collapsible Filters */}
@@ -227,13 +308,18 @@ export function HistoryScreen() {
       <Text style={styles.timelineHeader}>Timeline</Text>
     </View>
   ), [
-    pendingCount,
-    acknowledgedCount,
+    waitingCount,
+    needsAcknowledgementCount,
     responsivenessPercent,
     totalGems,
+    totalPendingCount,
     dateFilter,
     statusFilter,
-    handleStatusCardPress,
+    handleWaitingPress,
+    handleAcknowledgementsPress,
+    handleResponsivenessPress,
+    handleGemsPress,
+    handleOpenLoopsPress,
   ]);
 
   if (loading) {
@@ -304,6 +390,8 @@ const styles = StyleSheet.create({
   statusSnapshot: {
     flexDirection: 'row',
     gap: spacing.sm,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   timelineHeader: {
     ...typography.h3,
