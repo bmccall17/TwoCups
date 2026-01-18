@@ -9,6 +9,7 @@ import {
   Dimensions,
   RefreshControl,
 } from 'react-native';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../services/firebase/config';
 import { useAuth } from '../context/AuthContext';
@@ -48,6 +49,7 @@ export function LogAttemptScreen({ onGoBack }: LogAttemptScreenProps) {
   const { user, userData, coupleData } = useAuth();
   const { showSuccess, showError, showCelebration } = useToast();
   const { showGemAnimation } = useGemAnimation();
+  const tabBarHeight = useBottomTabBarHeight();
   const [action, setAction] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<string | null>(null);
@@ -272,7 +274,7 @@ export function LogAttemptScreen({ onGoBack }: LogAttemptScreenProps) {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: tabBarHeight }]}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -502,7 +504,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     padding: spacing.lg,
-    paddingBottom: 100, // Space for tab bar
   },
   header: {
     marginBottom: spacing.xl,

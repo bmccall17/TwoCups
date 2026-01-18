@@ -35,7 +35,10 @@
       "Bash(npm:*)",
       "Bash(node -e:*)",
       "Bash(chmod:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(xargs cat:*)",
+      "Bash(unzip:*)",
+      "Bash(powershell.exe -Command \"Expand-Archive -Path ''opendyslexic-0.92.zip'' -DestinationPath ''./extracted'' -Force\")"
     ]
   }
 }

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, RefreshControl, ScrollView, Dimensions, TouchableOpacity } from 'react-native';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { useAuth } from '../context/AuthContext';
 import { useMilestoneCelebration } from '../context/MilestoneCelebrationContext';
 import { usePlayerData } from '../hooks';
@@ -23,6 +24,7 @@ export function HomeScreen({
   const { userData, coupleData } = useAuth();
   const { myPlayer, partnerPlayer, partnerName, loading, error, refresh } = usePlayerData();
   const { checkMilestone } = useMilestoneCelebration();
+  const tabBarHeight = useBottomTabBarHeight();
   const previousGemCount = useRef<number | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -75,7 +77,7 @@ export function HomeScreen({
       />
 
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingBottom: tabBarHeight }]}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -199,7 +201,6 @@ const styles = StyleSheet.create({
   content: {
     flexGrow: 1,
     padding: spacing.md,
-    paddingBottom: 100, // Space for tab bar
   },
   // Compact Header
   header: {

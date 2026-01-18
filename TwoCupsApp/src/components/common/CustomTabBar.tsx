@@ -149,7 +149,10 @@ const styles = StyleSheet.create({
     bottom: 0,
     width: '100%',
     alignSelf: 'stretch',
-    backgroundColor: 'rgba(10, 10, 15, 0.98)',
+    // TEMP DEBUG: Red background to confirm visibility - change back to rgba(10, 10, 15, 0.98) after testing
+    backgroundColor: '#FF0000',
+    // TEMP DEBUG: Fixed height to ensure visibility
+    minHeight: 80,
     borderTopWidth: 0,
     // Ensure tab bar is always on top
     zIndex: 9999,

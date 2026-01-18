@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import {
   EmailAuthProvider,
   reauthenticateWithCredential,
@@ -35,15 +36,18 @@ interface SettingsScreenProps {
   onNavigateToManageSuggestions?: () => void;
   onNavigateToMakeRequest?: () => void;
   onNavigateToGemHistory?: () => void;
+  onNavigateToFontDebug?: () => void;
 }
 
 export function SettingsScreen({
   onNavigateToManageSuggestions,
   onNavigateToMakeRequest,
   onNavigateToGemHistory,
+  onNavigateToFontDebug,
 }: SettingsScreenProps) {
   const { user, userData, coupleData, signOut } = useAuth();
   const { partnerName, error, refresh } = usePlayerData();
+  const tabBarHeight = useBottomTabBarHeight();
 
   const username = userData?.username || 'Guest';
   const inviteCode = coupleData?.inviteCode || '—';
@@ -236,7 +240,7 @@ export function SettingsScreen({
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: tabBarHeight }]}>
         <View style={styles.header}>
           <Text style={styles.title}>Settings</Text>
         </View>
@@ -316,6 +320,13 @@ export function SettingsScreen({
           <Button
             title="📝 Make a Request"
             onPress={onNavigateToMakeRequest ?? (() => {})}
+            style={styles.actionButton}
+            variant="outline"
+          />
+
+          <Button
+            title="Font Debug"
+            onPress={onNavigateToFontDebug ?? (() => {})}
             style={styles.actionButton}
             variant="outline"
           />
@@ -458,7 +469,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     padding: spacing.lg,
-    paddingBottom: 100, // Space for tab bar
   },
   header: {
     marginBottom: spacing.xl,

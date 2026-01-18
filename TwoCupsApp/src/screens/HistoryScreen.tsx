@@ -17,6 +17,7 @@ import {
   onSnapshot,
 } from 'firebase/firestore';
 import { useNavigation } from '@react-navigation/native';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { db } from '../services/firebase/config';
 import { useAuth } from '../context/AuthContext';
 import { LoadingSpinner, EmptyState, ErrorState } from '../components/common';
@@ -61,6 +62,7 @@ export function HistoryScreen() {
   const coupleId = userData?.activeCoupleId;
   const { myPlayer, partnerPlayer, partnerName } = usePlayerData();
   const myPlayerName = userData?.username || 'You';
+  const tabBarHeight = useBottomTabBarHeight();
 
   // State
   const [attempts, setAttempts] = useState<Attempt[]>([]);
@@ -386,7 +388,7 @@ export function HistoryScreen() {
             subtitle="Try adjusting your filters"
           />
         }
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[styles.listContent, { paddingBottom: tabBarHeight }]}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -410,7 +412,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   listContent: {
-    paddingBottom: 100,
   },
   headerContainer: {
     padding: spacing.md,

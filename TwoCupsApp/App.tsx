@@ -28,6 +28,7 @@ import { ManageSuggestionsScreen } from './src/screens/ManageSuggestionsScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
 import { HistoryScreen } from './src/screens/HistoryScreen';
 import { GemHistoryScreen } from './src/screens/GemHistoryScreen';
+import { FontDebugScreen } from './src/screens/FontDebugScreen';
 import { colors } from './src/theme';
 import { initializeCrashlytics, log } from './src/services/crashlytics';
 
@@ -49,6 +50,7 @@ type MainStackParamList = {
   MakeRequest: undefined;
   ManageSuggestions: undefined;
   GemHistory: undefined;
+  FontDebug: undefined;
 };
 
 type AppStackParamList = {
@@ -154,6 +156,7 @@ function TabNavigator() {
             onNavigateToManageSuggestions={() => navigation.getParent()?.navigate('ManageSuggestions')}
             onNavigateToMakeRequest={() => navigation.getParent()?.navigate('MakeRequest')}
             onNavigateToGemHistory={() => navigation.getParent()?.navigate('GemHistory')}
+            onNavigateToFontDebug={() => navigation.getParent()?.navigate('FontDebug')}
           />
         )}
       </MainTab.Screen>
@@ -182,6 +185,11 @@ function MainTabNavigator() {
       <MainStack.Screen name="GemHistory">
         {({ navigation }) => (
           <GemHistoryScreen onGoBack={() => navigation.goBack()} />
+        )}
+      </MainStack.Screen>
+      <MainStack.Screen name="FontDebug">
+        {({ navigation }) => (
+          <FontDebugScreen onGoBack={() => navigation.goBack()} />
         )}
       </MainStack.Screen>
     </MainStack.Navigator>

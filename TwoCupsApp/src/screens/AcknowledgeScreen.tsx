@@ -13,6 +13,7 @@ import {
   Platform,
   UIManager,
 } from 'react-native';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { collection, query, where, onSnapshot, orderBy, doc, getDoc } from 'firebase/firestore';
 import { Feather } from '@expo/vector-icons';
 import { db } from '../services/firebase/config';
@@ -226,6 +227,7 @@ export function AcknowledgeScreen({
   const { user, userData, coupleData } = useAuth();
   const { showSuccess, showError } = useToast();
   const { showGemAnimation } = useGemAnimation();
+  const tabBarHeight = useBottomTabBarHeight();
 
   // State
   const [pendingAttempts, setPendingAttempts] = useState<Attempt[]>([]);
@@ -431,7 +433,7 @@ export function AcknowledgeScreen({
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: tabBarHeight }]}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -641,7 +643,6 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: spacing.md,
-    paddingBottom: 100, // Space for tab bar (moved from explicit View)
   },
   header: {
     marginBottom: spacing.lg,
