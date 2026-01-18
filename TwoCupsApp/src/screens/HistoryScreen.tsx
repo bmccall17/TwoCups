@@ -28,6 +28,7 @@ import {
   HealthInsightsCard,
   CollapsibleFilterControls,
   TimelineEntryCard,
+  SpinningGeometryHeader,
   DateRangeFilterType,
   StatusFilterType,
 } from '../components/history';
@@ -264,13 +265,24 @@ export function HistoryScreen() {
     [user?.uid, getPlayerName]
   );
 
+  // Get subtitle text based on date filter
+  const getDateFilterLabel = useCallback(() => {
+    switch (dateFilter) {
+      case 'today': return 'Today';
+      case 'last7days': return 'Last 7 days';
+      case 'last30days': return 'Last 30 days';
+      case 'alltime': return 'All time';
+      default: return 'Last 7 days';
+    }
+  }, [dateFilter]);
+
   const renderHeader = useCallback(() => (
     <View style={styles.headerContainer}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerEmoji}>💫</Text>
-        <Text style={styles.headerTitle}>History</Text>
-      </View>
+      {/* Spinning Sacred Geometry Header */}
+      <SpinningGeometryHeader
+        title="Connection"
+        subtitle={getDateFilterLabel()}
+      />
 
       {/* Status Snapshot */}
       <View style={styles.statusSnapshot}>
@@ -308,6 +320,7 @@ export function HistoryScreen() {
       <Text style={styles.timelineHeader}>Timeline</Text>
     </View>
   ), [
+    getDateFilterLabel,
     waitingCount,
     needsAcknowledgementCount,
     responsivenessPercent,
@@ -373,19 +386,6 @@ const styles = StyleSheet.create({
   headerContainer: {
     padding: spacing.md,
     gap: spacing.md,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginBottom: spacing.xs,
-  },
-  headerEmoji: {
-    fontSize: 32,
-  },
-  headerTitle: {
-    ...typography.h2,
-    color: colors.textPrimary,
   },
   statusSnapshot: {
     flexDirection: 'row',

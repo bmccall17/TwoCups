@@ -273,6 +273,251 @@ badgeDot: {
 
 ---
 
+## 2026-01-17 (Session 2) - Visual Polish & Sacred Geometry
+
+### Overview
+Major visual polish to the History tab animations and introduction of sacred geometry elements across the app. Added animated symbols to History cards, created a sacred geometry background system, redesigned the Homepage with collaborative aesthetics, and implemented a spinning Seed of Life header.
+
+### Phase 1: History Tab Visual Polish
+
+#### StatusSnapshotCard Enhancements (`src/components/history/StatusSnapshotCard.tsx`)
+
+**Waiting Card - Bouncing Dots Animation:**
+- Replaced static ⏳ icon with 3 bouncing amber dots
+- Staggered animation delays: 0ms, 150ms, 300ms
+- Creates wave-like sequential bounce effect
+- Uses `Animated.loop` with `Easing.bezier` for smooth motion
+- Duration: 600ms per bounce cycle
+
+**Acknowledged Card - Confetti Animation:**
+- Replaced static ✨ icon with 12 rainbow confetti particles
+- Party emoji 🎉 centered in the confetti field
+- Rainbow colors using hex spectrum (green → cyan → blue → violet → pink → rose)
+- Staggered bounce animations (50ms delay per particle)
+- Fixed pixel positions for React Native compatibility
+
+**Badge Styling Updates:**
+- Semi-transparent backgrounds with border
+- Repositioned to top-right corner with negative offset
+- Increased size for better visibility (28px)
+
+#### HealthInsightsCard Visual Redesign (`src/components/history/HealthInsightsCard.tsx`)
+
+**Response Metric - Wave Fill Animation:**
+- Circular container (56px) with emerald gradient
+- Wave fills to percentage level (minimum 3px visible)
+- Pulsing overlay animation (0.3 → 0.5 opacity, 2s cycle)
+- Uses `useNativeDriver: true` for smooth performance
+- Added trend indicator (↑ 8%)
+
+**Gems Metric - Energy Bars Animation:**
+- 7 animated bars of varying heights (12-32px)
+- Purple gradient matching gem color
+- Staggered pulse animation (100ms delay between bars)
+- Creates audio visualizer effect
+- 5 mini bars below for additional visual interest
+- Handles 999+ display for large numbers
+
+**Open Loops Metric - Chain Links Visual:**
+- 3 interlocking oval chain links with amber borders
+- Third link is dashed and 60% opacity (incomplete/broken loop)
+- 3 dot indicators below with varying opacity
+- Static design provides visual rest among animated elements
+
+**Component-Level Improvements:**
+- Added borders between metrics (5% opacity)
+- Increased card padding (spacing.lg)
+- Larger border radius (borderRadius.xl)
+- Better typography hierarchy
+
+### Phase 2: Sacred Geometry Background System
+
+#### New Component: SacredGeometryBackground (`src/components/common/SacredGeometryBackground.tsx`)
+
+**Available Patterns (from reference image):**
+
+1. **Seed of Life** (`seedOfLife`)
+   - 7 interlocking circles in hexagonal arrangement
+   - Center circle + 6 surrounding at 60° intervals
+   - Classic sacred geometry creation symbol
+
+2. **Vesica Piscis** (`vesicaPiscis`)
+   - Two overlapping circles representing union
+   - Perfect for couples/partnership symbolism
+   - Circles overlap by half radius
+
+3. **Flower of Life** (`flowerOfLife`)
+   - Extended Seed of Life with 19 circles
+   - Center + first ring (6) + second ring (12)
+   - Inner circles more prominent, outer at 60% opacity
+
+4. **Six Petal Rosette** (`sixPetalRosette`)
+   - Simple elegant flower pattern
+   - 6 circles with outer boundary
+   - Creates petal effect through overlap
+
+**Animation System:**
+- Slow meditative rotation: 180 seconds (3 minutes) per full rotation
+- Subtle breathing pulse: 1.03 scale over 5 seconds
+- Both animations use `useNativeDriver: true`
+- Can be disabled via `animate={false}` prop
+
+**Props:**
+```typescript
+interface SacredGeometryBackgroundProps {
+  variant?: 'seedOfLife' | 'vesicaPiscis' | 'flowerOfLife' | 'sixPetalRosette';
+  opacity?: number;      // Default: 0.12
+  animate?: boolean;     // Default: true
+  color?: string;        // Default: colors.primary
+}
+```
+
+**Export:** Added to `src/components/common/index.ts`
+
+### Phase 3: Homepage Redesign
+
+#### HomeScreen Updates (`src/screens/HomeScreen.tsx`)
+
+**New Visual Elements:**
+- **Flower of Life Background** - Subtle sacred geometry behind all content (6% opacity)
+- **Mystical Header** - Purple heart emoji, elegant "TWO CUPS" text with letter spacing
+- **"Our Connection" Section** - Collaborative focus on partnership
+
+**Cups Display Redesign:**
+- Partner cups displayed side-by-side with glowing auras
+- Purple glow for user's cup, emerald glow for partner's cup
+- Heart connection indicator (💕) between cups with connecting lines
+- Removed competitive individual focus
+
+**Collective "Together" Card:**
+- Beautiful card with sparkle emojis (✨ Together ✨)
+- Collective cup prominently displayed
+- "Our Shared Progress" subtitle
+- Semi-transparent background with primary border accent
+
+**Action Cards Redesign:**
+- "Ways to Connect" section title (was "Quick Actions")
+- Card-based design with emoji icons
+- "Make a Request" - Ask your partner for something meaningful
+- "My Suggestions" - Ideas for how your partner can fill your cup
+- Better touch targets with descriptions
+
+**Style Updates:**
+- Light font weights (300) for elegant feel
+- Letter spacing on headers (4px on title, 2px on labels)
+- Consistent use of borderRadius.xl
+- Semi-transparent card backgrounds
+
+### Phase 4: Spinning Geometry Header
+
+#### New Component: SpinningGeometryHeader (`src/components/history/SpinningGeometryHeader.tsx`)
+
+**Design Specs (from SpinningGeometryHeader.md):**
+- Container: 80x80px
+- Circle diameter: 32px
+- Distance from center: 10px
+- Based on Seed of Life sacred geometry
+
+**Three Layers:**
+
+1. **Outer Circles (Rotating)**
+   - 6 circles at 60° intervals
+   - 40% border opacity, 5% fill
+   - Rotates as a group
+
+2. **Center Circle (Static)**
+   - Single circle at true center
+   - 60% border opacity, 10% fill
+   - Does not rotate
+
+3. **Center Glow (Pulsing)**
+   - 16px purple dot
+   - Shadow-based glow effect (12px radius)
+   - Pulses between 60-100% opacity
+
+**Animations:**
+- **Rotation:** 20 seconds per full rotation, linear, infinite
+- **Pulse:** 2 seconds, ease-in-out, infinite
+
+**Props:**
+```typescript
+interface SpinningGeometryHeaderProps {
+  title?: string;    // Default: "Connection"
+  subtitle?: string; // Default: "Last 7 days"
+}
+```
+
+#### HistoryScreen Header Update (`src/screens/HistoryScreen.tsx`)
+
+**Changes:**
+- Replaced emoji header (💫 History) with SpinningGeometryHeader
+- Subtitle dynamically shows current date filter
+- Added `getDateFilterLabel()` helper function
+- Removed unused header styles (header, headerEmoji, headerTitle)
+
+**Dynamic Subtitle:**
+```typescript
+switch (dateFilter) {
+  case 'today': return 'Today';
+  case 'last7days': return 'Last 7 days';
+  case 'last30days': return 'Last 30 days';
+  case 'alltime': return 'All time';
+}
+```
+
+### Files Created (2)
+1. `src/components/common/SacredGeometryBackground.tsx` - Sacred geometry pattern system
+2. `src/components/history/SpinningGeometryHeader.tsx` - Spinning Seed of Life header
+
+### Files Modified (6)
+1. `src/components/history/StatusSnapshotCard.tsx` - Bouncing dots & confetti animations
+2. `src/components/history/HealthInsightsCard.tsx` - Wave fill, energy bars, chain links
+3. `src/components/history/index.ts` - Added SpinningGeometryHeader export
+4. `src/components/common/index.ts` - Added SacredGeometryBackground export
+5. `src/screens/HomeScreen.tsx` - Complete visual redesign with sacred geometry
+6. `src/screens/HistoryScreen.tsx` - Spinning geometry header integration
+
+### Design Philosophy Applied
+
+**Collaborative, Not Competitive:**
+- Focus on "Our Connection" and "Together"
+- Partner cups displayed equally with connection symbolism
+- Collective progress prominently featured
+- No leaderboard or competitive elements on homepage
+
+**Sacred Geometry Aesthetic:**
+- Seed of Life represents creation and beginnings
+- Vesica Piscis symbolizes union of two souls
+- Flower of Life represents interconnectedness
+- Slow meditative animations create calm atmosphere
+
+**Visual Hierarchy:**
+- Animated elements draw attention to actionable items
+- Static elements provide visual rest
+- Subtle backgrounds don't compete with content
+- Clear typography with elegant spacing
+
+### Technical Notes
+
+**React Native Compatibility:**
+- HSL colors converted to hex for cross-platform support
+- Percentage positions converted to fixed pixels
+- Shadow-based glow instead of CSS blur filter
+- All animations use `useNativeDriver` where possible
+
+**Performance Optimizations:**
+- `React.memo` on all sub-components
+- `useMemo` for position calculations
+- Animation cleanup in useEffect return
+- GPU-accelerated transforms only
+
+### Build Status
+✅ TypeScript compilation passes (`npm run typecheck`)
+✅ No runtime errors
+✅ All animations smooth at 60fps
+
+---
+
 **Status:** ✅ Complete and ready for testing
 **TypeScript:** ✅ No compilation errors
 **Build:** ✅ Ready to run
