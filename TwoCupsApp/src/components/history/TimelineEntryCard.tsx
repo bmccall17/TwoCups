@@ -111,17 +111,13 @@ export const TimelineEntryCard = React.memo(function TimelineEntryCard({
               </TouchableOpacity>
             )}
           </View>
-          <View style={styles.expandIcon}>
-            <Text style={styles.chevron}>▲</Text>
-          </View>
         </View>
       )}
 
-      {!isExpanded && (
-        <View style={styles.expandIcon}>
-          <Text style={styles.chevron}>▼</Text>
-        </View>
-      )}
+      {/* Expand/Collapse Icon - Single element with conditional content */}
+      <View style={styles.expandIcon}>
+        <Text style={styles.chevron}>{isExpanded ? '▲' : '▼'}</Text>
+      </View>
     </TouchableOpacity>
   );
 });

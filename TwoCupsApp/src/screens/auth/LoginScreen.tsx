@@ -24,7 +24,7 @@ interface LoginScreenProps {
 }
 
 export function LoginScreen({ onNavigateToSignUp }: LoginScreenProps) {
-  const { signIn, signInAnonymously } = useAuth();
+  const { signIn } = useAuth();
   const [identifier, setIdentifier] = useState(''); // email or username
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -77,17 +77,6 @@ export function LoginScreen({ onNavigateToSignUp }: LoginScreenProps) {
     }
   };
 
-  const handleAnonymousLogin = async () => {
-    setLoading(true);
-    try {
-      await signInAnonymously();
-    } catch (error: unknown) {
-      Alert.alert('Login Failed', getErrorMessage(error));
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
@@ -127,14 +116,6 @@ export function LoginScreen({ onNavigateToSignUp }: LoginScreenProps) {
             <Button
               title="Sign In"
               onPress={handleLogin}
-              loading={loading}
-              style={styles.button}
-            />
-
-            <Button
-              title="Continue as Guest"
-              onPress={handleAnonymousLogin}
-              variant="outline"
               loading={loading}
               style={styles.button}
             />

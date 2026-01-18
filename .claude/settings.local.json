@@ -34,7 +34,8 @@
       "Bash(node --version)",
       "Bash(npm:*)",
       "Bash(node -e:*)",
-      "Bash(chmod:*)"
+      "Bash(chmod:*)",
+      "Bash(find:*)"
     ]
   }
 }

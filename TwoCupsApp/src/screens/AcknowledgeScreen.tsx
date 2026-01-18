@@ -20,7 +20,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useGemAnimation } from '../context/GemAnimationContext';
 import { acknowledgeAttempt } from '../services/api';
-import { Button, LoadingSpinner, EmptyState, ErrorState, CelebrationOverlay } from '../components/common';
+import { Button, LoadingSpinner, EmptyState, ErrorState, CelebrationOverlay, SectionHeader, EmptyHint } from '../components/common';
 import { colors, spacing, typography, borderRadius } from '../theme';
 import { Attempt, Request, Suggestion } from '../types';
 import { getErrorMessage } from '../types/utils';
@@ -86,18 +86,17 @@ const CollapsibleSection = memo(function CollapsibleSection({
         onPress={toggleExpanded}
         activeOpacity={0.7}
       >
-        <View style={styles.collapsibleTitleRow}>
-          <Text style={styles.collapsibleIcon}>{icon}</Text>
-          <Text style={styles.collapsibleTitle}>{title}</Text>
-          {count > 0 && (
-            <View style={[styles.countBadge, { backgroundColor: accentColor }]}>
-              <Text style={styles.countBadgeText}>{count}</Text>
-            </View>
-          )}
-        </View>
-        <Animated.View style={{ transform: [{ rotate: rotation }] }}>
-          <Feather name="chevron-down" size={20} color={colors.textSecondary} />
-        </Animated.View>
+        <SectionHeader
+          icon={icon}
+          title={title}
+          count={count}
+          accentColor={accentColor}
+          rightElement={
+            <Animated.View style={{ transform: [{ rotate: rotation }] }}>
+              <Feather name="chevron-down" size={20} color={colors.textSecondary} />
+            </Animated.View>
+          }
+        />
       </TouchableOpacity>
       {expanded && <View style={styles.collapsibleContent}>{children}</View>}
     </View>
@@ -545,13 +544,14 @@ export function AcknowledgeScreen({
             {/* Requests Section - Prominent */}
             <View style={styles.prominentSection}>
               <View style={styles.sectionHeader}>
-                <Text style={styles.sectionIcon}>📝</Text>
-                <Text style={styles.sectionTitle}>My Requests</Text>
-                {activeRequests.length > 0 && (
-                  <View style={[styles.countBadge, { backgroundColor: colors.primary }]}>
-                    <Text style={styles.countBadgeText}>{activeRequests.length} active</Text>
-                  </View>
-                )}
+                <SectionHeader
+                  icon="📝"
+                  title="My Requests"
+                  count={activeRequests.length}
+                  countSuffix="active"
+                  accentColor={colors.primary}
+                  prominent
+                />
               </View>
 
               <AddButton
@@ -577,24 +577,20 @@ export function AcknowledgeScreen({
                   )}
                 </>
               ) : (
-                <View style={styles.emptyListHint}>
-                  <Text style={styles.emptyListHintText}>
-                    No requests yet. Tap above to ask your partner for something!
-                  </Text>
-                </View>
+                <EmptyHint message="No requests yet. Tap above to ask your partner for something!" />
               )}
             </View>
 
             {/* Suggestions Section - Prominent */}
             <View style={styles.prominentSection}>
               <View style={styles.sectionHeader}>
-                <Text style={styles.sectionIcon}>💡</Text>
-                <Text style={styles.sectionTitle}>My Suggestions</Text>
-                {mySuggestions.length > 0 && (
-                  <View style={[styles.countBadge, { backgroundColor: colors.emerald400 }]}>
-                    <Text style={styles.countBadgeText}>{mySuggestions.length}</Text>
-                  </View>
-                )}
+                <SectionHeader
+                  icon="💡"
+                  title="My Suggestions"
+                  count={mySuggestions.length}
+                  accentColor={colors.emerald400}
+                  prominent
+                />
               </View>
 
               <AddButton
@@ -620,18 +616,12 @@ export function AcknowledgeScreen({
                   )}
                 </>
               ) : (
-                <View style={styles.emptyListHint}>
-                  <Text style={styles.emptyListHintText}>
-                    No suggestions yet. Help your partner know what fills your cup!
-                  </Text>
-                </View>
+                <EmptyHint message="No suggestions yet. Help your partner know what fills your cup!" />
               )}
             </View>
           </>
         )}
 
-        {/* Bottom spacing for tab bar */}
-        <View style={{ height: 100 }} />
       </ScrollView>
 
       <CelebrationOverlay
@@ -651,6 +641,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: spacing.md,
+    paddingBottom: 100, // Space for tab bar (moved from explicit View)
   },
   header: {
     marginBottom: spacing.lg,
@@ -678,31 +669,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: spacing.md,
   },
-  collapsibleTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  collapsibleIcon: {
-    fontSize: 18,
-    marginRight: spacing.sm,
-  },
-  collapsibleTitle: {
-    ...typography.body,
-    color: colors.textPrimary,
-    fontWeight: '600',
-  },
-  countBadge: {
-    marginLeft: spacing.sm,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    borderRadius: borderRadius.full,
-  },
-  countBadgeText: {
-    ...typography.caption,
-    color: colors.textOnPrimary,
-    fontWeight: '600',
-  },
+  // Note: collapsibleTitleRow, collapsibleIcon, collapsibleTitle, countBadge, countBadgeText
+  // removed in DOM refactor - now using SectionHeader component
   collapsibleContent: {
     padding: spacing.md,
     paddingTop: 0,
@@ -893,24 +861,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: spacing.md,
   },
-  sectionIcon: {
-    fontSize: 20,
-    marginRight: spacing.sm,
-  },
-  sectionTitle: {
-    ...typography.h3,
-    color: colors.textPrimary,
-    flex: 1,
-  },
-  emptyListHint: {
-    backgroundColor: colors.surface + '60',
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
-  },
-  emptyListHintText: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    fontStyle: 'italic',
-  },
+  // Note: sectionIcon, sectionTitle removed in DOM refactor - now using SectionHeader component
+  // Note: emptyListHint, emptyListHintText removed in DOM refactor - now using EmptyHint component
 });

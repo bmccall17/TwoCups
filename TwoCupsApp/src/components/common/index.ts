@@ -14,3 +14,7 @@ export { ErrorBoundary } from './ErrorBoundary';
 export { UpdatePrompt } from './UpdatePrompt';
 export { SacredGeometryBackground } from './SacredGeometryBackground';
 export { CustomTabBar } from './CustomTabBar';
+export { SectionHeader } from './SectionHeader';
+export type { SectionHeaderProps } from './SectionHeader';
+export { EmptyHint } from './EmptyHint';
+export type { EmptyHintProps } from './EmptyHint';

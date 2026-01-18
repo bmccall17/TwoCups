@@ -518,6 +518,203 @@ switch (dateFilter) {
 
 ---
 
+## 2026-01-18 - Navigation Overhaul, Screen Restructuring & Bug Fixes
+
+### Overview
+Major session focusing on fixing the Response rate calculation, creating a custom bottom navigation bar, simplifying the HomePage, and restructuring the Receive screen with dynamic layout based on pending items.
+
+---
+
+### Response Rate Calculation Fix
+
+**Files Modified:** `src/screens/HistoryScreen.tsx`, `src/components/history/HealthInsightsCard.tsx`
+
+**Issue:** Response rate was calculating `acknowledged / total` for ALL attempts, not distinguishing between user's responsiveness to their own items.
+
+**Root Cause:** The metric mixed both partners' data instead of focusing on "How responsive am I?"
+
+**Fix - Response rate now correctly measures two things:**
+
+1. **Request Fulfillment Rate** - How often do I fulfill requests made FOR ME
+   ```typescript
+   const nonCanceledRequests = partnerRequests.filter(r => r.status !== 'canceled');
+   const fulfilledRequests = nonCanceledRequests.filter(r => r.status === 'fulfilled');
+   return nonCanceledRequests.length > 0
+     ? fulfilledRequests.length / nonCanceledRequests.length
+     : 1; // 100% if no requests yet
+   ```
+
+2. **Acknowledgement Rate** - How often do I acknowledge when partner fills my cup
+   ```typescript
+   const attemptsForMe = attempts.filter(a => a.forPlayerId === user?.uid);
+   const acknowledgedForMe = attemptsForMe.filter(a => a.acknowledged);
+   return attemptsForMe.length > 0
+     ? acknowledgedForMe.length / attemptsForMe.length
+     : 1; // 100% if no attempts for me yet
+   ```
+
+3. **Combined Response Rate** - Weighted average of both metrics
+   ```typescript
+   const combined = (requestFulfillmentRate + acknowledgementRate) / 2;
+   return Math.round(combined * 100);
+   ```
+
+**Additional Fix:** Removed hardcoded "↑ 8%" trend indicator. Now accepts optional `responseTrend` prop and only displays when real data is passed.
+
+---
+
+### Custom Bottom Navigation Bar
+
+**Files Created:** `src/components/common/CustomTabBar.tsx`
+**Files Modified:** `App.tsx`, `src/components/common/index.ts`
+
+**Features:**
+- Dark frosted glass background (`rgba(10, 10, 15, 0.98)`) with backdrop blur
+- Feather icons from `@expo/vector-icons`:
+  - Home → `home`
+  - Give → `heart`
+  - Receive → `check-circle`
+  - History → `bar-chart-2`
+  - Settings → `settings`
+- Purple glow circle behind active tab with pulse animation
+- Emerald notification dot for Receive tab (shows pending acknowledgement count)
+- Purple indicator dot at bottom of active tab
+- Web-compatible styling with `Platform.select`
+
+**Known Issue Found & Fixed:**
+Initial implementation had duplicate div layers from separate `VesicaPiscisPattern` and `ActiveIndicator` sub-components creating extra absolutely positioned containers that rendered as empty divs in the DOM.
+
+**Solution:** Simplified to inline elements - the active glow is now a single `Animated.View` inside each tab item, eliminating the extra DOM layers.
+
+**⚠️ TODO:** Audit entire application for similar duplicate div patterns that may affect performance/layout on web.
+
+---
+
+### HomeScreen Simplification
+
+**Files Modified:** `src/screens/HomeScreen.tsx`
+
+**Changes:**
+- **Removed** "Make a Request" and "My Suggestions" action cards (moved to Receive screen)
+- Made layout more compact to fit on one screen without scrolling (no fold)
+- Uses smaller cups (`size="small"`) for connection display
+- Horizontal compact layout for collective cup section
+- Adjusted glow sizes to match smaller cups (70px instead of 90px)
+
+**Kept:**
+- Header (💜 Two Cups, Welcome message)
+- Connection section (two cups side by side with heart)
+- Collective cup ("Together" card)
+- Gem Counter
+
+**Props Removed:**
+- `onNavigateToMakeRequest`
+- `onNavigateToManageSuggestions`
+
+---
+
+### Receive Screen (AcknowledgeScreen) Complete Redesign
+
+**Files Modified:** `src/screens/AcknowledgeScreen.tsx`
+
+**New Dynamic Layout Implementation:**
+
+#### When Pending Acknowledgements Exist:
+1. **"Needs Acknowledgement"** section expanded at top (collapsible drawer)
+   - Shows all pending items with acknowledge buttons
+   - Amber accent color
+2. **"My Requests"** section collapsed below
+   - Add button + preview of up to 3 items
+   - Purple accent color
+3. **"My Suggestions"** section collapsed below
+   - Add button + preview of up to 3 items
+   - Emerald accent color
+
+#### When NO Pending Acknowledgements:
+1. **"All caught up!"** celebratory card at top
+2. **"My Requests"** section prominent with Add button and full list
+3. **"My Suggestions"** section prominent with Add button and full list
+
+**New Sub-Components Created:**
+
+1. **CollapsibleSection** - Animated expand/collapse with:
+   - Chevron rotation animation
+   - LayoutAnimation for smooth content reveal
+   - Count badge with accent color
+   - Left border accent
+
+2. **AttemptCard** - Pending acknowledgement display:
+   - Partner name and timestamp
+   - Action description
+   - "Fulfilled your request!" badge when applicable
+   - Acknowledge button
+
+3. **RequestItem** - Request preview:
+   - Title and description
+   - Status indicator (Active/Fulfilled with colored dot)
+   - "for [partner]" meta text
+
+4. **SuggestionItem** - Suggestion preview:
+   - Title and description
+   - Category chip
+
+5. **AddButton** - Dashed border CTA:
+   - Emoji icon in circular container
+   - Title and subtitle
+   - Plus-circle icon on right
+   - Dashed purple border styling
+
+**New Data Fetching:**
+- Added Firestore listeners for `myRequests` (requests I created)
+- Added Firestore listeners for `mySuggestions` (suggestions I created)
+- Changed pending attempts query to filter `acknowledged === false`
+
+**Navigation Props Added:**
+- `onNavigateToMakeRequest`
+- `onNavigateToManageSuggestions`
+
+---
+
+### Navigation Updates
+
+**Files Modified:** `App.tsx`
+
+**HomeScreen:**
+- Removed `onNavigateToMakeRequest` prop
+- Removed `onNavigateToManageSuggestions` prop
+
+**AcknowledgeScreen:**
+- Added `onNavigateToMakeRequest={() => navigation.getParent()?.navigate('MakeRequest')}`
+- Added `onNavigateToManageSuggestions={() => navigation.getParent()?.navigate('ManageSuggestions')}`
+
+---
+
+### Dependencies Added
+- `@expo/vector-icons` - For Feather icons in custom tab bar
+
+---
+
+### Technical Debt Identified
+
+1. **Duplicate DIV layers** - Found in navbar, likely exists throughout application. Needs comprehensive audit.
+2. **Percentage-based positioning** - Can be unreliable in React Native Web, prefer pixel values
+3. **HSL colors** - Not fully supported in RN, use hex colors instead
+4. **CupVisualization sizes** - Only supports "small" and "large", no "medium" option
+
+---
+
+### Files Created (1)
+1. `src/components/common/CustomTabBar.tsx` - Custom bottom navigation bar
+
+### Files Modified (5)
+1. `src/screens/HistoryScreen.tsx` - Response rate calculation fix
+2. `src/components/history/HealthInsightsCard.tsx` - Trend indicator fix
+3. `src/screens/HomeScreen.tsx` - Simplified layout, removed Request/Suggestions
+4. `src/screens/AcknowledgeScreen.tsx` - Complete redesign with dynamic layout
+5. `App.tsx` - Custom tab bar integration, navigation prop updates
+
+---
+
 **Status:** ✅ Complete and ready for testing
 **TypeScript:** ✅ No compilation errors
-**Build:** ✅ Ready to run
+**Build:** ✅ Ready to run (`npx expo start --clear`)

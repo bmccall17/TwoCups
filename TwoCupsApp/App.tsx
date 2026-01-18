@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
+import { useFonts } from 'expo-font';
+import { Feather } from '@expo/vector-icons';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator, NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -209,12 +211,20 @@ function RootNavigator() {
   const { showPrompt, isIOS, triggerInstall, dismissPrompt } = useInstallPrompt();
   const [appIsReady, setAppIsReady] = useState(false);
 
+  // Load icon fonts - this ensures Feather icons display correctly on web
+  const [fontsLoaded, fontError] = useFonts({
+    ...Feather.font,
+  });
+
   useEffect(() => {
-    if (!loading) {
-      // App is ready when auth loading is complete
+    if (!loading && (fontsLoaded || fontError)) {
+      // Proceed even if fonts fail - icons will fall back gracefully
+      if (fontError) {
+        console.warn('Font loading failed, proceeding anyway:', fontError);
+      }
       setAppIsReady(true);
     }
-  }, [loading]);
+  }, [loading, fontsLoaded, fontError]);
 
   const onLayoutRootView = useCallback(async () => {
     if (appIsReady) {

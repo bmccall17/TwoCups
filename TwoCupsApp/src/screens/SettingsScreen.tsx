@@ -10,6 +10,12 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import {
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+  updateEmail,
+  updatePassword,
+} from 'firebase/auth';
 import { useAuth } from '../context/AuthContext';
 import { usePlayerData } from '../hooks';
 import { Button, ErrorState, TextInput } from '../components/common';
@@ -17,6 +23,8 @@ import { colors, spacing, typography, borderRadius } from '../theme';
 import { isUsernameAvailable, setUsername, updateUsername } from '../services/api/usernames';
 import {
   validateUsername,
+  validateEmail,
+  validatePassword,
   sanitizeUsername,
   MAX_LENGTHS,
   MIN_LENGTHS,
@@ -48,6 +56,21 @@ export function SettingsScreen({
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
   const [usernameError, setUsernameError] = useState<string | undefined>();
   const [savingUsername, setSavingUsername] = useState(false);
+
+  // Email change modal state
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [newEmail, setNewEmail] = useState('');
+  const [emailCurrentPassword, setEmailCurrentPassword] = useState('');
+  const [emailError, setEmailError] = useState<string | undefined>();
+  const [savingEmail, setSavingEmail] = useState(false);
+
+  // Password change modal state
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordError, setPasswordError] = useState<string | undefined>();
+  const [savingPassword, setSavingPassword] = useState(false);
 
   // Debounced username availability check
   useEffect(() => {
@@ -146,6 +169,134 @@ export function SettingsScreen({
     }
   };
 
+  // Email change handlers
+  const handleOpenEmailModal = () => {
+    setNewEmail('');
+    setEmailCurrentPassword('');
+    setEmailError(undefined);
+    setShowEmailModal(true);
+  };
+
+  const handleSaveEmail = async () => {
+    // Validate new email
+    const emailValidation = validateEmail(newEmail.trim());
+    if (!emailValidation.isValid) {
+      setEmailError(emailValidation.error);
+      return;
+    }
+
+    if (!emailCurrentPassword) {
+      setEmailError('Please enter your current password');
+      return;
+    }
+
+    const currentUser = auth.currentUser;
+    if (!currentUser || !currentUser.email) {
+      Alert.alert('Error', 'You must be logged in to change your email');
+      return;
+    }
+
+    setSavingEmail(true);
+    setEmailError(undefined);
+
+    try {
+      // Re-authenticate with current password
+      const credential = EmailAuthProvider.credential(currentUser.email, emailCurrentPassword);
+      await reauthenticateWithCredential(currentUser, credential);
+
+      // Update email
+      await updateEmail(currentUser, newEmail.trim().toLowerCase());
+
+      setShowEmailModal(false);
+      Alert.alert('Success', 'Email updated successfully');
+    } catch (err: unknown) {
+      console.error('[SettingsScreen] Email update failed:', err);
+      const error = err as { code?: string; message?: string };
+      if (error.code === 'auth/wrong-password') {
+        setEmailError('Incorrect password');
+      } else if (error.code === 'auth/email-already-in-use') {
+        setEmailError('This email is already in use');
+      } else if (error.code === 'auth/invalid-email') {
+        setEmailError('Invalid email address');
+      } else if (error.code === 'auth/requires-recent-login') {
+        setEmailError('Please sign out and sign in again before changing your email');
+      } else {
+        setEmailError(error.message || 'Failed to update email');
+      }
+    } finally {
+      setSavingEmail(false);
+    }
+  };
+
+  // Password change handlers
+  const handleOpenPasswordModal = () => {
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setPasswordError(undefined);
+    setShowPasswordModal(true);
+  };
+
+  const handleSavePassword = async () => {
+    // Validate current password
+    if (!currentPassword) {
+      setPasswordError('Please enter your current password');
+      return;
+    }
+
+    // Validate new password
+    const passwordValidation = validatePassword(newPassword);
+    if (!passwordValidation.isValid) {
+      setPasswordError(passwordValidation.error);
+      return;
+    }
+
+    // Check passwords match
+    if (newPassword !== confirmPassword) {
+      setPasswordError('New passwords do not match');
+      return;
+    }
+
+    const currentUser = auth.currentUser;
+    if (!currentUser || !currentUser.email) {
+      Alert.alert('Error', 'You must be logged in to change your password');
+      return;
+    }
+
+    setSavingPassword(true);
+    setPasswordError(undefined);
+
+    try {
+      // Re-authenticate with current password
+      const credential = EmailAuthProvider.credential(currentUser.email, currentPassword);
+      await reauthenticateWithCredential(currentUser, credential);
+
+      // Update password
+      await updatePassword(currentUser, newPassword);
+
+      setShowPasswordModal(false);
+      Alert.alert('Success', 'Password updated successfully');
+    } catch (err: unknown) {
+      console.error('[SettingsScreen] Password update failed:', err);
+      const error = err as { code?: string; message?: string };
+      if (error.code === 'auth/wrong-password') {
+        setPasswordError('Current password is incorrect');
+      } else if (error.code === 'auth/weak-password') {
+        setPasswordError('New password is too weak');
+      } else if (error.code === 'auth/requires-recent-login') {
+        setPasswordError('Please sign out and sign in again before changing your password');
+      } else {
+        setPasswordError(error.message || 'Failed to update password');
+      }
+    } finally {
+      setSavingPassword(false);
+    }
+  };
+
+  // Check if user is anonymous (can't change email/password)
+  const isAnonymous = user?.isAnonymous ?? true;
+  const userEmail = user?.email || 'Not set';
+
   if (error) {
     return (
       <SafeAreaView style={styles.container}>
@@ -184,6 +335,40 @@ export function SettingsScreen({
             </View>
           </View>
         </View>
+
+        {/* Account Section - Email & Password */}
+        {!isAnonymous && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Account</Text>
+            <View style={styles.card}>
+              <View style={styles.profileRow}>
+                <View style={styles.accountInfo}>
+                  <Text style={styles.label}>Email</Text>
+                  <Text style={styles.value} numberOfLines={1}>{userEmail}</Text>
+                </View>
+                <Button
+                  title="Change"
+                  onPress={handleOpenEmailModal}
+                  variant="secondary"
+                  style={styles.changeButton}
+                />
+              </View>
+              <View style={styles.divider} />
+              <View style={styles.profileRow}>
+                <View>
+                  <Text style={styles.label}>Password</Text>
+                  <Text style={styles.value}>••••••••</Text>
+                </View>
+                <Button
+                  title="Change"
+                  onPress={handleOpenPasswordModal}
+                  variant="secondary"
+                  style={styles.changeButton}
+                />
+              </View>
+            </View>
+          </View>
+        )}
 
         {/* Couple Section */}
         <View style={styles.section}>
@@ -294,6 +479,118 @@ export function SettingsScreen({
           </View>
         </View>
       </Modal>
+
+      {/* Email Change Modal */}
+      <Modal
+        visible={showEmailModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowEmailModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Change Email</Text>
+            <Text style={styles.modalSubtitle}>
+              Current: {userEmail}
+            </Text>
+
+            <TextInput
+              label="New Email"
+              value={newEmail}
+              onChangeText={setNewEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+              placeholder="your@newemail.com"
+              maxLength={MAX_LENGTHS.EMAIL}
+            />
+
+            <TextInput
+              label="Current Password"
+              value={emailCurrentPassword}
+              onChangeText={setEmailCurrentPassword}
+              secureTextEntry
+              placeholder="Enter your password to confirm"
+              maxLength={MAX_LENGTHS.PASSWORD}
+              error={emailError}
+            />
+
+            <View style={styles.modalButtons}>
+              <Button
+                title="Cancel"
+                onPress={() => setShowEmailModal(false)}
+                variant="outline"
+                style={styles.modalButton}
+              />
+              <Button
+                title="Save"
+                onPress={handleSaveEmail}
+                loading={savingEmail}
+                disabled={!newEmail.trim() || !emailCurrentPassword}
+                style={styles.modalButton}
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Password Change Modal */}
+      <Modal
+        visible={showPasswordModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowPasswordModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Change Password</Text>
+
+            <TextInput
+              label="Current Password"
+              value={currentPassword}
+              onChangeText={setCurrentPassword}
+              secureTextEntry
+              placeholder="Enter your current password"
+              maxLength={MAX_LENGTHS.PASSWORD}
+            />
+
+            <TextInput
+              label="New Password"
+              value={newPassword}
+              onChangeText={setNewPassword}
+              secureTextEntry
+              placeholder="Enter your new password"
+              maxLength={MAX_LENGTHS.PASSWORD}
+            />
+
+            <TextInput
+              label="Confirm New Password"
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              secureTextEntry
+              placeholder="Confirm your new password"
+              maxLength={MAX_LENGTHS.PASSWORD}
+              error={passwordError}
+            />
+
+            <View style={styles.modalButtons}>
+              <Button
+                title="Cancel"
+                onPress={() => setShowPasswordModal(false)}
+                variant="outline"
+                style={styles.modalButton}
+              />
+              <Button
+                title="Save"
+                onPress={handleSavePassword}
+                loading={savingPassword}
+                disabled={!currentPassword || !newPassword || !confirmPassword}
+                style={styles.modalButton}
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -335,6 +632,15 @@ const styles = StyleSheet.create({
   changeButton: {
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
+  },
+  accountInfo: {
+    flex: 1,
+    marginRight: spacing.md,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: colors.border,
+    marginVertical: spacing.md,
   },
   label: {
     ...typography.caption,
