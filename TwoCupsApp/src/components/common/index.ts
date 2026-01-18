@@ -13,3 +13,4 @@ export { OfflineBanner } from './OfflineBanner';
 export { ErrorBoundary } from './ErrorBoundary';
 export { UpdatePrompt } from './UpdatePrompt';
 export { SacredGeometryBackground } from './SacredGeometryBackground';
+export { CustomTabBar } from './CustomTabBar';

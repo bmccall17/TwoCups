@@ -121,15 +121,14 @@ export function HistoryScreen() {
     return unsubscribe;
   }, [coupleId, user?.uid, dateFilter]);
 
-  // Fetch partner's active requests (things partner requested ME to do)
+  // Fetch all requests for me (to calculate responsiveness - active + fulfilled, not canceled)
   useEffect(() => {
     if (!coupleId || !myUid) return;
 
     const requestsRef = collection(db, 'couples', coupleId, 'requests');
     const q = query(
       requestsRef,
-      where('forPlayerId', '==', myUid),
-      where('status', '==', 'active')
+      where('forPlayerId', '==', myUid)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -137,6 +136,7 @@ export function HistoryScreen() {
         id: doc.id,
         ...doc.data(),
         createdAt: doc.data().createdAt?.toDate() ?? new Date(),
+        fulfilledAt: doc.data().fulfilledAt?.toDate(),
       })) as Request[];
       setPartnerRequests(requests);
     });
@@ -180,10 +180,16 @@ export function HistoryScreen() {
   }, [attempts, statusFilter]);
 
   // Calculate metrics
+  // Active requests from partner (things waiting for ME to do)
+  const activeRequestsForMe = useMemo(
+    () => partnerRequests.filter(r => r.status === 'active'),
+    [partnerRequests]
+  );
+
   // Waiting: Active requests + suggestions from partner (things waiting for ME to do)
   const waitingCount = useMemo(
-    () => partnerRequests.length + partnerSuggestions.length,
-    [partnerRequests, partnerSuggestions]
+    () => activeRequestsForMe.length + partnerSuggestions.length,
+    [activeRequestsForMe, partnerSuggestions]
   );
 
   // Acknowledgements: Items partner logged for me that I need to acknowledge
@@ -198,15 +204,38 @@ export function HistoryScreen() {
     [waitingCount, needsAcknowledgementCount]
   );
 
-  const acknowledgedCount = useMemo(
-    () => attempts.filter((a) => a.acknowledged).length,
-    [attempts]
+  // Response Rate Calculation (combines two metrics):
+  // 1. Request Fulfillment: How often do I fulfill requests made for me?
+  // 2. Acknowledgement Rate: How often do I acknowledge when partner fills my cup?
+
+  // Request fulfillment rate (fulfilled / (fulfilled + active), exclude canceled)
+  const requestFulfillmentRate = useMemo(() => {
+    const nonCanceledRequests = partnerRequests.filter(r => r.status !== 'canceled');
+    const fulfilledRequests = nonCanceledRequests.filter(r => r.status === 'fulfilled');
+    return nonCanceledRequests.length > 0
+      ? fulfilledRequests.length / nonCanceledRequests.length
+      : 1; // 100% if no requests yet
+  }, [partnerRequests]);
+
+  // Acknowledgement rate (how responsive am I to things partner logged for me)
+  const attemptsForMe = useMemo(
+    () => attempts.filter(a => a.forPlayerId === user?.uid),
+    [attempts, user?.uid]
   );
 
+  const acknowledgementRate = useMemo(() => {
+    const acknowledgedForMe = attemptsForMe.filter(a => a.acknowledged);
+    return attemptsForMe.length > 0
+      ? acknowledgedForMe.length / attemptsForMe.length
+      : 1; // 100% if no attempts for me yet
+  }, [attemptsForMe]);
+
+  // Combined Response rate (average of both metrics)
   const responsivenessPercent = useMemo(() => {
-    const total = attempts.length;
-    return total > 0 ? Math.round((acknowledgedCount / total) * 100) : 0;
-  }, [attempts.length, acknowledgedCount]);
+    // Weight both equally
+    const combined = (requestFulfillmentRate + acknowledgementRate) / 2;
+    return Math.round(combined * 100);
+  }, [requestFulfillmentRate, acknowledgementRate]);
 
   const totalGems = useMemo(
     () => (myPlayer?.gemCount ?? 0) + (partnerPlayer?.gemCount ?? 0),

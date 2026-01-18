@@ -5,7 +5,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator, NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Text, View, StyleSheet } from 'react-native';
+import { View } from 'react-native';
 
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 
@@ -15,7 +15,7 @@ import { ToastProvider } from './src/context/ToastContext';
 import { GemAnimationProvider } from './src/context/GemAnimationContext';
 import { MilestoneCelebrationProvider } from './src/context/MilestoneCelebrationContext';
 import { NetworkProvider } from './src/context/NetworkContext';
-import { LoadingSpinner, InstallAppModal, ToastContainer, OfflineBanner, ErrorBoundary, UpdatePrompt } from './src/components/common';
+import { LoadingSpinner, InstallAppModal, ToastContainer, OfflineBanner, ErrorBoundary, UpdatePrompt, CustomTabBar } from './src/components/common';
 import { useInstallPrompt, usePendingAcknowledgments } from './src/hooks';
 import { LoginScreen, SignUpScreen, PairingScreen } from './src/screens/auth';
 import { HomeScreen } from './src/screens/HomeScreen';
@@ -59,19 +59,6 @@ const AppStack = createNativeStackNavigator<AppStackParamList>();
 const MainStack = createNativeStackNavigator<MainStackParamList>();
 const MainTab = createBottomTabNavigator<MainTabParamList>();
 
-function TabIcon({ icon, focused, badgeCount }: { icon: string; focused: boolean; badgeCount?: number }) {
-  return (
-    <View style={styles.tabIconContainer}>
-      <Text style={[styles.tabIcon, focused && styles.tabIconFocused]}>{icon}</Text>
-      {badgeCount !== undefined && badgeCount > 0 && (
-        <View style={styles.badge}>
-          <View style={styles.badgeDot} />
-        </View>
-      )}
-    </View>
-  );
-}
-
 function AuthNavigator() {
   return (
     <AuthStack.Navigator
@@ -101,37 +88,21 @@ function TabNavigator() {
 
   return (
     <MainTab.Navigator
+      tabBar={(props) => <CustomTabBar {...props} />}
       screenOptions={{
         headerShown: false,
-        tabBarStyle: {
-          backgroundColor: colors.surface,
-          borderTopColor: colors.border,
-          borderTopWidth: 1,
-          paddingTop: 8,
-          paddingBottom: 8,
-          height: 64,
-        },
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textSecondary,
-        tabBarLabelStyle: {
-          fontSize: 10,
-          fontWeight: '500',
-        },
       }}
     >
       <MainTab.Screen
         name="HomeTab"
         options={{
           tabBarLabel: 'Home',
-          tabBarIcon: ({ focused }) => <TabIcon icon="🏠" focused={focused} />,
         }}
       >
         {({ navigation }) => (
           <HomeScreen
             onNavigateToLogAttempt={() => navigation.navigate('LogTab')}
             onNavigateToAcknowledge={() => navigation.navigate('AcknowledgeTab')}
-            onNavigateToMakeRequest={() => navigation.getParent()?.navigate('MakeRequest')}
-            onNavigateToManageSuggestions={() => navigation.getParent()?.navigate('ManageSuggestions')}
             onNavigateToGemHistory={() => navigation.getParent()?.navigate('GemHistory')}
           />
         )}
@@ -141,7 +112,6 @@ function TabNavigator() {
         name="LogTab"
         options={{
           tabBarLabel: 'Give',
-          tabBarIcon: ({ focused }) => <TabIcon icon="💝" focused={focused} />,
         }}
       >
         {({ navigation }) => <LogAttemptScreen onGoBack={() => navigation.navigate('HomeTab')} />}
@@ -151,17 +121,21 @@ function TabNavigator() {
         name="AcknowledgeTab"
         options={{
           tabBarLabel: 'Receive',
-          tabBarIcon: ({ focused }) => <TabIcon icon="📨" focused={focused} badgeCount={pendingCount} />,
+          tabBarBadge: pendingCount > 0 ? pendingCount : undefined,
         }}
       >
-        {() => <AcknowledgeScreen />}
+        {({ navigation }) => (
+          <AcknowledgeScreen
+            onNavigateToMakeRequest={() => navigation.getParent()?.navigate('MakeRequest')}
+            onNavigateToManageSuggestions={() => navigation.getParent()?.navigate('ManageSuggestions')}
+          />
+        )}
       </MainTab.Screen>
 
       <MainTab.Screen
         name="HistoryTab"
         options={{
           tabBarLabel: 'History',
-          tabBarIcon: ({ focused }) => <TabIcon icon="📜" focused={focused} />,
         }}
       >
         {() => <HistoryScreen />}
@@ -171,7 +145,6 @@ function TabNavigator() {
         name="SettingsTab"
         options={{
           tabBarLabel: 'Settings',
-          tabBarIcon: ({ focused }) => <TabIcon icon="⚙️" focused={focused} />,
         }}
       >
         {({ navigation }) => (
@@ -268,37 +241,7 @@ function RootNavigator() {
   );
 }
 
-const styles = StyleSheet.create({
-  tabIconContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
-  },
-  tabIcon: {
-    fontSize: 20,
-    opacity: 0.6,
-  },
-  tabIconFocused: {
-    opacity: 1,
-  },
-  badge: {
-    position: 'absolute',
-    top: -4,
-    right: -8,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  badgeDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.textOnPrimary,
-  },
-});
+// Styles removed - using CustomTabBar component
 
 export default function App() {
   // Initialize Crashlytics when app starts

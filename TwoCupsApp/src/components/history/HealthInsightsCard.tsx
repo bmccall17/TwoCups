@@ -6,6 +6,7 @@ interface HealthInsightsCardProps {
   responsivenessPercentage: number;
   gemCount: number;
   openLoopsCount: number;
+  responseTrend?: number; // Optional: positive = up, negative = down, undefined = no trend shown
   onResponsivenessPress?: () => void;
   onGemsPress?: () => void;
   onOpenLoopsPress?: () => void;
@@ -137,11 +138,22 @@ export const HealthInsightsCard = React.memo(function HealthInsightsCard({
   responsivenessPercentage,
   gemCount,
   openLoopsCount,
+  responseTrend,
   onResponsivenessPress,
   onGemsPress,
   onOpenLoopsPress,
 }: HealthInsightsCardProps) {
   const displayGemCount = gemCount > 999 ? '999+' : gemCount.toString();
+
+  // Format trend display
+  const getTrendDisplay = () => {
+    if (responseTrend === undefined || responseTrend === 0) return null;
+    const arrow = responseTrend > 0 ? '↑' : '↓';
+    const color = responseTrend > 0 ? colors.emerald400 : colors.amber400;
+    return { text: `${arrow} ${Math.abs(responseTrend)}%`, color };
+  };
+
+  const trendDisplay = getTrendDisplay();
 
   return (
     <View style={styles.card}>
@@ -156,7 +168,11 @@ export const HealthInsightsCard = React.memo(function HealthInsightsCard({
           <WaveFill percentage={responsivenessPercentage} />
           <Text style={styles.value}>{responsivenessPercentage}%</Text>
           <Text style={styles.label}>RESPONSE</Text>
-          <Text style={styles.trend}>↑ 8%</Text>
+          {trendDisplay && (
+            <Text style={[styles.trend, { color: trendDisplay.color }]}>
+              {trendDisplay.text}
+            </Text>
+          )}
         </TouchableOpacity>
 
         {/* Gems - Energy Bars */}
@@ -226,7 +242,6 @@ const styles = StyleSheet.create({
   },
   trend: {
     fontSize: 11,
-    color: colors.emerald400,
     fontWeight: '600',
     marginTop: 4,
   },

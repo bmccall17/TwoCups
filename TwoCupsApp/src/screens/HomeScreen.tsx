@@ -1,25 +1,23 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, RefreshControl, Animated, Easing, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, RefreshControl, ScrollView, Dimensions } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { useMilestoneCelebration } from '../context/MilestoneCelebrationContext';
 import { usePlayerData } from '../hooks';
-import { Button, LoadingSpinner, ErrorState, GemCounter, SacredGeometryBackground } from '../components/common';
+import { LoadingSpinner, ErrorState, GemCounter, SacredGeometryBackground } from '../components/common';
 import { CupVisualization } from '../components/cups';
 import { colors, spacing, typography, borderRadius } from '../theme';
+
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 interface HomeScreenProps {
   onNavigateToLogAttempt?: () => void;
   onNavigateToAcknowledge?: () => void;
-  onNavigateToMakeRequest?: () => void;
-  onNavigateToManageSuggestions?: () => void;
   onNavigateToGemHistory?: () => void;
 }
 
 export function HomeScreen({
   onNavigateToLogAttempt,
   onNavigateToAcknowledge,
-  onNavigateToMakeRequest,
-  onNavigateToManageSuggestions,
   onNavigateToGemHistory,
 }: HomeScreenProps) {
   const { userData, coupleData } = useAuth();
@@ -36,7 +34,7 @@ export function HomeScreen({
 
   const myName = useMemo(() => userData?.username || 'Me', [userData?.username]);
   const collectiveLevel = useMemo(() => coupleData?.collectiveCupLevel ?? 0, [coupleData?.collectiveCupLevel]);
-  
+
   const myCupLevel = useMemo(() => myPlayer?.cupLevel ?? 0, [myPlayer?.cupLevel]);
   const partnerCupLevel = useMemo(() => partnerPlayer?.cupLevel ?? 0, [partnerPlayer?.cupLevel]);
   const myGemCount = useMemo(() => myPlayer?.gemCount ?? 0, [myPlayer?.gemCount]);
@@ -75,7 +73,7 @@ export function HomeScreen({
       />
 
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={styles.content}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -85,19 +83,20 @@ export function HomeScreen({
           />
         }
         showsVerticalScrollIndicator={false}
+        bounces={true}
       >
-        {/* Header with mystical aesthetic */}
+        {/* Header */}
         <View style={styles.header}>
           <Text style={styles.headerEmoji}>💜</Text>
           <Text style={styles.title}>Two Cups</Text>
           <Text style={styles.subtitle}>Welcome, {myName}</Text>
         </View>
 
-        {/* Connection Section - Vesica Piscis inspired */}
+        {/* Connection Section */}
         <View style={styles.connectionSection}>
           <Text style={styles.connectionTitle}>Our Connection</Text>
 
-          {/* Two cups side by side representing the union */}
+          {/* Two cups side by side */}
           <View style={styles.cupsPair}>
             {/* My Cup */}
             <View style={styles.cupWrapper}>
@@ -105,7 +104,7 @@ export function HomeScreen({
               <CupVisualization
                 level={myCupLevel}
                 label={myName}
-                size="large"
+                size="small"
               />
             </View>
 
@@ -122,33 +121,35 @@ export function HomeScreen({
               <CupVisualization
                 level={partnerCupLevel}
                 label={partnerName}
-                size="large"
+                size="small"
               />
             </View>
           </View>
+        </View>
 
-          {/* Collective progress */}
-          <View style={styles.collectiveSection}>
-            <View style={styles.collectiveCard}>
+        {/* Collective Cup - Compact */}
+        <View style={styles.collectiveCard}>
+          <View style={styles.collectiveRow}>
+            <View style={styles.collectiveCupSmall}>
+              <CupVisualization
+                level={collectiveLevel}
+                label=""
+                variant="collective"
+                size="small"
+              />
+            </View>
+            <View style={styles.collectiveInfo}>
               <View style={styles.collectiveHeader}>
                 <Text style={styles.collectiveEmoji}>✨</Text>
                 <Text style={styles.collectiveLabel}>Together</Text>
                 <Text style={styles.collectiveEmoji}>✨</Text>
-              </View>
-              <View style={styles.collectiveCupContainer}>
-                <CupVisualization
-                  level={collectiveLevel}
-                  label=""
-                  variant="collective"
-                  size="large"
-                />
               </View>
               <Text style={styles.collectiveSublabel}>Our Shared Progress</Text>
             </View>
           </View>
         </View>
 
-        {/* Gem Counter Section */}
+        {/* Gem Counter */}
         <GemCounter
           myGems={myGemCount}
           partnerGems={partnerGemCount}
@@ -156,38 +157,6 @@ export function HomeScreen({
           partnerName={partnerName}
           onPress={onNavigateToGemHistory}
         />
-
-        {/* Quick Actions with better styling */}
-        <View style={styles.actionsSection}>
-          <Text style={styles.sectionTitle}>Ways to Connect</Text>
-
-          <TouchableOpacity
-            style={styles.actionCard}
-            onPress={onNavigateToMakeRequest}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.actionEmoji}>📝</Text>
-            <View style={styles.actionContent}>
-              <Text style={styles.actionTitle}>Make a Request</Text>
-              <Text style={styles.actionDescription}>Ask your partner for something meaningful</Text>
-            </View>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.actionCard}
-            onPress={onNavigateToManageSuggestions}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.actionEmoji}>💡</Text>
-            <View style={styles.actionContent}>
-              <Text style={styles.actionTitle}>My Suggestions</Text>
-              <Text style={styles.actionDescription}>Ideas for how your partner can fill your cup</Text>
-            </View>
-          </TouchableOpacity>
-        </View>
-
-        {/* Spacer for bottom nav */}
-        <View style={{ height: spacing.xxl }} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -198,41 +167,43 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  scrollContent: {
+  content: {
     flexGrow: 1,
     padding: spacing.md,
+    paddingBottom: 100, // Space for tab bar
+    justifyContent: 'space-between',
   },
   // Header styles
   header: {
     alignItems: 'center',
-    marginBottom: spacing.lg,
-    marginTop: spacing.md,
+    marginBottom: spacing.md,
+    paddingTop: spacing.sm,
   },
   headerEmoji: {
-    fontSize: 40,
+    fontSize: 32,
     marginBottom: spacing.xs,
   },
   title: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: '300',
     color: colors.textPrimary,
-    letterSpacing: 4,
+    letterSpacing: 3,
     textTransform: 'uppercase',
   },
   subtitle: {
-    ...typography.body,
+    ...typography.bodySmall,
     color: colors.textSecondary,
     marginTop: spacing.xs,
   },
   // Connection section
   connectionSection: {
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
   },
   connectionTitle: {
-    ...typography.h3,
+    ...typography.body,
     color: colors.textPrimary,
     textAlign: 'center',
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
     fontWeight: '300',
     letterSpacing: 1,
   },
@@ -240,7 +211,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: spacing.lg,
   },
   cupWrapper: {
     alignItems: 'center',
@@ -248,10 +218,10 @@ const styles = StyleSheet.create({
   },
   cupGlow: {
     position: 'absolute',
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    top: 20,
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    top: 10,
   },
   connectionIndicator: {
     flexDirection: 'column',
@@ -261,86 +231,49 @@ const styles = StyleSheet.create({
   },
   connectionLine: {
     width: 2,
-    height: 20,
+    height: 16,
     backgroundColor: colors.primary + '30',
   },
   connectionHeart: {
-    fontSize: 20,
+    fontSize: 16,
     marginVertical: spacing.xs,
   },
-  // Collective section
-  collectiveSection: {
-    alignItems: 'center',
-  },
+  // Collective section - compact horizontal layout
   collectiveCard: {
     backgroundColor: colors.surface + '80',
-    borderRadius: borderRadius.xl,
-    padding: spacing.lg,
-    alignItems: 'center',
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
     borderWidth: 1,
     borderColor: colors.primary + '20',
-    width: '100%',
+    marginBottom: spacing.md,
+  },
+  collectiveRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  collectiveCupSmall: {
+    marginRight: spacing.md,
+  },
+  collectiveInfo: {
+    flex: 1,
   },
   collectiveHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: spacing.sm,
+    marginBottom: spacing.xs,
   },
   collectiveEmoji: {
-    fontSize: 14,
+    fontSize: 12,
   },
   collectiveLabel: {
     ...typography.bodySmall,
     color: colors.primary,
     fontWeight: '600',
     textTransform: 'uppercase',
-    letterSpacing: 2,
-    marginHorizontal: spacing.sm,
-  },
-  collectiveCupContainer: {
-    alignItems: 'center',
+    letterSpacing: 1.5,
+    marginHorizontal: spacing.xs,
   },
   collectiveSublabel: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    marginTop: spacing.sm,
-  },
-  // Actions section
-  actionsSection: {
-    marginTop: spacing.md,
-    marginBottom: spacing.lg,
-  },
-  sectionTitle: {
-    ...typography.h3,
-    color: colors.textPrimary,
-    marginBottom: spacing.md,
-    fontWeight: '300',
-    letterSpacing: 0.5,
-  },
-  actionCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surface + '60',
-    borderRadius: borderRadius.lg,
-    padding: spacing.md,
-    marginBottom: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  actionEmoji: {
-    fontSize: 28,
-    marginRight: spacing.md,
-  },
-  actionContent: {
-    flex: 1,
-  },
-  actionTitle: {
-    ...typography.body,
-    color: colors.textPrimary,
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-  actionDescription: {
     ...typography.caption,
     color: colors.textSecondary,
   },
