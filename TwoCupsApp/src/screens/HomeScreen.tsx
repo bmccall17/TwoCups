@@ -5,7 +5,7 @@ import { useMilestoneCelebration } from '../context/MilestoneCelebrationContext'
 import { usePlayerData } from '../hooks';
 import { LoadingSpinner, ErrorState, SacredGeometryBackground, SectionDivider } from '../components/common';
 import { CupVisualization } from '../components/cups';
-import { colors, spacing, typography, borderRadius } from '../theme';
+import { colors, spacing, typography, borderRadius, fonts } from '../theme';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -208,7 +208,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontWeight: '300',
+    fontFamily: fonts.regular,
     color: colors.textPrimary,
     letterSpacing: 2,
     textTransform: 'uppercase',
@@ -281,7 +281,7 @@ const styles = StyleSheet.create({
   collectiveLabel: {
     fontSize: 18,
     color: colors.primary,
-    fontWeight: '600',
+    fontFamily: fonts.bold,
     textTransform: 'uppercase',
     letterSpacing: 2,
     marginHorizontal: spacing.sm,
@@ -322,7 +322,7 @@ const styles = StyleSheet.create({
   },
   gemsCount: {
     fontSize: 28,
-    fontWeight: '700',
+    fontFamily: fonts.bold,
     color: colors.textPrimary,
   },
 });

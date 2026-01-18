@@ -46,40 +46,65 @@ export const spacing = {
   xxl: 48,
 };
 
+// Font family constants
+export const fonts = {
+  regular: 'OpenDyslexic-Regular',
+  bold: 'OpenDyslexic-Bold',
+  italic: 'OpenDyslexic-Italic',
+  boldItalic: 'OpenDyslexic-BoldItalic',
+};
+
+// Helper to get font family based on weight
+// Use this instead of fontWeight when working with custom fonts
+export const getFontFamily = (weight: '300' | '400' | '500' | '600' | '700' | 'normal' | 'bold' = '400') => {
+  switch (weight) {
+    case '600':
+    case '700':
+    case 'bold':
+      return fonts.bold;
+    case '300':
+    case '400':
+    case '500':
+    case 'normal':
+    default:
+      return fonts.regular;
+  }
+};
+
 export const typography = {
   h1: {
     fontSize: 32,
-    fontWeight: '700' as const,
+    fontFamily: fonts.bold,
     lineHeight: 40,
   },
   h2: {
     fontSize: 24,
-    fontWeight: '600' as const,
+    fontFamily: fonts.bold,
     lineHeight: 32,
   },
   h3: {
     fontSize: 20,
-    fontWeight: '600' as const,
+    fontFamily: fonts.bold,
     lineHeight: 28,
   },
   body: {
     fontSize: 16,
-    fontWeight: '400' as const,
+    fontFamily: fonts.regular,
     lineHeight: 24,
   },
   bodySmall: {
     fontSize: 14,
-    fontWeight: '400' as const,
+    fontFamily: fonts.regular,
     lineHeight: 20,
   },
   caption: {
     fontSize: 12,
-    fontWeight: '400' as const,
+    fontFamily: fonts.regular,
     lineHeight: 16,
   },
   button: {
     fontSize: 16,
-    fontWeight: '600' as const,
+    fontFamily: fonts.bold,
     lineHeight: 24,
   },
 };
@@ -122,4 +147,5 @@ export default {
   typography,
   borderRadius,
   shadows,
+  fonts,
 };

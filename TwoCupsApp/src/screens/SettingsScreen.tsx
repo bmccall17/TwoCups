@@ -49,32 +49,24 @@ export function SettingsScreen({
   const inviteCode = coupleData?.inviteCode || '—';
   const isActive = coupleData?.status === 'active';
 
-  // Username change modal state
-  const [showUsernameModal, setShowUsernameModal] = useState(false);
+  // Combined account edit modal state
+  const [showAccountModal, setShowAccountModal] = useState(false);
   const [newUsername, setNewUsername] = useState('');
   const [checkingUsername, setCheckingUsername] = useState(false);
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
   const [usernameError, setUsernameError] = useState<string | undefined>();
-  const [savingUsername, setSavingUsername] = useState(false);
-
-  // Email change modal state
-  const [showEmailModal, setShowEmailModal] = useState(false);
   const [newEmail, setNewEmail] = useState('');
-  const [emailCurrentPassword, setEmailCurrentPassword] = useState('');
   const [emailError, setEmailError] = useState<string | undefined>();
-  const [savingEmail, setSavingEmail] = useState(false);
-
-  // Password change modal state
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordError, setPasswordError] = useState<string | undefined>();
-  const [savingPassword, setSavingPassword] = useState(false);
+  const [savingAccount, setSavingAccount] = useState(false);
+  const [accountError, setAccountError] = useState<string | undefined>();
 
   // Debounced username availability check
   useEffect(() => {
-    if (!showUsernameModal) return;
+    if (!showAccountModal) return;
 
     const sanitized = sanitizeUsername(newUsername);
     const validation = validateUsername(sanitized);
@@ -109,187 +101,119 @@ export function SettingsScreen({
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [newUsername, showUsernameModal, userData?.username]);
+  }, [newUsername, showAccountModal, userData?.username]);
 
-  const handleOpenUsernameModal = () => {
+  const handleOpenAccountModal = () => {
     setNewUsername('');
     setUsernameAvailable(null);
     setUsernameError(undefined);
-    setShowUsernameModal(true);
-  };
-
-  const handleSaveUsername = async () => {
-    console.log('[SettingsScreen] Save clicked, usernameAvailable:', usernameAvailable, 'newUsername:', newUsername);
-
-    // Relaxed check - just need a non-empty username
-    const sanitizedNewUsername = sanitizeUsername(newUsername);
-    if (!sanitizedNewUsername) {
-      console.log('[SettingsScreen] No username entered');
-      Alert.alert('Error', 'Please enter a username');
-      return;
-    }
-
-    const uid = user?.uid;
-    const email = user?.email || 'anonymous@guest.local'; // Fallback for anonymous users
-    console.log('[SettingsScreen] Auth state:', { uid, email, isAnonymous: user?.isAnonymous });
-
-    if (!uid) {
-      Alert.alert('Error', 'You must be logged in to change your username');
-      return;
-    }
-
-    setSavingUsername(true);
-    try {
-      console.log('[SettingsScreen] Calling username update...');
-
-      if (userData?.username) {
-        // User has existing username - update it
-        console.log('[SettingsScreen] Updating existing username:', userData.username, '->', sanitizedNewUsername);
-        await updateUsername(
-          userData.username,
-          sanitizedNewUsername,
-          uid,
-          email
-        );
-      } else {
-        // User doesn't have a username yet - set it for the first time
-        console.log('[SettingsScreen] Setting new username:', sanitizedNewUsername);
-        await setUsername(sanitizedNewUsername, uid, email);
-      }
-
-      console.log('[SettingsScreen] Username update successful!');
-      setShowUsernameModal(false);
-      Alert.alert('Success', 'Username updated successfully');
-    } catch (err) {
-      console.error('[SettingsScreen] Username update failed:', err);
-      const message = err instanceof Error ? err.message : 'Failed to update username';
-      Alert.alert('Error', message);
-    } finally {
-      setSavingUsername(false);
-    }
-  };
-
-  // Email change handlers
-  const handleOpenEmailModal = () => {
-    setNewEmail('');
-    setEmailCurrentPassword('');
+    setNewEmail(user?.email || '');
     setEmailError(undefined);
-    setShowEmailModal(true);
-  };
-
-  const handleSaveEmail = async () => {
-    // Validate new email
-    const emailValidation = validateEmail(newEmail.trim());
-    if (!emailValidation.isValid) {
-      setEmailError(emailValidation.error);
-      return;
-    }
-
-    if (!emailCurrentPassword) {
-      setEmailError('Please enter your current password');
-      return;
-    }
-
-    const currentUser = auth.currentUser;
-    if (!currentUser || !currentUser.email) {
-      Alert.alert('Error', 'You must be logged in to change your email');
-      return;
-    }
-
-    setSavingEmail(true);
-    setEmailError(undefined);
-
-    try {
-      // Re-authenticate with current password
-      const credential = EmailAuthProvider.credential(currentUser.email, emailCurrentPassword);
-      await reauthenticateWithCredential(currentUser, credential);
-
-      // Update email
-      await updateEmail(currentUser, newEmail.trim().toLowerCase());
-
-      setShowEmailModal(false);
-      Alert.alert('Success', 'Email updated successfully');
-    } catch (err: unknown) {
-      console.error('[SettingsScreen] Email update failed:', err);
-      const error = err as { code?: string; message?: string };
-      if (error.code === 'auth/wrong-password') {
-        setEmailError('Incorrect password');
-      } else if (error.code === 'auth/email-already-in-use') {
-        setEmailError('This email is already in use');
-      } else if (error.code === 'auth/invalid-email') {
-        setEmailError('Invalid email address');
-      } else if (error.code === 'auth/requires-recent-login') {
-        setEmailError('Please sign out and sign in again before changing your email');
-      } else {
-        setEmailError(error.message || 'Failed to update email');
-      }
-    } finally {
-      setSavingEmail(false);
-    }
-  };
-
-  // Password change handlers
-  const handleOpenPasswordModal = () => {
     setCurrentPassword('');
     setNewPassword('');
     setConfirmPassword('');
     setPasswordError(undefined);
-    setShowPasswordModal(true);
+    setAccountError(undefined);
+    setShowAccountModal(true);
   };
 
-  const handleSavePassword = async () => {
-    // Validate current password
-    if (!currentPassword) {
-      setPasswordError('Please enter your current password');
+  const handleSaveAccount = async () => {
+    const sanitizedNewUsername = sanitizeUsername(newUsername);
+    const emailChanged = newEmail.trim().toLowerCase() !== (user?.email || '').toLowerCase();
+    const passwordChanged = newPassword.length > 0;
+    const usernameChanged = sanitizedNewUsername.length > 0 && sanitizedNewUsername !== (userData?.username?.toLowerCase() || '');
+
+    // Validate that at least one field is being changed
+    if (!usernameChanged && !emailChanged && !passwordChanged) {
+      setAccountError('No changes to save');
       return;
     }
 
-    // Validate new password
-    const passwordValidation = validatePassword(newPassword);
-    if (!passwordValidation.isValid) {
-      setPasswordError(passwordValidation.error);
+    // If email or password is being changed, require current password
+    if ((emailChanged || passwordChanged) && !currentPassword) {
+      setAccountError('Please enter your current password to change email or password');
       return;
     }
 
-    // Check passwords match
-    if (newPassword !== confirmPassword) {
-      setPasswordError('New passwords do not match');
+    // Validate email if changed
+    if (emailChanged) {
+      const emailValidation = validateEmail(newEmail.trim());
+      if (!emailValidation.isValid) {
+        setEmailError(emailValidation.error);
+        return;
+      }
+    }
+
+    // Validate password if changed
+    if (passwordChanged) {
+      const passwordValidation = validatePassword(newPassword);
+      if (!passwordValidation.isValid) {
+        setPasswordError(passwordValidation.error);
+        return;
+      }
+      if (newPassword !== confirmPassword) {
+        setPasswordError('New passwords do not match');
+        return;
+      }
+    }
+
+    // Validate username if changed
+    if (usernameChanged && !usernameAvailable) {
+      setUsernameError('Please enter a valid, available username');
       return;
     }
 
     const currentUser = auth.currentUser;
-    if (!currentUser || !currentUser.email) {
-      Alert.alert('Error', 'You must be logged in to change your password');
-      return;
-    }
-
-    setSavingPassword(true);
-    setPasswordError(undefined);
+    setSavingAccount(true);
+    setAccountError(undefined);
 
     try {
-      // Re-authenticate with current password
-      const credential = EmailAuthProvider.credential(currentUser.email, currentPassword);
-      await reauthenticateWithCredential(currentUser, credential);
+      // Reauthenticate if needed for email/password change
+      if ((emailChanged || passwordChanged) && currentUser?.email && currentPassword) {
+        const credential = EmailAuthProvider.credential(currentUser.email, currentPassword);
+        await reauthenticateWithCredential(currentUser, credential);
+      }
 
-      // Update password
-      await updatePassword(currentUser, newPassword);
+      // Update username if changed
+      if (usernameChanged && user?.uid) {
+        const email = user.email || 'anonymous@guest.local';
+        if (userData?.username) {
+          await updateUsername(userData.username, sanitizedNewUsername, user.uid, email);
+        } else {
+          await setUsername(sanitizedNewUsername, user.uid, email);
+        }
+      }
 
-      setShowPasswordModal(false);
-      Alert.alert('Success', 'Password updated successfully');
+      // Update email if changed
+      if (emailChanged && currentUser) {
+        await updateEmail(currentUser, newEmail.trim().toLowerCase());
+      }
+
+      // Update password if changed
+      if (passwordChanged && currentUser) {
+        await updatePassword(currentUser, newPassword);
+      }
+
+      setShowAccountModal(false);
+      Alert.alert('Success', 'Account updated successfully');
     } catch (err: unknown) {
-      console.error('[SettingsScreen] Password update failed:', err);
+      console.error('[SettingsScreen] Account update failed:', err);
       const error = err as { code?: string; message?: string };
       if (error.code === 'auth/wrong-password') {
-        setPasswordError('Current password is incorrect');
+        setAccountError('Current password is incorrect');
+      } else if (error.code === 'auth/email-already-in-use') {
+        setEmailError('This email is already in use');
+      } else if (error.code === 'auth/invalid-email') {
+        setEmailError('Invalid email address');
       } else if (error.code === 'auth/weak-password') {
         setPasswordError('New password is too weak');
       } else if (error.code === 'auth/requires-recent-login') {
-        setPasswordError('Please sign out and sign in again before changing your password');
+        setAccountError('Please sign out and sign in again before making changes');
       } else {
-        setPasswordError(error.message || 'Failed to update password');
+        setAccountError(error.message || 'Failed to update account');
       }
     } finally {
-      setSavingPassword(false);
+      setSavingAccount(false);
     }
   };
 
@@ -328,47 +252,31 @@ export function SettingsScreen({
               </View>
               <Button
                 title="Change"
-                onPress={handleOpenUsernameModal}
+                onPress={handleOpenAccountModal}
                 variant="secondary"
                 style={styles.changeButton}
               />
             </View>
+            {!isAnonymous && (
+              <>
+                <View style={styles.divider} />
+                <View style={styles.profileRow}>
+                  <View style={styles.accountInfo}>
+                    <Text style={styles.label}>Email</Text>
+                    <Text style={styles.value} numberOfLines={1}>{userEmail}</Text>
+                  </View>
+                </View>
+                <View style={styles.divider} />
+                <View style={styles.profileRow}>
+                  <View>
+                    <Text style={styles.label}>Password</Text>
+                    <Text style={styles.value}>••••••••</Text>
+                  </View>
+                </View>
+              </>
+            )}
           </View>
         </View>
-
-        {/* Account Section - Email & Password */}
-        {!isAnonymous && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Account</Text>
-            <View style={styles.card}>
-              <View style={styles.profileRow}>
-                <View style={styles.accountInfo}>
-                  <Text style={styles.label}>Email</Text>
-                  <Text style={styles.value} numberOfLines={1}>{userEmail}</Text>
-                </View>
-                <Button
-                  title="Change"
-                  onPress={handleOpenEmailModal}
-                  variant="secondary"
-                  style={styles.changeButton}
-                />
-              </View>
-              <View style={styles.divider} />
-              <View style={styles.profileRow}>
-                <View>
-                  <Text style={styles.label}>Password</Text>
-                  <Text style={styles.value}>••••••••</Text>
-                </View>
-                <Button
-                  title="Change"
-                  onPress={handleOpenPasswordModal}
-                  variant="secondary"
-                  style={styles.changeButton}
-                />
-              </View>
-            </View>
-          </View>
-        )}
 
         {/* Couple Section */}
         <View style={styles.section}>
@@ -424,171 +332,118 @@ export function SettingsScreen({
         </View>
       </ScrollView>
 
-      {/* Username Change Modal */}
+      {/* Edit Account Modal */}
       <Modal
-        visible={showUsernameModal}
+        visible={showAccountModal}
         transparent
         animationType="fade"
-        onRequestClose={() => setShowUsernameModal(false)}
+        onRequestClose={() => setShowAccountModal(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Change Username</Text>
-            <Text style={styles.modalSubtitle}>
-              Current: {username}
-            </Text>
+          <ScrollView
+            style={styles.modalScrollView}
+            contentContainerStyle={styles.modalScrollContent}
+            keyboardShouldPersistTaps="handled"
+          >
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Edit Account</Text>
+              <Text style={styles.modalSubtitle}>
+                Update your account details
+              </Text>
 
-            <View style={styles.usernameInputContainer}>
-              <TextInput
-                label="New Username"
-                value={newUsername}
-                onChangeText={setNewUsername}
-                error={usernameError}
-                autoCapitalize="none"
-                autoCorrect={false}
-                placeholder="letters, numbers, underscores"
-                maxLength={MAX_LENGTHS.USERNAME}
-              />
-              {checkingUsername && (
-                <View style={styles.usernameStatus}>
-                  <ActivityIndicator size="small" color={colors.primary} />
-                </View>
+              {accountError && (
+                <Text style={styles.accountErrorText}>{accountError}</Text>
               )}
-              {!checkingUsername && usernameAvailable === true && (
-                <View style={styles.usernameStatus}>
-                  <Text style={styles.availableText}>Available</Text>
-                </View>
+
+              {/* Username Section */}
+              <Text style={styles.modalSectionTitle}>Username</Text>
+              <View style={styles.usernameInputContainer}>
+                <TextInput
+                  label="New Username"
+                  value={newUsername}
+                  onChangeText={setNewUsername}
+                  error={usernameError}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  placeholder={username}
+                  maxLength={MAX_LENGTHS.USERNAME}
+                />
+                {checkingUsername && (
+                  <View style={styles.usernameStatus}>
+                    <ActivityIndicator size="small" color={colors.primary} />
+                  </View>
+                )}
+                {!checkingUsername && usernameAvailable === true && (
+                  <View style={styles.usernameStatus}>
+                    <Text style={styles.availableText}>Available</Text>
+                  </View>
+                )}
+              </View>
+
+              {/* Email Section - only show for non-anonymous users */}
+              {!isAnonymous && (
+                <>
+                  <Text style={styles.modalSectionTitle}>Email</Text>
+                  <TextInput
+                    label="Email Address"
+                    value={newEmail}
+                    onChangeText={setNewEmail}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    placeholder="your@email.com"
+                    maxLength={MAX_LENGTHS.EMAIL}
+                    error={emailError}
+                  />
+
+                  {/* Password Section */}
+                  <Text style={styles.modalSectionTitle}>Password</Text>
+                  <TextInput
+                    label="Current Password"
+                    value={currentPassword}
+                    onChangeText={setCurrentPassword}
+                    secureTextEntry
+                    placeholder="Required if changing email or password"
+                    maxLength={MAX_LENGTHS.PASSWORD}
+                  />
+
+                  <TextInput
+                    label="New Password"
+                    value={newPassword}
+                    onChangeText={setNewPassword}
+                    secureTextEntry
+                    placeholder="Leave blank to keep current"
+                    maxLength={MAX_LENGTHS.PASSWORD}
+                  />
+
+                  <TextInput
+                    label="Confirm New Password"
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                    secureTextEntry
+                    placeholder="Confirm new password"
+                    maxLength={MAX_LENGTHS.PASSWORD}
+                    error={passwordError}
+                  />
+                </>
               )}
+
+              <View style={styles.modalButtons}>
+                <Button
+                  title="Cancel"
+                  onPress={() => setShowAccountModal(false)}
+                  variant="outline"
+                  style={styles.modalButton}
+                />
+                <Button
+                  title="Save"
+                  onPress={handleSaveAccount}
+                  loading={savingAccount}
+                  style={styles.modalButton}
+                />
+              </View>
             </View>
-
-            <View style={styles.modalButtons}>
-              <Button
-                title="Cancel"
-                onPress={() => setShowUsernameModal(false)}
-                variant="outline"
-                style={styles.modalButton}
-              />
-              <Button
-                title="Save"
-                onPress={handleSaveUsername}
-                loading={savingUsername}
-                disabled={!usernameAvailable}
-                style={styles.modalButton}
-              />
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Email Change Modal */}
-      <Modal
-        visible={showEmailModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowEmailModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Change Email</Text>
-            <Text style={styles.modalSubtitle}>
-              Current: {userEmail}
-            </Text>
-
-            <TextInput
-              label="New Email"
-              value={newEmail}
-              onChangeText={setNewEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-              placeholder="your@newemail.com"
-              maxLength={MAX_LENGTHS.EMAIL}
-            />
-
-            <TextInput
-              label="Current Password"
-              value={emailCurrentPassword}
-              onChangeText={setEmailCurrentPassword}
-              secureTextEntry
-              placeholder="Enter your password to confirm"
-              maxLength={MAX_LENGTHS.PASSWORD}
-              error={emailError}
-            />
-
-            <View style={styles.modalButtons}>
-              <Button
-                title="Cancel"
-                onPress={() => setShowEmailModal(false)}
-                variant="outline"
-                style={styles.modalButton}
-              />
-              <Button
-                title="Save"
-                onPress={handleSaveEmail}
-                loading={savingEmail}
-                disabled={!newEmail.trim() || !emailCurrentPassword}
-                style={styles.modalButton}
-              />
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Password Change Modal */}
-      <Modal
-        visible={showPasswordModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowPasswordModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Change Password</Text>
-
-            <TextInput
-              label="Current Password"
-              value={currentPassword}
-              onChangeText={setCurrentPassword}
-              secureTextEntry
-              placeholder="Enter your current password"
-              maxLength={MAX_LENGTHS.PASSWORD}
-            />
-
-            <TextInput
-              label="New Password"
-              value={newPassword}
-              onChangeText={setNewPassword}
-              secureTextEntry
-              placeholder="Enter your new password"
-              maxLength={MAX_LENGTHS.PASSWORD}
-            />
-
-            <TextInput
-              label="Confirm New Password"
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              secureTextEntry
-              placeholder="Confirm your new password"
-              maxLength={MAX_LENGTHS.PASSWORD}
-              error={passwordError}
-            />
-
-            <View style={styles.modalButtons}>
-              <Button
-                title="Cancel"
-                onPress={() => setShowPasswordModal(false)}
-                variant="outline"
-                style={styles.modalButton}
-              />
-              <Button
-                title="Save"
-                onPress={handleSavePassword}
-                loading={savingPassword}
-                disabled={!currentPassword || !newPassword || !confirmPassword}
-                style={styles.modalButton}
-              />
-            </View>
-          </View>
+          </ScrollView>
         </View>
       </Modal>
     </SafeAreaView>
@@ -603,6 +458,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     padding: spacing.lg,
+    paddingBottom: 100, // Space for tab bar
   },
   header: {
     marginBottom: spacing.xl,
@@ -674,12 +530,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: spacing.lg,
   },
+  modalScrollView: {
+    maxHeight: '90%',
+    width: '100%',
+    maxWidth: 400,
+  },
+  modalScrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+  },
   modalContent: {
     backgroundColor: colors.surface,
     borderRadius: borderRadius.lg,
     padding: spacing.xl,
     width: '100%',
-    maxWidth: 400,
   },
   modalTitle: {
     ...typography.h2,
@@ -693,9 +557,27 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: spacing.lg,
   },
+  modalSectionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.textSecondary,
+    marginTop: spacing.md,
+    marginBottom: spacing.xs,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  accountErrorText: {
+    ...typography.body,
+    color: colors.error,
+    textAlign: 'center',
+    marginBottom: spacing.md,
+    padding: spacing.sm,
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    borderRadius: borderRadius.sm,
+  },
   usernameInputContainer: {
     position: 'relative',
-    marginBottom: spacing.lg,
+    marginBottom: spacing.sm,
   },
   usernameStatus: {
     position: 'absolute',
@@ -710,6 +592,7 @@ const styles = StyleSheet.create({
   modalButtons: {
     flexDirection: 'row',
     gap: spacing.md,
+    marginTop: spacing.lg,
   },
   modalButton: {
     flex: 1,

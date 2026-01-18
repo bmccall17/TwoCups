@@ -211,9 +211,13 @@ function RootNavigator() {
   const { showPrompt, isIOS, triggerInstall, dismissPrompt } = useInstallPrompt();
   const [appIsReady, setAppIsReady] = useState(false);
 
-  // Load icon fonts - this ensures Feather icons display correctly on web
+  // Load icon fonts and OpenDyslexic font family
   const [fontsLoaded, fontError] = useFonts({
     ...Feather.font,
+    'OpenDyslexic-Regular': require('./assets/fonts/OpenDyslexic-Regular.otf'),
+    'OpenDyslexic-Bold': require('./assets/fonts/OpenDyslexic-Bold.otf'),
+    'OpenDyslexic-Italic': require('./assets/fonts/OpenDyslexic-Italic.otf'),
+    'OpenDyslexic-BoldItalic': require('./assets/fonts/OpenDyslexic-BoldItalic.otf'),
   });
 
   useEffect(() => {

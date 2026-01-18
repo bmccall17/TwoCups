@@ -502,6 +502,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     padding: spacing.lg,
+    paddingBottom: 100, // Space for tab bar
   },
   header: {
     marginBottom: spacing.xl,

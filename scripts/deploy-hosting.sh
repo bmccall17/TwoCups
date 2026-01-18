@@ -95,7 +95,22 @@ echo "    Total files in dist: $FILE_COUNT"
 if [[ -f "$APP_DIR/dist/build-manifest.json" ]]; then
     BUILD_TS=$(node -e "console.log(require('$APP_DIR/dist/build-manifest.json').buildTimestamp)")
     BUILD_DATE=$(node -e "console.log(require('$APP_DIR/dist/build-manifest.json').buildDate)")
-    echo "    Build timestamp: $BUILD_TS"
+
+    # Human-readable time (HH:MM, 24-hour clock) derived from buildTimestamp
+    BUILD_TIME_24=$(node -e "
+      const m = require('$APP_DIR/dist/build-manifest.json');
+      let ts = m.buildTimestamp;
+
+      // Handle number or string timestamps; handle seconds vs ms
+      if (typeof ts === 'string' && /^[0-9]+$/.test(ts)) ts = Number(ts);
+      if (typeof ts === 'number' && ts < 1e12) ts = ts * 1000; // seconds -> ms if needed
+
+      const d = new Date(ts);
+      const pad = (n) => String(n).padStart(2,'0');
+      console.log(pad(d.getHours()) + ':' + pad(d.getMinutes()));
+    ")
+
+    echo "    Build timestamp: $BUILD_TIME_24"
     echo "    Build date: $BUILD_DATE"
 fi
 
@@ -124,7 +139,7 @@ echo "======================================"
 echo "  Deploy Summary"
 echo "======================================"
 echo "  Files deployed: $FILE_COUNT"
-echo "  Build timestamp: $BUILD_TS"
+echo "  Build timestamp: $BUILD_TIME_24"
 if [[ "$PREVIEW" == true ]]; then
     echo "  Target: Preview channel"
 else

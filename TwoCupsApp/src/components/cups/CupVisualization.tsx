@@ -1,6 +1,6 @@
 import React, { memo, useMemo, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
-import { colors, spacing, typography, borderRadius } from '../../theme';
+import { colors, spacing, typography, borderRadius, fonts } from '../../theme';
 
 interface CupVisualizationProps {
   level: number; // 0-100
@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
   levelText: {
     ...typography.h2,
     color: colors.textPrimary,
-    fontWeight: '700',
+    fontFamily: fonts.bold,
   },
   gemContainer: {
     flexDirection: 'row',
@@ -137,6 +137,6 @@ const styles = StyleSheet.create({
   gemCount: {
     ...typography.body,
     color: colors.gem,
-    fontWeight: '600',
+    fontFamily: fonts.bold,
   },
 });

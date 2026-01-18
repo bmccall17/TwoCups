@@ -802,3 +802,124 @@ useEffect(() => {
 **Issue:** Black screen on web after font preloading
 **Root Cause:** Missing error handling in useFonts hook
 **Solution:** Check for fontError in addition to fontsLoaded
+
+---
+
+## 2026-01-18 (Session 3) - Navbar Layout Fix & Combined Account Modal
+
+### Overview
+Fixed navbar not displaying correctly on web (left-hugging, not full-width) and combined the separate username/email/password modals into one unified "Edit Account" modal.
+
+### Issue 1: Navbar Layout Bug
+
+**Problem:**
+- Navbar was shrink-wrapping and left-hugging instead of spanning full viewport width
+- Changes weren't appearing due to service worker caching stale bundles
+
+**Root Cause:**
+- `CustomTabBar` didn't have explicit width/positioning - relied on parent flex rules
+- On RN-web, parent had `alignItems: 'flex-start'` causing collapse
+- Service worker (`sw.js`) was caching old JS bundles
+
+**Solution (`CustomTabBar.tsx`):**
+
+Added explicit full-width positioning to container:
+```tsx
+container: {
+  position: 'absolute',
+  left: 0,
+  right: 0,
+  bottom: 0,
+  width: '100%',
+  alignSelf: 'stretch',
+  // ... existing styles
+}
+```
+
+Updated tabsContainer for proper distribution:
+```tsx
+tabsContainer: {
+  flexDirection: 'row',
+  width: '100%',
+  justifyContent: 'space-around',
+  alignItems: 'center',
+  paddingTop: 8,
+  paddingBottom: 4,
+  paddingHorizontal: 8,
+}
+```
+
+Added minWidth to tabItem to prevent web flex issues:
+```tsx
+tabItem: {
+  flex: 1,
+  alignItems: 'center',
+  justifyContent: 'center',
+  paddingVertical: 8,
+  minWidth: 0,
+}
+```
+
+Added debug marker (temporary):
+```tsx
+console.log('[CustomTabBar] render', new Date().toISOString());
+```
+
+**Cache Fix Required:**
+1. Chrome DevTools → Application → Service Workers → "Update on reload" + "Unregister"
+2. Application → Storage → "Clear site data"
+3. Hard refresh
+
+### Issue 2: Combined Account Modal
+
+**Problem:**
+- Settings had 3 separate modals for username, email, and password changes
+- User wanted one unified modal with email prepopulated
+
+**Solution (`SettingsScreen.tsx`):**
+
+Combined into single "Edit Account" modal with:
+- Username field (with availability check)
+- Email field (prepopulated with current email)
+- Current password field (required only when changing email/password)
+- New password + confirm fields
+
+Key changes:
+1. Replaced 3 modal state groups with single `showAccountModal` + `savingAccount` + `accountError`
+2. Created `handleOpenAccountModal()` that prepopulates email from `user?.email`
+3. Created `handleSaveAccount()` that:
+   - Detects which fields changed
+   - Only requires current password if changing email/password
+   - Performs username, email, and password updates in sequence
+   - Handles Firebase auth errors appropriately
+4. Modal uses ScrollView for form content (many fields)
+5. Profile section now shows username, email, password in one card with single "Change" button
+
+### Files Modified
+
+1. **`src/components/common/CustomTabBar.tsx`**
+   - Added absolute positioning + full-width styles
+   - Added debug console.log and testID
+
+2. **`src/screens/SettingsScreen.tsx`**
+   - Replaced 3 separate modals with 1 combined modal
+   - Added scrollable modal content
+   - Email prepopulated, password fields empty
+   - New section title styles + account error display
+
+### Design Details
+
+**Navbar active state:**
+- Purple circle (44x44px) behind active tab icon
+- `backgroundColor: 'rgba(192, 132, 252, 0.2)'`
+- `borderColor: 'rgba(192, 132, 252, 0.4)'`
+
+**Account modal sections:**
+- Username (always shown)
+- Email + Password (only for non-anonymous users)
+- Section titles: uppercase, secondary color, 14px
+
+---
+
+**Account Modal Status:** ✅ Working (future improvements planned)
+**Navbar Status:** 🔄 In Progress - layout fix applied but not fully correct yet, will continue next session

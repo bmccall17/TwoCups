@@ -1,11 +1,9 @@
-import React, { useRef, useEffect, memo } from 'react';
+import React, { memo } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
-  Animated,
-  Easing,
   Platform,
 } from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
@@ -49,32 +47,6 @@ const TabItem = memo(({ routeName, isFocused, onPress, onLongPress, badgeCount }
   const label = TAB_LABELS[routeName] || routeName;
   const hasNotification = badgeCount !== undefined && badgeCount > 0;
 
-  // Pulse animation for active indicator
-  const pulseAnim = useRef(new Animated.Value(0.6)).current;
-
-  useEffect(() => {
-    if (isFocused) {
-      const animation = Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, {
-            toValue: 1,
-            duration: 1200,
-            easing: Easing.inOut(Easing.ease),
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseAnim, {
-            toValue: 0.6,
-            duration: 1200,
-            easing: Easing.inOut(Easing.ease),
-            useNativeDriver: true,
-          }),
-        ])
-      );
-      animation.start();
-      return () => animation.stop();
-    }
-  }, [isFocused, pulseAnim]);
-
   return (
     <TouchableOpacity
       accessibilityRole="button"
@@ -85,22 +57,14 @@ const TabItem = memo(({ routeName, isFocused, onPress, onLongPress, badgeCount }
       style={styles.tabItem}
       activeOpacity={0.7}
     >
-      {/* Active glow background */}
-      {isFocused && (
-        <Animated.View
-          style={[
-            styles.activeGlow,
-            { opacity: pulseAnim }
-          ]}
-        />
-      )}
-
-      {/* Icon */}
+      {/* Icon with active circle background */}
       <View style={styles.iconWrapper}>
+        {isFocused && <View style={styles.activeCircle} />}
         <Feather
           name={iconName}
           size={22}
           color={isFocused ? ACTIVE_COLOR : INACTIVE_COLOR}
+          style={styles.icon}
         />
         {/* Notification dot */}
         {hasNotification && <View style={styles.notificationDot} />}
@@ -110,9 +74,6 @@ const TabItem = memo(({ routeName, isFocused, onPress, onLongPress, badgeCount }
       <Text style={[styles.label, isFocused && styles.labelActive]}>
         {label}
       </Text>
-
-      {/* Active indicator dot */}
-      {isFocused && <View style={styles.activeIndicatorDot} />}
     </TouchableOpacity>
   );
 });
@@ -121,8 +82,14 @@ const TabItem = memo(({ routeName, isFocused, onPress, onLongPress, badgeCount }
 export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
 
+  // Debug marker - remove after verifying changes are loading
+  console.log('[CustomTabBar] render', new Date().toISOString());
+
   return (
-    <View style={[styles.container, { paddingBottom: Math.max(insets.bottom, 8) }]}>
+    <View
+      testID="custom-tabbar"
+      style={[styles.container, { paddingBottom: Math.max(insets.bottom, 8) }]}
+    >
       {/* Top border line */}
       <View style={styles.topBorder} />
 
@@ -175,8 +142,18 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
 
 const styles = StyleSheet.create({
   container: {
+    // Force full-width bottom bar positioning
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    alignSelf: 'stretch',
     backgroundColor: 'rgba(10, 10, 15, 0.98)',
     borderTopWidth: 0,
+    // Ensure tab bar is always on top
+    zIndex: 9999,
+    elevation: 9999, // Android
     ...Platform.select({
       web: {
         backdropFilter: 'blur(20px)',
@@ -193,30 +170,39 @@ const styles = StyleSheet.create({
   },
   tabsContainer: {
     flexDirection: 'row',
+    width: '100%',
+    justifyContent: 'space-around',
+    alignItems: 'center',
     paddingTop: 8,
     paddingBottom: 4,
-    paddingHorizontal: 4,
+    paddingHorizontal: 8,
   },
   tabItem: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 8,
-    position: 'relative',
-  },
-  activeGlow: {
-    position: 'absolute',
-    top: 4,
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: 'rgba(192, 132, 252, 0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(192, 132, 252, 0.25)',
+    minWidth: 0, // Prevents web flex shrink issues
   },
   iconWrapper: {
     position: 'relative',
-    marginBottom: 4,
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 2,
+  },
+  activeCircle: {
+    position: 'absolute',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(192, 132, 252, 0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(192, 132, 252, 0.4)',
+  },
+  icon: {
+    zIndex: 1,
   },
   notificationDot: {
     position: 'absolute',
@@ -238,25 +224,6 @@ const styles = StyleSheet.create({
   labelActive: {
     color: '#D8B4FE', // purple-300
     fontWeight: '500',
-  },
-  activeIndicatorDot: {
-    position: 'absolute',
-    bottom: 2,
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: ACTIVE_COLOR,
-    ...Platform.select({
-      ios: {
-        shadowColor: ACTIVE_COLOR,
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.8,
-        shadowRadius: 4,
-      },
-      web: {
-        boxShadow: `0 0 6px ${ACTIVE_COLOR}`,
-      },
-    }),
   },
   bottomGlow: {
     height: 1,
