@@ -1,13 +1,13 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, RefreshControl, ScrollView, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, RefreshControl, ScrollView, Dimensions, TouchableOpacity } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { useMilestoneCelebration } from '../context/MilestoneCelebrationContext';
 import { usePlayerData } from '../hooks';
-import { LoadingSpinner, ErrorState, GemCounter, SacredGeometryBackground } from '../components/common';
+import { LoadingSpinner, ErrorState, SacredGeometryBackground, SectionDivider } from '../components/common';
 import { CupVisualization } from '../components/cups';
 import { colors, spacing, typography, borderRadius } from '../theme';
 
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface HomeScreenProps {
   onNavigateToLogAttempt?: () => void;
@@ -63,12 +63,14 @@ export function HomeScreen({
     );
   }
 
+  const totalGems = myGemCount + partnerGemCount;
+
   return (
     <SafeAreaView style={styles.container}>
-      {/* Sacred Geometry Background */}
+      {/* Sacred Geometry Background - Seed of Life at enhanced opacity */}
       <SacredGeometryBackground
-        variant="flowerOfLife"
-        opacity={0.06}
+        variant="seedOfLife"
+        opacity={0.11}
         color={colors.primary}
       />
 
@@ -85,78 +87,105 @@ export function HomeScreen({
         showsVerticalScrollIndicator={false}
         bounces={true}
       >
-        {/* Header */}
+        {/* Compact Header */}
         <View style={styles.header}>
-          <Text style={styles.headerEmoji}>💜</Text>
           <Text style={styles.title}>Two Cups</Text>
           <Text style={styles.subtitle}>Welcome, {myName}</Text>
         </View>
 
-        {/* Connection Section */}
+        {/* Connection Section - Two cups with Vesica Piscis */}
         <View style={styles.connectionSection}>
-          <Text style={styles.connectionTitle}>Our Connection</Text>
-
-          {/* Two cups side by side */}
-          <View style={styles.cupsPair}>
-            {/* My Cup */}
-            <View style={styles.cupWrapper}>
-              <View style={[styles.cupGlow, { backgroundColor: colors.primary + '15' }]} />
-              <CupVisualization
-                level={myCupLevel}
-                label={myName}
-                size="small"
+          <View style={styles.cupsPairContainer}>
+            {/* Vesica Piscis - sacred symbol of two becoming one */}
+            <View style={styles.vesicaPiscisContainer}>
+              <SacredGeometryBackground
+                variant="vesicaPiscis"
+                opacity={0.20}
+                color={colors.primary}
+                secondaryColor={colors.emerald400}
+                size={200}
+                animate={true}
+                inline={true}
               />
             </View>
 
-            {/* Connection indicator */}
-            <View style={styles.connectionIndicator}>
-              <View style={styles.connectionLine} />
-              <Text style={styles.connectionHeart}>💕</Text>
-              <View style={styles.connectionLine} />
-            </View>
+            {/* Two cups side by side */}
+            <View style={styles.cupsPair}>
+              {/* My Cup */}
+              <View style={styles.cupWrapper}>
+                <CupVisualization
+                  level={myCupLevel}
+                  label={myName}
+                  size="small"
+                />
+              </View>
 
-            {/* Partner's Cup */}
-            <View style={styles.cupWrapper}>
-              <View style={[styles.cupGlow, { backgroundColor: colors.emerald400 + '15' }]} />
-              <CupVisualization
-                level={partnerCupLevel}
-                label={partnerName}
-                size="small"
-              />
+              {/* Connection indicator */}
+              <View style={styles.connectionIndicator}>
+                <Text style={styles.connectionHeart}>💕</Text>
+              </View>
+
+              {/* Partner's Cup */}
+              <View style={styles.cupWrapper}>
+                <CupVisualization
+                  level={partnerCupLevel}
+                  label={partnerName}
+                  size="small"
+                />
+              </View>
             </View>
           </View>
         </View>
 
-        {/* Collective Cup - Compact */}
-        <View style={styles.collectiveCard}>
-          <View style={styles.collectiveRow}>
-            <View style={styles.collectiveCupSmall}>
+        {/* Section Divider */}
+        <SectionDivider opacity={0.22} color={colors.primary} />
+
+        {/* HERO: Collective Cup - Large and Prominent */}
+        <View style={styles.collectiveHero}>
+          {/* Seed of Life background behind collective cup */}
+          <View style={styles.collectiveGeometryBackground}>
+            <SacredGeometryBackground
+              variant="seedOfLife"
+              opacity={0.18}
+              color={colors.primary}
+              size={280}
+              animate={true}
+              inline={true}
+            />
+          </View>
+
+          <View style={styles.collectiveContent}>
+            <View style={styles.collectiveHeader}>
+              <Text style={styles.collectiveEmoji}>✨</Text>
+              <Text style={styles.collectiveLabel}>Our Cup Together</Text>
+              <Text style={styles.collectiveEmoji}>✨</Text>
+            </View>
+
+            <View style={styles.collectiveCupLarge}>
               <CupVisualization
                 level={collectiveLevel}
                 label=""
                 variant="collective"
-                size="small"
+                size="large"
               />
             </View>
-            <View style={styles.collectiveInfo}>
-              <View style={styles.collectiveHeader}>
-                <Text style={styles.collectiveEmoji}>✨</Text>
-                <Text style={styles.collectiveLabel}>Together</Text>
-                <Text style={styles.collectiveEmoji}>✨</Text>
-              </View>
-              <Text style={styles.collectiveSublabel}>Our Shared Progress</Text>
-            </View>
+
+            <Text style={styles.collectiveSublabel}>Fill it with love & care</Text>
           </View>
         </View>
 
-        {/* Gem Counter */}
-        <GemCounter
-          myGems={myGemCount}
-          partnerGems={partnerGemCount}
-          myName={myName}
-          partnerName={partnerName}
+        {/* Simple Total Gems Display */}
+        <TouchableOpacity
+          style={styles.gemsSimple}
           onPress={onNavigateToGemHistory}
-        />
+          activeOpacity={0.8}
+        >
+          <Text style={styles.gemsLabel}>Shared Gems</Text>
+          <View style={styles.gemsRow}>
+            <Text style={styles.gemsIcon}>💎</Text>
+            <Text style={styles.gemsCount}>{totalGems.toLocaleString()}</Text>
+          </View>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -171,110 +200,129 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     padding: spacing.md,
     paddingBottom: 100, // Space for tab bar
-    justifyContent: 'space-between',
   },
-  // Header styles
+  // Compact Header
   header: {
     alignItems: 'center',
-    marginBottom: spacing.md,
-    paddingTop: spacing.sm,
-  },
-  headerEmoji: {
-    fontSize: 32,
-    marginBottom: spacing.xs,
+    marginBottom: spacing.sm,
   },
   title: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '300',
     color: colors.textPrimary,
-    letterSpacing: 3,
+    letterSpacing: 2,
     textTransform: 'uppercase',
   },
   subtitle: {
-    ...typography.bodySmall,
+    ...typography.caption,
     color: colors.textSecondary,
-    marginTop: spacing.xs,
+    marginTop: 2,
   },
-  // Connection section
+  // Connection section - compact
   connectionSection: {
-    marginBottom: spacing.md,
+    marginBottom: spacing.xs,
   },
-  connectionTitle: {
-    ...typography.body,
-    color: colors.textPrimary,
-    textAlign: 'center',
-    marginBottom: spacing.sm,
-    fontWeight: '300',
-    letterSpacing: 1,
+  cupsPairContainer: {
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.sm,
+  },
+  vesicaPiscisContainer: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: [{ translateX: -100 }, { translateY: -100 }],
+    zIndex: 0,
   },
   cupsPair: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 1,
   },
   cupWrapper: {
     alignItems: 'center',
-    position: 'relative',
-  },
-  cupGlow: {
-    position: 'absolute',
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    top: 10,
   },
   connectionIndicator: {
-    flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    marginHorizontal: spacing.sm,
-  },
-  connectionLine: {
-    width: 2,
-    height: 16,
-    backgroundColor: colors.primary + '30',
+    marginHorizontal: spacing.md,
   },
   connectionHeart: {
-    fontSize: 16,
-    marginVertical: spacing.xs,
+    fontSize: 20,
   },
-  // Collective section - compact horizontal layout
-  collectiveCard: {
-    backgroundColor: colors.surface + '80',
-    borderRadius: borderRadius.lg,
-    padding: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.primary + '20',
-    marginBottom: spacing.md,
-  },
-  collectiveRow: {
-    flexDirection: 'row',
+  // HERO: Collective Cup - Large and Prominent
+  collectiveHero: {
+    position: 'relative',
     alignItems: 'center',
+    paddingVertical: spacing.md,
+    marginVertical: spacing.sm,
   },
-  collectiveCupSmall: {
-    marginRight: spacing.md,
+  collectiveGeometryBackground: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: [{ translateX: -140 }, { translateY: -140 }],
+    zIndex: 0,
   },
-  collectiveInfo: {
-    flex: 1,
+  collectiveContent: {
+    alignItems: 'center',
+    zIndex: 1,
   },
   collectiveHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: spacing.xs,
+    marginBottom: spacing.sm,
   },
   collectiveEmoji: {
-    fontSize: 12,
+    fontSize: 16,
   },
   collectiveLabel: {
-    ...typography.bodySmall,
+    fontSize: 18,
     color: colors.primary,
     fontWeight: '600',
     textTransform: 'uppercase',
-    letterSpacing: 1.5,
-    marginHorizontal: spacing.xs,
+    letterSpacing: 2,
+    marginHorizontal: spacing.sm,
+  },
+  collectiveCupLarge: {
+    marginVertical: spacing.sm,
   },
   collectiveSublabel: {
-    ...typography.caption,
+    ...typography.bodySmall,
     color: colors.textSecondary,
+    fontStyle: 'italic',
+    marginTop: spacing.xs,
+  },
+  // Simple Gems Display
+  gemsSimple: {
+    backgroundColor: colors.surface + '60',
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.gem + '30',
+    marginTop: spacing.sm,
+  },
+  gemsLabel: {
+    ...typography.caption,
+    color: colors.gem,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: spacing.xs,
+  },
+  gemsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  gemsIcon: {
+    fontSize: 24,
+    marginRight: spacing.sm,
+  },
+  gemsCount: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: colors.textPrimary,
   },
 });

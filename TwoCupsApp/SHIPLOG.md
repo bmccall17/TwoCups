@@ -718,3 +718,87 @@ Initial implementation had duplicate div layers from separate `VesicaPiscisPatte
 **Status:** ✅ Complete and ready for testing
 **TypeScript:** ✅ No compilation errors
 **Build:** ✅ Ready to run (`npx expo start --clear`)
+
+---
+
+## 2026-01-18 (Session 2) - Black Screen Fix After Font Loading
+
+### Overview
+Fixed a critical bug where the app showed a completely black screen after adding Feather icon font preloading in the previous session.
+
+### Problem
+After adding `useFonts` hook to preload Feather icons in `App.tsx`, the app rendered a completely black screen on web.
+
+### Root Cause
+Console showed: **"Failed to decode downloaded font"**
+
+The `useFonts` hook was trying to load the Feather font but it fails on web. Since the code only checked `fontsLoaded` (which stays `false` when fonts fail), `appIsReady` never became `true`, and the app rendered `null` forever.
+
+**Broken code flow:**
+```
+useFonts() called → Font fails to decode → fontsLoaded stays false →
+appIsReady never set to true → App returns null → Black screen
+```
+
+### Solution
+Added error handling to proceed even when fonts fail to load. The `useFonts` hook returns a tuple with both the loaded state and any error.
+
+**File Modified:** `TwoCupsApp/App.tsx`
+
+**Before (broken):**
+```tsx
+const [fontsLoaded] = useFonts({
+  ...Feather.font,
+});
+
+useEffect(() => {
+  if (!loading && fontsLoaded) {
+    setAppIsReady(true);
+  }
+}, [loading, fontsLoaded]);
+```
+
+**After (fixed):**
+```tsx
+const [fontsLoaded, fontError] = useFonts({
+  ...Feather.font,
+});
+
+useEffect(() => {
+  if (!loading && (fontsLoaded || fontError)) {
+    // Proceed even if fonts fail - icons will fall back gracefully
+    if (fontError) {
+      console.warn('Font loading failed, proceeding anyway:', fontError);
+    }
+    setAppIsReady(true);
+  }
+}, [loading, fontsLoaded, fontError]);
+```
+
+### Key Changes
+1. **Capture `fontError`** from the `useFonts` hook destructured return
+2. **Updated condition** to `(fontsLoaded || fontError)` - app proceeds regardless of font outcome
+3. **Added warning log** when fonts fail for debugging visibility
+4. **Added `fontError`** to the useEffect dependency array
+
+### Why This Works
+- Feather icons use a fallback system - when the custom font fails, text-based fallbacks display instead
+- The app functionality is unaffected by font loading failure
+- Users see the app immediately rather than a black screen
+- Console warning helps developers know fonts didn't load (for debugging)
+
+### Files Modified (1)
+1. `TwoCupsApp/App.tsx` - Lines 215-227 (font loading and useEffect)
+
+### Verification Steps
+1. Run `npx expo start --clear`
+2. App should load immediately (no more black screen)
+3. Navigate between tabs - navbar should display and be functional
+4. Console may show font warning but app works normally
+
+---
+
+**Status:** ✅ Fixed
+**Issue:** Black screen on web after font preloading
+**Root Cause:** Missing error handling in useFonts hook
+**Solution:** Check for fontError in addition to fontsLoaded

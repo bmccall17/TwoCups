@@ -7,6 +7,12 @@ interface SacredGeometryBackgroundProps {
   opacity?: number;
   animate?: boolean;
   color?: string;
+  /** Fixed size for inline usage. If not provided, defaults to 85% of screen width */
+  size?: number;
+  /** For vesicaPiscis: secondary color for the right circle (creates gradient effect) */
+  secondaryColor?: string;
+  /** If true, renders as inline element instead of absolute positioned background */
+  inline?: boolean;
 }
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -82,15 +88,44 @@ const SeedOfLifePattern = memo(({ size, opacity, color }: { size: number; opacit
 });
 
 // Vesica Piscis pattern - two interlocking circles representing union of two souls
-const VesicaPiscisPattern = memo(({ size, opacity, color }: { size: number; opacity: number; color: string }) => {
+const VesicaPiscisPattern = memo(({
+  size,
+  opacity,
+  color,
+  secondaryColor,
+}: {
+  size: number;
+  opacity: number;
+  color: string;
+  secondaryColor?: string;
+}) => {
   const circleSize = size * 0.6;
   const radius = circleSize / 2;
   // Circles overlap by half their radius to create the classic vesica piscis
   const offset = radius * 0.5;
   const centerY = (size - circleSize) / 2;
 
+  // Calculate mandorla (intersection) position and size
+  const mandorlaWidth = circleSize - offset * 2;
+  const mandorlaHeight = circleSize * 0.9;
+
   return (
     <View style={{ width: size, height: size }}>
+      {/* Inner glow at intersection (the sacred mandorla) */}
+      {secondaryColor && (
+        <View
+          style={{
+            position: 'absolute',
+            top: centerY + (circleSize - mandorlaHeight) / 2,
+            left: size / 2 - mandorlaWidth / 2,
+            width: mandorlaWidth,
+            height: mandorlaHeight,
+            borderRadius: mandorlaWidth / 2,
+            backgroundColor: secondaryColor,
+            opacity: opacity * 0.3,
+          }}
+        />
+      )}
       {/* Left circle - represents one partner */}
       <Circle
         size={circleSize}
@@ -106,7 +141,7 @@ const VesicaPiscisPattern = memo(({ size, opacity, color }: { size: number; opac
         top={centerY}
         left={size / 2 - radius + offset}
         opacity={opacity}
-        borderColor={color}
+        borderColor={secondaryColor || color}
         borderWidth={2}
       />
     </View>
@@ -224,6 +259,9 @@ export const SacredGeometryBackground = memo(function SacredGeometryBackground({
   opacity = 0.12,
   animate = true,
   color = colors.primary,
+  size,
+  secondaryColor,
+  inline = false,
 }: SacredGeometryBackgroundProps) {
   const rotateAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -273,7 +311,36 @@ export const SacredGeometryBackground = memo(function SacredGeometryBackground({
     outputRange: ['0deg', '360deg'],
   });
 
-  const patternSize = SCREEN_WIDTH * 0.85;
+  const patternSize = size ?? SCREEN_WIDTH * 0.85;
+
+  const renderPattern = () => {
+    switch (variant) {
+      case 'seedOfLife':
+        return <SeedOfLifePattern size={patternSize} opacity={opacity} color={color} />;
+      case 'vesicaPiscis':
+        return <VesicaPiscisPattern size={patternSize} opacity={opacity} color={color} secondaryColor={secondaryColor} />;
+      case 'flowerOfLife':
+        return <FlowerOfLifePattern size={patternSize} opacity={opacity} color={color} />;
+      case 'sixPetalRosette':
+        return <SixPetalRosettePattern size={patternSize} opacity={opacity} color={color} />;
+      default:
+        return null;
+    }
+  };
+
+  // Inline mode - renders without absolute positioning
+  if (inline) {
+    return (
+      <Animated.View
+        style={{
+          transform: animate ? [{ rotate: rotation }, { scale: pulseAnim }] : [],
+        }}
+        pointerEvents="none"
+      >
+        {renderPattern()}
+      </Animated.View>
+    );
+  }
 
   return (
     <View style={styles.container} pointerEvents="none">
@@ -288,18 +355,7 @@ export const SacredGeometryBackground = memo(function SacredGeometryBackground({
           },
         ]}
       >
-        {variant === 'seedOfLife' && (
-          <SeedOfLifePattern size={patternSize} opacity={opacity} color={color} />
-        )}
-        {variant === 'vesicaPiscis' && (
-          <VesicaPiscisPattern size={patternSize} opacity={opacity} color={color} />
-        )}
-        {variant === 'flowerOfLife' && (
-          <FlowerOfLifePattern size={patternSize} opacity={opacity} color={color} />
-        )}
-        {variant === 'sixPetalRosette' && (
-          <SixPetalRosettePattern size={patternSize} opacity={opacity} color={color} />
-        )}
+        {renderPattern()}
       </Animated.View>
     </View>
   );

@@ -13,6 +13,8 @@ export { OfflineBanner } from './OfflineBanner';
 export { ErrorBoundary } from './ErrorBoundary';
 export { UpdatePrompt } from './UpdatePrompt';
 export { SacredGeometryBackground } from './SacredGeometryBackground';
+export { SectionDivider } from './SectionDivider';
+export type { SectionDividerProps } from './SectionDivider';
 export { CustomTabBar } from './CustomTabBar';
 export { SectionHeader } from './SectionHeader';
 export type { SectionHeaderProps } from './SectionHeader';
