@@ -13,41 +13,38 @@ interface HealthInsightsCardProps {
 
 // Wave Fill Component for Response metric
 const WaveFill = React.memo(({ percentage }: { percentage: number }) => {
-  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const pulseAnim = useRef(new Animated.Value(0.3)).current;
 
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, {
-          toValue: 1.1,
+          toValue: 0.5,
           duration: 2000,
           easing: Easing.inOut(Easing.ease),
-          useNativeDriver: false,
+          useNativeDriver: true,
         }),
         Animated.timing(pulseAnim, {
-          toValue: 1,
+          toValue: 0.3,
           duration: 2000,
           easing: Easing.inOut(Easing.ease),
-          useNativeDriver: false,
+          useNativeDriver: true,
         }),
       ])
     ).start();
   }, [pulseAnim]);
 
-  const fillHeight = Math.max(percentage, 5); // Minimum 5% visible
+  // Container is 56px tall, calculate fill height as pixels
+  const containerHeight = 56;
+  const fillHeightPx = Math.max((percentage / 100) * containerHeight, 3); // Minimum 3px visible
 
   return (
     <View style={styles.waveContainer}>
-      <View style={[styles.waveFill, { height: `${fillHeight}%` }]}>
+      <View style={[styles.waveFill, { height: fillHeightPx }]}>
         <Animated.View
           style={[
             styles.waveOverlay,
-            {
-              opacity: pulseAnim.interpolate({
-                inputRange: [1, 1.1],
-                outputRange: [0.3, 0.5],
-              }),
-            },
+            { opacity: pulseAnim },
           ]}
         />
       </View>

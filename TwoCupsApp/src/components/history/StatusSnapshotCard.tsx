@@ -58,15 +58,40 @@ const BouncingDots = React.memo(() => {
   );
 });
 
+// Rainbow colors as hex (green through rainbow spectrum)
+const CONFETTI_COLORS = [
+  '#22C55E', // green
+  '#10B981', // emerald
+  '#14B8A6', // teal
+  '#06B6D4', // cyan
+  '#0EA5E9', // sky
+  '#3B82F6', // blue
+  '#6366F1', // indigo
+  '#8B5CF6', // violet
+  '#A855F7', // purple
+  '#D946EF', // fuchsia
+  '#EC4899', // pink
+  '#F43F5E', // rose
+];
+
 // Confetti Component for Acknowledged card
 const Confetti = React.memo(() => {
+  // Fixed positions (percentage of 64px container)
   const confettiPositions = useMemo(
-    () =>
-      Array.from({ length: 12 }, (_, i) => ({
-        top: Math.random() * 80 + 10, // 10-90%
-        left: Math.random() * 80 + 10, // 10-90%
-        hue: 120 + i * 30, // Green through rainbow
-      })),
+    () => [
+      { top: 8, left: 12 },
+      { top: 16, left: 48 },
+      { top: 6, left: 32 },
+      { top: 24, left: 8 },
+      { top: 12, left: 52 },
+      { top: 20, left: 28 },
+      { top: 4, left: 44 },
+      { top: 28, left: 16 },
+      { top: 10, left: 56 },
+      { top: 22, left: 40 },
+      { top: 14, left: 4 },
+      { top: 18, left: 60 },
+    ],
     []
   );
 
@@ -108,9 +133,9 @@ const Confetti = React.memo(() => {
           style={[
             styles.confettiParticle,
             {
-              top: `${pos.top}%`,
-              left: `${pos.left}%`,
-              backgroundColor: `hsl(${pos.hue}, 70%, 50%)`,
+              top: pos.top,
+              left: pos.left,
+              backgroundColor: CONFETTI_COLORS[index % CONFETTI_COLORS.length],
               transform: [{ translateY: bounceAnims[index] }],
             },
           ]}

@@ -12,3 +12,4 @@ export { GemLeaderboard } from './GemLeaderboard';
 export { OfflineBanner } from './OfflineBanner';
 export { ErrorBoundary } from './ErrorBoundary';
 export { UpdatePrompt } from './UpdatePrompt';
+export { SacredGeometryBackground } from './SacredGeometryBackground';
