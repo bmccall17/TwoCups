@@ -8,7 +8,6 @@ import {
 } from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { Home, Heart, CheckCircle2, BarChart3, Settings } from 'lucide-react-native';
-import { colors } from '../../theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSetTabBarHeight } from '../../context/TabBarHeightContext';
 
@@ -72,13 +71,16 @@ const TabItem = memo(({ routeName, isFocused, onPress, onLongPress, badgeCount }
         {hasNotification && <View style={styles.notificationDot} />}
       </View>
 
-      {/* Label */}
+      {/* Label - intentionally raw Text for fixed nav chrome (see UI_DEBT.md) */}
+      {/* eslint-disable-next-line no-restricted-syntax */}
       <Text style={[styles.label, isFocused && styles.labelActive]}>
         {label}
       </Text>
     </TouchableOpacity>
   );
 });
+
+TabItem.displayName = 'TabItem';
 
 // Tab bar base height (without safe area)
 const TAB_BAR_BASE_HEIGHT = 80;

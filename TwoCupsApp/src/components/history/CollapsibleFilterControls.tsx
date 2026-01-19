@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { colors, spacing, borderRadius, typography } from '../../theme';
+import { AppText } from '../common';
 
 export type DateRangeFilterType = 'today' | 'last7days' | 'last30days' | 'alltime';
 export type StatusFilterType = 'all' | 'pending' | 'acknowledged';
@@ -46,13 +47,13 @@ export const CollapsibleFilterControls = React.memo(function CollapsibleFilterCo
         onPress={() => setIsExpanded(!isExpanded)}
         activeOpacity={0.7}
       >
-        <Text style={styles.headerText}>Filters</Text>
+        <AppText style={styles.headerText}>Filters</AppText>
         <View style={styles.headerRight}>
           <View style={styles.currentFilters}>
-            <Text style={styles.filterBadge}>{getDateLabel(dateFilter)}</Text>
-            <Text style={styles.filterBadge}>{getStatusLabel(statusFilter)}</Text>
+            <AppText style={styles.filterBadge}>{getDateLabel(dateFilter)}</AppText>
+            <AppText style={styles.filterBadge}>{getStatusLabel(statusFilter)}</AppText>
           </View>
-          <Text style={styles.chevron}>{isExpanded ? '▲' : '▼'}</Text>
+          <AppText style={styles.chevron}>{isExpanded ? '▲' : '▼'}</AppText>
         </View>
       </TouchableOpacity>
 
@@ -60,17 +61,17 @@ export const CollapsibleFilterControls = React.memo(function CollapsibleFilterCo
         <View style={styles.filterContent}>
           {/* Period Filter */}
           <View style={styles.filterSection}>
-            <Text style={styles.filterLabel}>Period</Text>
+            <AppText style={styles.filterLabel}>Period</AppText>
             <View style={styles.filterOptions}>
               <TouchableOpacity
                 style={[styles.filterOption, dateFilter === 'last7days' && styles.filterOptionActive]}
                 onPress={() => onDateFilterChange('last7days')}
                 activeOpacity={0.7}
               >
-                <Text style={styles.filterOptionIcon}>📅</Text>
-                <Text style={[styles.filterOptionText, dateFilter === 'last7days' && styles.filterOptionTextActive]}>
+                <AppText style={styles.filterOptionIcon}>📅</AppText>
+                <AppText style={[styles.filterOptionText, dateFilter === 'last7days' && styles.filterOptionTextActive]}>
                   7d
-                </Text>
+                </AppText>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -78,10 +79,10 @@ export const CollapsibleFilterControls = React.memo(function CollapsibleFilterCo
                 onPress={() => onDateFilterChange('last30days')}
                 activeOpacity={0.7}
               >
-                <Text style={styles.filterOptionIcon}>📆</Text>
-                <Text style={[styles.filterOptionText, dateFilter === 'last30days' && styles.filterOptionTextActive]}>
+                <AppText style={styles.filterOptionIcon}>📆</AppText>
+                <AppText style={[styles.filterOptionText, dateFilter === 'last30days' && styles.filterOptionTextActive]}>
                   30d
-                </Text>
+                </AppText>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -89,27 +90,27 @@ export const CollapsibleFilterControls = React.memo(function CollapsibleFilterCo
                 onPress={() => onDateFilterChange('alltime')}
                 activeOpacity={0.7}
               >
-                <Text style={styles.filterOptionIcon}>∞</Text>
-                <Text style={[styles.filterOptionText, dateFilter === 'alltime' && styles.filterOptionTextActive]}>
+                <AppText style={styles.filterOptionIcon}>∞</AppText>
+                <AppText style={[styles.filterOptionText, dateFilter === 'alltime' && styles.filterOptionTextActive]}>
                   All
-                </Text>
+                </AppText>
               </TouchableOpacity>
             </View>
           </View>
 
           {/* Status Filter */}
           <View style={styles.filterSection}>
-            <Text style={styles.filterLabel}>Status</Text>
+            <AppText style={styles.filterLabel}>Status</AppText>
             <View style={styles.filterOptions}>
               <TouchableOpacity
                 style={[styles.filterOption, statusFilter === 'all' && styles.filterOptionActive]}
                 onPress={() => onStatusFilterChange('all')}
                 activeOpacity={0.7}
               >
-                <Text style={styles.filterOptionIcon}>✨</Text>
-                <Text style={[styles.filterOptionText, statusFilter === 'all' && styles.filterOptionTextActive]}>
+                <AppText style={styles.filterOptionIcon}>✨</AppText>
+                <AppText style={[styles.filterOptionText, statusFilter === 'all' && styles.filterOptionTextActive]}>
                   All
-                </Text>
+                </AppText>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -117,10 +118,10 @@ export const CollapsibleFilterControls = React.memo(function CollapsibleFilterCo
                 onPress={() => onStatusFilterChange('pending')}
                 activeOpacity={0.7}
               >
-                <Text style={styles.filterOptionIcon}>⏳</Text>
-                <Text style={[styles.filterOptionText, statusFilter === 'pending' && styles.filterOptionTextActive]}>
+                <AppText style={styles.filterOptionIcon}>⏳</AppText>
+                <AppText style={[styles.filterOptionText, statusFilter === 'pending' && styles.filterOptionTextActive]}>
                   Waiting
-                </Text>
+                </AppText>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -128,10 +129,10 @@ export const CollapsibleFilterControls = React.memo(function CollapsibleFilterCo
                 onPress={() => onStatusFilterChange('acknowledged')}
                 activeOpacity={0.7}
               >
-                <Text style={styles.filterOptionIcon}>✓</Text>
-                <Text style={[styles.filterOptionText, statusFilter === 'acknowledged' && styles.filterOptionTextActive]}>
+                <AppText style={styles.filterOptionIcon}>✓</AppText>
+                <AppText style={[styles.filterOptionText, statusFilter === 'acknowledged' && styles.filterOptionTextActive]}>
                   Done
-                </Text>
+                </AppText>
               </TouchableOpacity>
             </View>
           </View>

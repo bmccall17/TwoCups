@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, memo } from 'react';
-import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
-import { colors, spacing, typography } from '../../theme';
+import { View, StyleSheet, Animated, Easing } from 'react-native';
+import { colors, spacing } from '../../theme';
+import { AppText } from '../common';
 
 interface SpinningGeometryHeaderProps {
   title?: string;
@@ -8,7 +9,7 @@ interface SpinningGeometryHeaderProps {
 }
 
 // Single circle component
-const GeometryCircle = memo(({
+const GeometryCircle = memo(function GeometryCircle({
   size,
   borderOpacity,
   fillOpacity,
@@ -18,22 +19,24 @@ const GeometryCircle = memo(({
   borderOpacity: number;
   fillOpacity: number;
   style?: object;
-}) => (
-  <View
-    style={[
-      {
-        width: size,
-        height: size,
-        borderRadius: size / 2,
-        borderWidth: 2,
-        borderColor: colors.primary + Math.round(borderOpacity * 255).toString(16).padStart(2, '0'),
-        backgroundColor: colors.primary + Math.round(fillOpacity * 255).toString(16).padStart(2, '0'),
-        position: 'absolute',
-      },
-      style,
-    ]}
-  />
-));
+}) {
+  return (
+    <View
+      style={[
+        {
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          borderWidth: 2,
+          borderColor: colors.primary + Math.round(borderOpacity * 255).toString(16).padStart(2, '0'),
+          backgroundColor: colors.primary + Math.round(fillOpacity * 255).toString(16).padStart(2, '0'),
+          position: 'absolute',
+        },
+        style,
+      ]}
+    />
+  );
+});
 
 export const SpinningGeometryHeader = memo(function SpinningGeometryHeader({
   title = 'Connection',
@@ -143,8 +146,8 @@ export const SpinningGeometryHeader = memo(function SpinningGeometryHeader({
       </View>
 
       {/* Text labels */}
-      <Text style={styles.title}>{title}</Text>
-      <Text style={styles.subtitle}>{subtitle}</Text>
+      <AppText style={styles.title}>{title}</AppText>
+      <AppText style={styles.subtitle}>{subtitle}</AppText>
     </View>
   );
 });

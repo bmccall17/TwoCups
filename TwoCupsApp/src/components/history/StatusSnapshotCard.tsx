@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useMemo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated, Easing } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Animated, Easing } from 'react-native';
 import { colors, spacing, borderRadius, typography } from '../../theme';
+import { AppText } from '../common';
 
 interface StatusSnapshotCardProps {
   type: 'waiting' | 'acknowledged';
@@ -9,7 +10,7 @@ interface StatusSnapshotCardProps {
 }
 
 // Bouncing Dots Component for Waiting card
-const BouncingDots = React.memo(() => {
+const BouncingDots = React.memo(function BouncingDots() {
   const bounceAnims = useRef([
     new Animated.Value(0),
     new Animated.Value(0),
@@ -75,7 +76,7 @@ const CONFETTI_COLORS = [
 ];
 
 // Confetti Component for Acknowledged card
-const Confetti = React.memo(() => {
+const Confetti = React.memo(function Confetti() {
   // Fixed positions (percentage of 64px container)
   const confettiPositions = useMemo(
     () => [
@@ -142,7 +143,7 @@ const Confetti = React.memo(() => {
         />
       ))}
       <View style={styles.confettiEmoji}>
-        <Text style={styles.partyEmoji}>🎉</Text>
+        <AppText style={styles.partyEmoji}>🎉</AppText>
       </View>
     </View>
   );
@@ -170,7 +171,7 @@ export const StatusSnapshotCard = React.memo(function StatusSnapshotCard({
         <View style={styles.iconContainer}>
           {isWaiting ? <BouncingDots /> : <Confetti />}
         </View>
-        <Text style={styles.label}>{label}</Text>
+        <AppText style={styles.label}>{label}</AppText>
       </View>
 
       <View
@@ -179,7 +180,7 @@ export const StatusSnapshotCard = React.memo(function StatusSnapshotCard({
           isWaiting ? styles.waitingBadge : styles.acknowledgedBadge,
         ]}
       >
-        <Text style={styles.badgeText}>{count}</Text>
+        <AppText style={styles.badgeText}>{count}</AppText>
       </View>
     </TouchableOpacity>
   );
