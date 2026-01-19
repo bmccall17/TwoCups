@@ -326,8 +326,7 @@ export function SettingsScreen() {
           </View>
         </Stack>
 
-        {/* Sign Out - pushed to bottom with flex grow spacer */}
-        <View style={styles.spacer} />
+        {/* Sign Out */}
         <Button
           title="Sign Out"
           onPress={signOut}
@@ -502,10 +501,6 @@ const styles = StyleSheet.create({
   },
   fontSizeOptionPressed: {
     opacity: 0.7,
-  },
-  spacer: {
-    flexGrow: 1,
-    minHeight: spacing.lg,
   },
   signOutButton: {
     opacity: 0.7,
