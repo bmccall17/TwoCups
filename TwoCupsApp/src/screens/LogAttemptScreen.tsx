@@ -3,21 +3,18 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   ScrollView,
   TouchableOpacity,
   Dimensions,
-  RefreshControl,
 } from 'react-native';
-import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../services/firebase/config';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useGemAnimation } from '../context/GemAnimationContext';
 import { logAttempt, getDailyAttemptsInfo, DailyAttemptsInfo } from '../services/api';
-import { AppText, Button, TextInput, LoadingSpinner, EmptyState, ErrorState } from '../components/common';
-import { colors, spacing, typography, borderRadius } from '../theme';
+import { Screen, Stack, Row, AppText, Button, TextInput, LoadingSpinner, EmptyState, ErrorState } from '../components/common';
+import { colors, spacing, borderRadius } from '../theme';
 import { Request, Suggestion } from '../types';
 import { getErrorMessage } from '../types/utils';
 import {
@@ -49,7 +46,6 @@ export function LogAttemptScreen({ onGoBack }: LogAttemptScreenProps) {
   const { user, userData, coupleData } = useAuth();
   const { showSuccess, showError, showCelebration } = useToast();
   const { showGemAnimation } = useGemAnimation();
-  const tabBarHeight = useBottomTabBarHeight();
   const [action, setAction] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<string | null>(null);
@@ -260,38 +256,28 @@ export function LogAttemptScreen({ onGoBack }: LogAttemptScreenProps) {
 
   if (error) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.scrollContent}>
+      <Screen>
+        <Stack gap="md">
           <TouchableOpacity onPress={onGoBack} style={styles.backButton}>
             <AppText variant="body" color={colors.primary}>← Back</AppText>
           </TouchableOpacity>
           <ErrorState error={error} onRetry={handleRetry} />
-        </View>
-      </SafeAreaView>
+        </Stack>
+      </Screen>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: tabBarHeight }]}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            tintColor={colors.primary}
-            colors={[colors.primary]}
-          />
-        }
-      >
+    <Screen scroll onRefresh={handleRefresh} refreshing={refreshing}>
+      <Stack gap="lg">
         {/* Header */}
-        <View style={styles.header}>
+        <Stack gap="xs">
           <TouchableOpacity onPress={onGoBack} style={styles.backButton}>
             <AppText variant="body" color={colors.primary}>← Back</AppText>
           </TouchableOpacity>
-          <AppText variant="h1" color={colors.primary} style={styles.title}>Log an Attempt</AppText>
+          <AppText variant="h1" color={colors.primary}>Log an Attempt</AppText>
           <AppText variant="body" color={colors.textSecondary}>What did you do for your partner?</AppText>
-          
+
           {/* Daily attempts counter */}
           {dailyAttemptsInfo && (
             <View style={[
@@ -310,7 +296,7 @@ export function LogAttemptScreen({ onGoBack }: LogAttemptScreenProps) {
               </AppText>
             </View>
           )}
-        </View>
+        </Stack>
 
         {/* Partner's Requests */}
         {partnerRequests.length > 0 && (
@@ -487,27 +473,13 @@ export function LogAttemptScreen({ onGoBack }: LogAttemptScreenProps) {
             </View>
           </View>
         )}
-      </ScrollView>
-    </SafeAreaView>
+      </Stack>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    padding: spacing.lg,
-  },
-  header: {
-    marginBottom: spacing.xl,
-  },
   backButton: {
-    marginBottom: spacing.md,
-  },
-  title: {
     marginBottom: spacing.xs,
   },
   attemptsCounter: {

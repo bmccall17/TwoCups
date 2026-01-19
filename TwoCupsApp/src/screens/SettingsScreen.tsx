@@ -1,20 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
-  SafeAreaView,
-  ScrollView,
   Modal,
-  TouchableOpacity,
   Pressable,
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
   Dimensions,
+  ScrollView,
 } from 'react-native';
-import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import {
   EmailAuthProvider,
   reauthenticateWithCredential,
@@ -24,8 +20,8 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useFontSize, FontSizeOption } from '../context/FontSizeContext';
 import { usePlayerData } from '../hooks';
-import { AppText, Button, ErrorState, TextInput } from '../components/common';
-import { colors, spacing, typography, borderRadius } from '../theme';
+import { Screen, Stack, Row, AppText, Button, ErrorState, TextInput } from '../components/common';
+import { colors, spacing, borderRadius } from '../theme';
 import { isUsernameAvailable, setUsername, updateUsername } from '../services/api/usernames';
 import {
   validateUsername,
@@ -39,9 +35,8 @@ import { auth } from '../services/firebase/config';
 
 export function SettingsScreen() {
   const { user, userData, coupleData, signOut } = useAuth();
-  const { fontSize, setFontSize, scaledTypography } = useFontSize();
+  const { fontSize, setFontSize } = useFontSize();
   const { partnerName, error, refresh } = usePlayerData();
-  const tabBarHeight = useBottomTabBarHeight();
 
   const FONT_SIZE_OPTIONS: { value: FontSizeOption; label: string }[] = [
     { value: 'small', label: 'Small' },
@@ -227,131 +222,119 @@ export function SettingsScreen() {
 
   if (error) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.scrollContent}>
-          <View style={styles.header}>
-            <AppText variant="h1">Settings</AppText>
-          </View>
+      <Screen>
+        <Stack gap="xl">
+          <AppText variant="h1">Settings</AppText>
           <ErrorState error={error} onRetry={refresh} />
-        </View>
-      </SafeAreaView>
+        </Stack>
+      </Screen>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: tabBarHeight }]}>
-        <View style={styles.header}>
-          <AppText variant="h1">Settings</AppText>
-        </View>
+    <Screen scroll>
+      <Stack gap="xl">
+        {/* Header */}
+        <AppText variant="h1">Settings</AppText>
 
         {/* Profile Section */}
-        <View style={styles.section}>
-          <AppText variant="h3" style={styles.sectionTitle}>Profile</AppText>
+        <Stack gap="md">
+          <AppText variant="h3">Profile</AppText>
           <View style={styles.card}>
-            <View style={styles.profileRow}>
-              <View>
-                <AppText variant="caption" color={colors.textSecondary} style={styles.label}>Username</AppText>
-                <AppText variant="body">{username}</AppText>
-              </View>
-              <Button
-                title="Change"
-                onPress={handleOpenAccountModal}
-                variant="secondary"
-                style={styles.changeButton}
-              />
-            </View>
-            {!isAnonymous && (
-              <>
-                <View style={styles.divider} />
-                <View style={styles.profileRow}>
-                  <View style={styles.accountInfo}>
-                    <AppText variant="caption" color={colors.textSecondary} style={styles.label}>Email</AppText>
-                    <AppText variant="body" numberOfLines={1}>{userEmail}</AppText>
-                  </View>
-                </View>
-                <View style={styles.divider} />
-                <View style={styles.profileRow}>
-                  <View>
-                    <AppText variant="caption" color={colors.textSecondary} style={styles.label}>Password</AppText>
+            <Stack gap="md">
+              <Row justify="between">
+                <Stack gap="xs">
+                  <AppText variant="caption" color={colors.textSecondary}>Username</AppText>
+                  <AppText variant="body">{username}</AppText>
+                </Stack>
+                <Button
+                  title="Change"
+                  onPress={handleOpenAccountModal}
+                  variant="secondary"
+                  style={styles.changeButton}
+                />
+              </Row>
+              {!isAnonymous && (
+                <>
+                  <View style={styles.divider} />
+                  <Row justify="between">
+                    <Stack gap="xs" style={styles.accountInfo}>
+                      <AppText variant="caption" color={colors.textSecondary}>Email</AppText>
+                      <AppText variant="body" numberOfLines={1}>{userEmail}</AppText>
+                    </Stack>
+                  </Row>
+                  <View style={styles.divider} />
+                  <Stack gap="xs">
+                    <AppText variant="caption" color={colors.textSecondary}>Password</AppText>
                     <AppText variant="body">••••••••</AppText>
-                  </View>
-                </View>
-              </>
-            )}
+                  </Stack>
+                </>
+              )}
+            </Stack>
           </View>
-        </View>
+        </Stack>
 
         {/* Couple Section */}
-        <View style={styles.section}>
-          <AppText variant="h3" style={styles.sectionTitle}>Couple</AppText>
+        <Stack gap="md">
+          <AppText variant="h3">Couple</AppText>
           {isActive ? (
             <View style={styles.card}>
-              <AppText variant="caption" color={colors.textSecondary} style={styles.label}>Partner</AppText>
-              <AppText variant="body">{partnerName || 'Partner'}</AppText>
+              <Stack gap="xs">
+                <AppText variant="caption" color={colors.textSecondary}>Partner</AppText>
+                <AppText variant="body">{partnerName || 'Partner'}</AppText>
+              </Stack>
             </View>
           ) : (
             <View style={styles.card}>
-              <AppText variant="caption" color={colors.textSecondary} style={styles.label}>Invite Code</AppText>
-              <AppText variant="body">{inviteCode}</AppText>
-              <AppText variant="caption" color={colors.textMuted} style={styles.hint}>Share this code with your partner</AppText>
+              <Stack gap="xs">
+                <AppText variant="caption" color={colors.textSecondary}>Invite Code</AppText>
+                <AppText variant="body">{inviteCode}</AppText>
+                <AppText variant="caption" color={colors.textMuted}>Share this code with your partner</AppText>
+              </Stack>
             </View>
           )}
-        </View>
+        </Stack>
 
         {/* Accessibility Section */}
-        <View style={styles.section}>
-          <AppText variant="h3" style={styles.sectionTitle}>Accessibility</AppText>
+        <Stack gap="md">
+          <AppText variant="h3">Accessibility</AppText>
           <View style={styles.card}>
-            <AppText variant="caption" color={colors.textSecondary} style={styles.label}>Font Size</AppText>
-            <View style={styles.fontSizeSelector}>
-              {FONT_SIZE_OPTIONS.map((option) => (
-                <Pressable
-                  key={option.value}
-                  style={({ pressed }) => [
-                    styles.fontSizeOption,
-                    fontSize === option.value && styles.fontSizeOptionActive,
-                    pressed && styles.fontSizeOptionPressed,
-                  ]}
-                  onPress={() => setFontSize(option.value)}
-                >
-                  <AppText
-                    variant="bodySmall"
-                    color={fontSize === option.value ? colors.textOnPrimary : colors.textSecondary}
-                    bold={fontSize === option.value}
+            <Stack gap="sm">
+              <AppText variant="caption" color={colors.textSecondary}>Font Size</AppText>
+              <Row style={styles.fontSizeSelector}>
+                {FONT_SIZE_OPTIONS.map((option) => (
+                  <Pressable
+                    key={option.value}
+                    style={({ pressed }) => [
+                      styles.fontSizeOption,
+                      fontSize === option.value && styles.fontSizeOptionActive,
+                      pressed && styles.fontSizeOptionPressed,
+                    ]}
+                    onPress={() => setFontSize(option.value)}
                   >
-                    {option.label}
-                  </AppText>
-                </Pressable>
-              ))}
-            </View>
-
-            {/* Preview */}
-            <View style={styles.fontSizePreview}>
-              <AppText variant="caption" color={colors.textMuted} style={styles.previewLabel}>Preview</AppText>
-              <AppText variant="h3" style={styles.previewHeading}>
-                Heading Text
-              </AppText>
-              <AppText variant="body" style={styles.previewBody}>
-                Body text shows how your content will look.
-              </AppText>
-              <AppText variant="caption" color={colors.textSecondary} style={styles.previewCaption}>
-                Caption text for smaller details
-              </AppText>
-            </View>
+                    <AppText
+                      variant="bodySmall"
+                      color={fontSize === option.value ? colors.textOnPrimary : colors.textSecondary}
+                      bold={fontSize === option.value}
+                    >
+                      {option.label}
+                    </AppText>
+                  </Pressable>
+                ))}
+              </Row>
+            </Stack>
           </View>
-        </View>
+        </Stack>
 
-        {/* Sign Out */}
-        <View style={styles.footer}>
-          <Button
-            title="Sign Out"
-            onPress={signOut}
-            variant="outline"
-            style={styles.signOutButton}
-          />
-        </View>
-      </ScrollView>
+        {/* Sign Out - pushed to bottom with flex grow spacer */}
+        <View style={styles.spacer} />
+        <Button
+          title="Sign Out"
+          onPress={signOut}
+          variant="outline"
+          style={styles.signOutButton}
+        />
+      </Stack>
 
       {/* Edit Account Modal */}
       <Modal
@@ -371,137 +354,123 @@ export function SettingsScreen() {
             showsVerticalScrollIndicator={false}
           >
             <View style={styles.modalContent}>
-              <AppText variant="h2" style={styles.modalTitle}>Edit Account</AppText>
-              <AppText variant="body" color={colors.textSecondary} style={styles.modalSubtitle}>
-                Update your account details
-              </AppText>
+              <Stack gap="md" align="stretch">
+                <Stack gap="xs" align="center">
+                  <AppText variant="h2">Edit Account</AppText>
+                  <AppText variant="body" color={colors.textSecondary}>
+                    Update your account details
+                  </AppText>
+                </Stack>
 
-              {accountError && (
-                <AppText variant="body" color={colors.error} style={styles.accountErrorText}>{accountError}</AppText>
-              )}
-
-              {/* Username Section */}
-              <AppText variant="caption" color={colors.textSecondary} style={styles.modalSectionTitle}>Username</AppText>
-              <View style={styles.usernameInputContainer}>
-                <TextInput
-                  label="New Username"
-                  value={newUsername}
-                  onChangeText={setNewUsername}
-                  error={usernameError}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  placeholder={username}
-                  maxLength={MAX_LENGTHS.USERNAME}
-                />
-                {checkingUsername && (
-                  <View style={styles.usernameStatus}>
-                    <ActivityIndicator size="small" color={colors.primary} />
-                  </View>
+                {accountError && (
+                  <AppText variant="body" color={colors.error} style={styles.accountErrorText}>{accountError}</AppText>
                 )}
-                {!checkingUsername && usernameAvailable === true && (
-                  <View style={styles.usernameStatus}>
-                    <AppText variant="caption" color={colors.success} bold>Available</AppText>
+
+                {/* Username Section */}
+                <Stack gap="xs">
+                  <AppText variant="caption" color={colors.textSecondary} style={styles.modalSectionTitle}>Username</AppText>
+                  <View style={styles.usernameInputContainer}>
+                    <TextInput
+                      label="New Username"
+                      value={newUsername}
+                      onChangeText={setNewUsername}
+                      error={usernameError}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      placeholder={username}
+                      maxLength={MAX_LENGTHS.USERNAME}
+                    />
+                    {checkingUsername && (
+                      <View style={styles.usernameStatus}>
+                        <ActivityIndicator size="small" color={colors.primary} />
+                      </View>
+                    )}
+                    {!checkingUsername && usernameAvailable === true && (
+                      <View style={styles.usernameStatus}>
+                        <AppText variant="caption" color={colors.success} bold>Available</AppText>
+                      </View>
+                    )}
                   </View>
+                </Stack>
+
+                {/* Email Section - only show for non-anonymous users */}
+                {!isAnonymous && (
+                  <>
+                    <Stack gap="xs">
+                      <AppText variant="caption" color={colors.textSecondary} style={styles.modalSectionTitle}>Email</AppText>
+                      <TextInput
+                        label="Email Address"
+                        value={newEmail}
+                        onChangeText={setNewEmail}
+                        keyboardType="email-address"
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                        placeholder="your@email.com"
+                        maxLength={MAX_LENGTHS.EMAIL}
+                        error={emailError}
+                      />
+                    </Stack>
+
+                    {/* Password Section */}
+                    <Stack gap="sm">
+                      <AppText variant="caption" color={colors.textSecondary} style={styles.modalSectionTitle}>Password</AppText>
+                      <TextInput
+                        label="Current Password"
+                        value={currentPassword}
+                        onChangeText={setCurrentPassword}
+                        secureTextEntry
+                        placeholder="Required if changing email or password"
+                        maxLength={MAX_LENGTHS.PASSWORD}
+                      />
+                      <TextInput
+                        label="New Password"
+                        value={newPassword}
+                        onChangeText={setNewPassword}
+                        secureTextEntry
+                        placeholder="Leave blank to keep current"
+                        maxLength={MAX_LENGTHS.PASSWORD}
+                      />
+                      <TextInput
+                        label="Confirm New Password"
+                        value={confirmPassword}
+                        onChangeText={setConfirmPassword}
+                        secureTextEntry
+                        placeholder="Confirm new password"
+                        maxLength={MAX_LENGTHS.PASSWORD}
+                        error={passwordError}
+                      />
+                    </Stack>
+                  </>
                 )}
-              </View>
 
-              {/* Email Section - only show for non-anonymous users */}
-              {!isAnonymous && (
-                <>
-                  <AppText variant="caption" color={colors.textSecondary} style={styles.modalSectionTitle}>Email</AppText>
-                  <TextInput
-                    label="Email Address"
-                    value={newEmail}
-                    onChangeText={setNewEmail}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    placeholder="your@email.com"
-                    maxLength={MAX_LENGTHS.EMAIL}
-                    error={emailError}
+                <Row gap="md" style={styles.modalButtons}>
+                  <Button
+                    title="Cancel"
+                    onPress={() => setShowAccountModal(false)}
+                    variant="outline"
+                    style={styles.modalButton}
                   />
-
-                  {/* Password Section */}
-                  <AppText variant="caption" color={colors.textSecondary} style={styles.modalSectionTitle}>Password</AppText>
-                  <TextInput
-                    label="Current Password"
-                    value={currentPassword}
-                    onChangeText={setCurrentPassword}
-                    secureTextEntry
-                    placeholder="Required if changing email or password"
-                    maxLength={MAX_LENGTHS.PASSWORD}
+                  <Button
+                    title="Save"
+                    onPress={handleSaveAccount}
+                    loading={savingAccount}
+                    style={styles.modalButton}
                   />
-
-                  <TextInput
-                    label="New Password"
-                    value={newPassword}
-                    onChangeText={setNewPassword}
-                    secureTextEntry
-                    placeholder="Leave blank to keep current"
-                    maxLength={MAX_LENGTHS.PASSWORD}
-                  />
-
-                  <TextInput
-                    label="Confirm New Password"
-                    value={confirmPassword}
-                    onChangeText={setConfirmPassword}
-                    secureTextEntry
-                    placeholder="Confirm new password"
-                    maxLength={MAX_LENGTHS.PASSWORD}
-                    error={passwordError}
-                  />
-                </>
-              )}
-
-              <View style={styles.modalButtons}>
-                <Button
-                  title="Cancel"
-                  onPress={() => setShowAccountModal(false)}
-                  variant="outline"
-                  style={styles.modalButton}
-                />
-                <Button
-                  title="Save"
-                  onPress={handleSaveAccount}
-                  loading={savingAccount}
-                  style={styles.modalButton}
-                />
-              </View>
+                </Row>
+              </Stack>
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
       </Modal>
-    </SafeAreaView>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    padding: spacing.lg,
-  },
-  header: {
-    marginBottom: spacing.xl,
-  },
-  section: {
-    marginBottom: spacing.xl,
-  },
-  sectionTitle: {
-    marginBottom: spacing.md,
-  },
   card: {
     backgroundColor: colors.surface,
     borderRadius: borderRadius.lg,
     padding: spacing.md,
-  },
-  profileRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
   },
   changeButton: {
     paddingHorizontal: spacing.md,
@@ -514,20 +483,11 @@ const styles = StyleSheet.create({
   divider: {
     height: 1,
     backgroundColor: colors.border,
-    marginVertical: spacing.md,
-  },
-  label: {
-    marginBottom: spacing.xs,
-  },
-  hint: {
-    marginTop: spacing.xs,
   },
   fontSizeSelector: {
-    flexDirection: 'row',
     backgroundColor: colors.background,
     borderRadius: borderRadius.md,
     padding: 4,
-    marginTop: spacing.sm,
   },
   fontSizeOption: {
     flex: 1,
@@ -543,29 +503,9 @@ const styles = StyleSheet.create({
   fontSizeOptionPressed: {
     opacity: 0.7,
   },
-  fontSizePreview: {
-    marginTop: spacing.lg,
-    paddingTop: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  previewLabel: {
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: spacing.sm,
-  },
-  previewHeading: {
-    marginBottom: spacing.xs,
-  },
-  previewBody: {
-    marginBottom: spacing.xs,
-  },
-  previewCaption: {
-    // Color set via AppText color prop
-  },
-  footer: {
-    marginTop: 'auto',
-    paddingTop: spacing.lg,
+  spacer: {
+    flexGrow: 1,
+    minHeight: spacing.lg,
   },
   signOutButton: {
     opacity: 0.7,
@@ -592,30 +532,18 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     width: '100%',
   },
-  modalTitle: {
-    textAlign: 'center',
-    marginBottom: spacing.xs,
-  },
-  modalSubtitle: {
-    textAlign: 'center',
-    marginBottom: spacing.lg,
-  },
   modalSectionTitle: {
-    marginTop: spacing.md,
-    marginBottom: spacing.xs,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   accountErrorText: {
     textAlign: 'center',
-    marginBottom: spacing.md,
     padding: spacing.sm,
     backgroundColor: 'rgba(239, 68, 68, 0.1)',
     borderRadius: borderRadius.sm,
   },
   usernameInputContainer: {
     position: 'relative',
-    marginBottom: spacing.sm,
   },
   usernameStatus: {
     position: 'absolute',
@@ -623,9 +551,7 @@ const styles = StyleSheet.create({
     top: 38,
   },
   modalButtons: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    marginTop: spacing.lg,
+    marginTop: spacing.md,
   },
   modalButton: {
     flex: 1,

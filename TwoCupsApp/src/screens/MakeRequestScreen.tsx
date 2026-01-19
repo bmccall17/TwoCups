@@ -3,11 +3,9 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   ScrollView,
   TouchableOpacity,
   Alert,
-  RefreshControl,
   Platform,
 } from 'react-native';
 import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
@@ -16,8 +14,8 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { createRequest, deleteRequest, getActiveRequestsInfo } from '../services/api';
 import type { ActiveRequestsInfo } from '../services/api';
-import { Button, TextInput, LoadingSpinner, EmptyState, ErrorState, AppText } from '../components/common';
-import { colors, spacing, typography, borderRadius } from '../theme';
+import { Screen, Stack, Row, Button, TextInput, LoadingSpinner, EmptyState, ErrorState, AppText } from '../components/common';
+import { colors, spacing, borderRadius } from '../theme';
 import { Request } from '../types';
 import { getErrorMessage } from '../types/utils';
 import {
@@ -237,36 +235,26 @@ export function MakeRequestScreen({ onGoBack }: MakeRequestScreenProps) {
 
   if (error) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.scrollContent}>
+      <Screen tabBarInset={false}>
+        <Stack gap="md">
           <TouchableOpacity onPress={onGoBack} style={styles.backButton}>
             <AppText variant="body" color={colors.primary}>← Back</AppText>
           </TouchableOpacity>
           <ErrorState error={error} onRetry={handleRetry} />
-        </View>
-      </SafeAreaView>
+        </Stack>
+      </Screen>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            tintColor={colors.primary}
-            colors={[colors.primary]}
-          />
-        }
-      >
+    <Screen scroll tabBarInset={false} onRefresh={handleRefresh} refreshing={refreshing}>
+      <Stack gap="lg">
         {/* Header */}
-        <View style={styles.header}>
+        <Stack gap="xs">
           <TouchableOpacity onPress={onGoBack} style={styles.backButton}>
             <AppText variant="body" color={colors.primary}>← Back</AppText>
           </TouchableOpacity>
-          <AppText variant="h1" color={colors.primary} style={styles.title}>Make a Request</AppText>
+          <AppText variant="h1" color={colors.primary}>Make a Request</AppText>
           <AppText variant="body" color={colors.textSecondary}>Ask your partner for something specific</AppText>
 
           {/* Active Requests Counter */}
@@ -283,7 +271,7 @@ export function MakeRequestScreen({ onGoBack }: MakeRequestScreenProps) {
               </AppText>
             </View>
           )}
-        </View>
+        </Stack>
 
         {/* Info Box - only show for first-time users */}
         {visibleRequests.length === 0 && (
@@ -492,27 +480,13 @@ export function MakeRequestScreen({ onGoBack }: MakeRequestScreenProps) {
             />
           )}
         </View>
-      </ScrollView>
-    </SafeAreaView>
+      </Stack>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    padding: spacing.lg,
-  },
-  header: {
-    marginBottom: spacing.xl,
-  },
   backButton: {
-    marginBottom: spacing.md,
-  },
-  title: {
     marginBottom: spacing.xs,
   },
   counterContainer: {

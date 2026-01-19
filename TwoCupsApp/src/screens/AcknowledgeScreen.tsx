@@ -3,17 +3,13 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
-  ScrollView,
   TouchableOpacity,
   Dimensions,
-  RefreshControl,
   Animated,
   LayoutAnimation,
   Platform,
   UIManager,
 } from 'react-native';
-import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { collection, query, where, onSnapshot, orderBy, doc, getDoc } from 'firebase/firestore';
 import { Feather } from '@expo/vector-icons';
 import { db } from '../services/firebase/config';
@@ -21,8 +17,8 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useGemAnimation } from '../context/GemAnimationContext';
 import { acknowledgeAttempt } from '../services/api';
-import { AppText, Button, LoadingSpinner, EmptyState, ErrorState, CelebrationOverlay, SectionHeader, EmptyHint } from '../components/common';
-import { colors, spacing, typography, borderRadius } from '../theme';
+import { Screen, Stack, Row, AppText, Button, LoadingSpinner, EmptyState, ErrorState, CelebrationOverlay, SectionHeader, EmptyHint } from '../components/common';
+import { colors, spacing, borderRadius } from '../theme';
 import { Attempt, Request, Suggestion } from '../types';
 import { getErrorMessage } from '../types/utils';
 
@@ -227,7 +223,6 @@ export function AcknowledgeScreen({
   const { user, userData, coupleData } = useAuth();
   const { showSuccess, showError } = useToast();
   const { showGemAnimation } = useGemAnimation();
-  const tabBarHeight = useBottomTabBarHeight();
 
   // State
   const [pendingAttempts, setPendingAttempts] = useState<Attempt[]>([]);
@@ -416,43 +411,32 @@ export function AcknowledgeScreen({
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <Screen>
         <LoadingSpinner message="Loading..." />
-      </SafeAreaView>
+      </Screen>
     );
   }
 
   if (error) {
     return (
-      <SafeAreaView style={styles.container}>
+      <Screen>
         <ErrorState error={error} onRetry={() => setError(null)} />
-      </SafeAreaView>
+      </Screen>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: tabBarHeight }]}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            tintColor={colors.primary}
-            colors={[colors.primary]}
-          />
-        }
-        showsVerticalScrollIndicator={false}
-      >
+    <Screen scroll onRefresh={handleRefresh} refreshing={refreshing}>
+      <Stack gap="lg">
         {/* Header */}
-        <View style={styles.header}>
-          <AppText variant="h1" color={colors.primary} style={styles.title}>Receive</AppText>
+        <Stack gap="xs">
+          <AppText variant="h1" color={colors.primary}>Receive</AppText>
           <AppText variant="body" color={colors.textSecondary}>
             {hasPendingItems
               ? `${pendingAttempts.length} item${pendingAttempts.length !== 1 ? 's' : ''} need${pendingAttempts.length === 1 ? 's' : ''} your attention`
               : 'All caught up! Manage your requests below.'}
           </AppText>
-        </View>
+        </Stack>
 
         {/* Dynamic Layout based on pending items */}
         {hasPendingItems ? (
@@ -623,8 +607,7 @@ export function AcknowledgeScreen({
             </View>
           </>
         )}
-
-      </ScrollView>
+      </Stack>
 
       <CelebrationOverlay
         visible={celebration.visible}
@@ -632,24 +615,11 @@ export function AcknowledgeScreen({
         subMessage={celebration.subMessage}
         onDismiss={handleDismissCelebration}
       />
-    </SafeAreaView>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  scrollContent: {
-    padding: spacing.md,
-  },
-  header: {
-    marginBottom: spacing.lg,
-  },
-  title: {
-    marginBottom: spacing.xs,
-  },
   // Collapsible Section
   collapsibleSection: {
     backgroundColor: colors.surface,

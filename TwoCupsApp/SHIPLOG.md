@@ -923,3 +923,135 @@ Key changes:
 
 **Account Modal Status:** ✅ Working (future improvements planned)
 **Navbar Status:** 🔄 In Progress - layout fix applied but not fully correct yet, will continue next session
+
+---
+
+## 2026-01-19 - Typography Migration (Phases 2 & 3)
+
+### Overview
+Completed the AppText migration across all remaining screens to enable dynamic font scaling for accessibility. All user-readable text now uses the `AppText` component with scaled typography, while decorative emojis retain hardcoded sizes.
+
+### Background
+Phase 1 (completed previously) established the typography system:
+- Created `AppText` component (`src/components/common/AppText.tsx`)
+- Created `FontSizeContext` for user font size preferences (small/medium/large)
+- Created `ScaledControlLabels` for form controls
+- Migrated `HomeScreen.tsx` and `AcknowledgeScreen.tsx`
+
+### Phase 2 - Secondary Screens
+
+#### HistoryScreen.tsx
+- **Status:** Already migrated (uses AppText)
+- No changes needed
+
+#### SettingsScreen.tsx
+**Migrated Components:**
+- Error state title → `<AppText variant="h1">`
+- Font size selector options → `<AppText variant="bodySmall">` with dynamic color/bold props
+- Modal title → `<AppText variant="h2">`
+- Modal subtitle → `<AppText variant="body">`
+- Modal section titles (Username/Email/Password) → `<AppText variant="caption">`
+- Account error text → `<AppText variant="body" color={colors.error}>`
+- Username availability text → `<AppText variant="caption" color={colors.success} bold>`
+
+**Removed:**
+- Preview section (no longer needed for font size testing)
+- Unused styles: `fontSizeOptionText`, `fontSizeOptionTextActive`, `fontSizePreview`, `previewLabel`, `previewHeading`, `previewBody`, `previewCaption`, `availableText`
+- Unused import: `fonts` from theme
+
+### Phase 3 - Low Priority Screens
+
+#### LogAttemptScreen.tsx
+- **Status:** Already migrated (uses AppText)
+- No changes needed
+
+#### AcknowledgeScreen.tsx
+- **Status:** Already migrated (uses AppText)
+- No changes needed
+
+#### GemHistoryScreen.tsx
+**Migrated Components:**
+- Back button text → `<AppText variant="body" color={colors.primary}>`
+- Title → `<AppText variant="h2">`
+- Entry reason label → `<AppText variant="body" bold>`
+- Entry action (quoted text) → `<AppText variant="bodySmall" color={colors.textSecondary}>`
+- Entry timestamp → `<AppText variant="caption" color={colors.textMuted}>`
+- Gem badge amount → `<AppText variant="body" bold color={reasonColor}>`
+- Loading more text → `<AppText variant="bodySmall" color={colors.textSecondary}>`
+- Summary label → `<AppText variant="caption" color={colors.textSecondary}>`
+- Summary value → `<AppText variant="h1" color={colors.gem} bold>`
+- Summary hint → `<AppText variant="caption" color={colors.textMuted}>`
+
+**Kept as raw Text (decorative emojis):**
+- `{reasonIcon}` - emoji icons (💝, 🎯, ✅, 🤝)
+- `💎` gem emoji in badge and header
+
+**Removed styles:** `backButtonText`, `summaryLabel`, `summaryValue`, `entryReason`, `entryAction` (typography), `entryTime` (typography), `gemBadgeText`, `loadingMoreText`
+
+#### MakeRequestScreen.tsx
+**Migrated Components:**
+- Back button text → `<AppText variant="body" color={colors.primary}>`
+- Title → `<AppText variant="h1" color={colors.primary}>`
+- Subtitle → `<AppText variant="body" color={colors.textSecondary}>`
+- Counter text → `<AppText variant="bodySmall">` with dynamic color/bold
+- Info box text → `<AppText variant="bodySmall" color={colors.textSecondary}>`
+- Category label → `<AppText variant="bodySmall" color={colors.textSecondary}>`
+- Category chip text → `<AppText variant="caption">` with dynamic color
+- Section title → `<AppText variant="h3">`
+- Filter tab text → `<AppText variant="bodySmall">` with dynamic color/bold
+- Status badge text → `<AppText variant="caption">` with dynamic color
+- Request time → `<AppText variant="caption" color={colors.textMuted}>`
+- Request action → `<AppText variant="body" bold>`
+- Request description → `<AppText variant="bodySmall" color={colors.textSecondary}>`
+- Category badge text → `<AppText variant="caption" color={colors.textSecondary}>`
+- Fulfilled info text → `<AppText variant="caption" color={colors.success}>`
+- Delete button → `<AppText variant="body" color={colors.error} bold>`
+
+**Removed styles:** `backText`, `subtitle`, `counterText`, `counterTextLimit`, `categoryChipText`, `categoryChipTextSelected`, `infoText`, `filterText`, `filterTextActive`, `statusText`, `statusTextActive`, `statusTextFulfilled`, `requestTime`, `requestDescription` (typography), `categoryBadgeText`, `fulfilledInfoText`
+
+#### ManageSuggestionsScreen.tsx
+**Migrated Components:**
+- Back button text → `<AppText variant="body" color={colors.primary}>`
+- Title → `<AppText variant="h1" color={colors.primary}>`
+- Subtitle → `<AppText variant="body" color={colors.textSecondary}>`
+- Info box text → `<AppText variant="bodySmall" color={colors.textSecondary}>`
+- Category label → `<AppText variant="bodySmall" color={colors.textSecondary}>`
+- Category chip text → `<AppText variant="caption">` with dynamic color
+- Section title → `<AppText variant="h3">`
+- Category group title → `<AppText variant="bodySmall" color={colors.primary} bold>`
+- Suggestion action → `<AppText variant="body" bold>`
+- Suggestion description → `<AppText variant="bodySmall" color={colors.textSecondary}>`
+- Delete button → `<AppText variant="body" color={colors.error} bold>`
+
+**Removed styles:** `backText`, `subtitle`, `infoText`, `categoryChipText`, `categoryChipTextSelected`, `suggestionAction`
+
+### Migration Pattern Used
+
+All screens follow the same pattern:
+1. Import `AppText` from `../components/common`
+2. Replace `<Text style={styles.xxx}>` with `<AppText variant="xxx">`
+3. Move color from styles to `color` prop
+4. Move fontWeight to `bold` prop
+5. Keep only layout-related styles (margins, padding, positioning)
+6. Remove typography-related style definitions (fontSize, fontFamily, fontWeight, color)
+
+### Files Modified (5)
+1. `src/screens/SettingsScreen.tsx` - Full migration + preview removal
+2. `src/screens/GemHistoryScreen.tsx` - Full migration (emojis kept as Text)
+3. `src/screens/MakeRequestScreen.tsx` - Full migration
+4. `src/screens/ManageSuggestionsScreen.tsx` - Full migration
+5. `SHIPLOG.md` - This entry
+
+### Remaining Raw Text Usage
+Only decorative emoji/icons retain hardcoded font sizes (as planned):
+- **GemHistoryScreen.tsx:** 4 instances (reason icons, gem emojis)
+
+### Verification
+✅ ESLint passes (only pre-existing warnings unrelated to migration)
+✅ All user-readable text now uses AppText
+✅ Font size selector in Settings works across all screens
+
+---
+
+**Status:** ✅ Complete
+**Typography Migration:** ✅ All phases complete

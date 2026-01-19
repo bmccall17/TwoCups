@@ -26,8 +26,8 @@ import {
 } from 'firebase/firestore';
 import { db, getCurrentUserId } from '../services/firebase/config';
 import { useAuth } from '../context/AuthContext';
-import { LoadingSpinner, EmptyState, ErrorState, Button, AppText } from '../components/common';
-import { colors, spacing, typography, borderRadius, shadows } from '../theme';
+import { Screen, Stack, LoadingSpinner, EmptyState, ErrorState, Button, AppText } from '../components/common';
+import { colors, spacing, borderRadius, shadows } from '../theme';
 import { Attempt } from '../types';
 
 const PAGE_SIZE = 20;
@@ -336,35 +336,33 @@ export function GemHistoryScreen({ onGoBack }: GemHistoryScreenProps) {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
+      <Screen tabBarInset={false}>
+        <Stack gap="md">
           {onGoBack && (
             <TouchableOpacity onPress={onGoBack} style={styles.backButton}>
               <AppText variant="body" color={colors.primary}>← Back</AppText>
             </TouchableOpacity>
           )}
-          <AppText variant="h2" style={styles.title}>Gem History</AppText>
-        </View>
+          <AppText variant="h2">Gem History</AppText>
+        </Stack>
         <LoadingSpinner message="Loading gem history..." />
-      </SafeAreaView>
+      </Screen>
     );
   }
 
   if (error) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
+      <Screen tabBarInset={false}>
+        <Stack gap="md">
           {onGoBack && (
             <TouchableOpacity onPress={onGoBack} style={styles.backButton}>
               <AppText variant="body" color={colors.primary}>← Back</AppText>
             </TouchableOpacity>
           )}
-          <AppText variant="h2" style={styles.title}>Gem History</AppText>
-        </View>
-        <View style={{ flex: 1, paddingHorizontal: spacing.lg }}>
+          <AppText variant="h2">Gem History</AppText>
           <ErrorState error={error} onRetry={() => fetchEntries()} />
-        </View>
-      </SafeAreaView>
+        </Stack>
+      </Screen>
     );
   }
 

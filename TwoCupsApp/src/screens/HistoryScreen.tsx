@@ -16,10 +16,9 @@ import {
   onSnapshot,
 } from 'firebase/firestore';
 import { useNavigation } from '@react-navigation/native';
-import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { db } from '../services/firebase/config';
 import { useAuth } from '../context/AuthContext';
-import { LoadingSpinner, EmptyState, ErrorState, AppText } from '../components/common';
+import { LoadingSpinner, EmptyState, ErrorState, AppText, useTabBarHeight } from '../components/common';
 import { colors, spacing } from '../theme';
 import { Attempt, Request, Suggestion } from '../types';
 import { usePlayerData } from '../hooks/usePlayerData';
@@ -61,7 +60,7 @@ export function HistoryScreen() {
   const coupleId = userData?.activeCoupleId;
   const { myPlayer, partnerPlayer, partnerName } = usePlayerData();
   const myPlayerName = userData?.username || 'You';
-  const tabBarHeight = useBottomTabBarHeight();
+  const tabBarHeight = useTabBarHeight();
 
   // State
   const [attempts, setAttempts] = useState<Attempt[]>([]);

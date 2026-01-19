@@ -3,19 +3,17 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   ScrollView,
   TouchableOpacity,
   Alert,
-  RefreshControl,
   Platform,
 } from 'react-native';
 import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
 import { db } from '../services/firebase/config';
 import { useAuth } from '../context/AuthContext';
 import { createSuggestion, deleteSuggestion } from '../services/api';
-import { Button, TextInput, LoadingSpinner, EmptyState, ErrorState, AppText } from '../components/common';
-import { colors, spacing, typography, borderRadius } from '../theme';
+import { Screen, Stack, Row, Button, TextInput, LoadingSpinner, EmptyState, ErrorState, AppText } from '../components/common';
+import { colors, spacing, borderRadius } from '../theme';
 import { Suggestion } from '../types';
 import { getErrorMessage } from '../types/utils';
 import {
@@ -185,30 +183,20 @@ export function ManageSuggestionsScreen({ onGoBack }: ManageSuggestionsScreenPro
 
   if (error) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.scrollContent}>
+      <Screen tabBarInset={false}>
+        <Stack gap="md">
           <TouchableOpacity onPress={onGoBack} style={styles.backButton}>
             <AppText variant="body" color={colors.primary}>← Back</AppText>
           </TouchableOpacity>
           <ErrorState error={error} onRetry={handleRetry} />
-        </View>
-      </SafeAreaView>
+        </Stack>
+      </Screen>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            tintColor={colors.primary}
-            colors={[colors.primary]}
-          />
-        }
-      >
+    <Screen scroll tabBarInset={false} onRefresh={handleRefresh} refreshing={refreshing}>
+      <Stack gap="lg">
         <View style={styles.header}>
           <TouchableOpacity onPress={onGoBack} style={styles.backButton}>
             <AppText variant="body" color={colors.primary}>← Back</AppText>
@@ -336,25 +324,17 @@ export function ManageSuggestionsScreen({ onGoBack }: ManageSuggestionsScreenPro
             ))
           )}
         </View>
-      </ScrollView>
-    </SafeAreaView>
+      </Stack>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    padding: spacing.lg,
-  },
   header: {
-    marginBottom: spacing.lg,
+    marginBottom: spacing.sm,
   },
   backButton: {
-    marginBottom: spacing.md,
+    marginBottom: spacing.xs,
   },
   title: {
     marginBottom: spacing.xs,
