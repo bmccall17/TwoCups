@@ -9,6 +9,9 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
+  Dimensions,
 } from 'react-native';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import {
@@ -18,9 +21,10 @@ import {
   updatePassword,
 } from 'firebase/auth';
 import { useAuth } from '../context/AuthContext';
+import { useFontSize, FontSizeOption } from '../context/FontSizeContext';
 import { usePlayerData } from '../hooks';
 import { Button, ErrorState, TextInput } from '../components/common';
-import { colors, spacing, typography, borderRadius } from '../theme';
+import { colors, spacing, typography, borderRadius, fonts } from '../theme';
 import { isUsernameAvailable, setUsername, updateUsername } from '../services/api/usernames';
 import {
   validateUsername,
@@ -36,18 +40,23 @@ interface SettingsScreenProps {
   onNavigateToManageSuggestions?: () => void;
   onNavigateToMakeRequest?: () => void;
   onNavigateToGemHistory?: () => void;
-  onNavigateToFontDebug?: () => void;
 }
 
 export function SettingsScreen({
   onNavigateToManageSuggestions,
   onNavigateToMakeRequest,
   onNavigateToGemHistory,
-  onNavigateToFontDebug,
 }: SettingsScreenProps) {
   const { user, userData, coupleData, signOut } = useAuth();
+  const { fontSize, setFontSize } = useFontSize();
   const { partnerName, error, refresh } = usePlayerData();
   const tabBarHeight = useBottomTabBarHeight();
+
+  const FONT_SIZE_OPTIONS: { value: FontSizeOption; label: string }[] = [
+    { value: 'small', label: 'Small' },
+    { value: 'medium', label: 'Medium' },
+    { value: 'large', label: 'Large' },
+  ];
 
   const username = userData?.username || 'Guest';
   const inviteCode = coupleData?.inviteCode || '—';
@@ -299,6 +308,36 @@ export function SettingsScreen({
           )}
         </View>
 
+        {/* Accessibility Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Accessibility</Text>
+          <View style={styles.card}>
+            <Text style={styles.label}>Font Size</Text>
+            <View style={styles.fontSizeSelector}>
+              {FONT_SIZE_OPTIONS.map((option) => (
+                <TouchableOpacity
+                  key={option.value}
+                  style={[
+                    styles.fontSizeOption,
+                    fontSize === option.value && styles.fontSizeOptionActive,
+                  ]}
+                  onPress={() => setFontSize(option.value)}
+                  activeOpacity={0.7}
+                >
+                  <Text
+                    style={[
+                      styles.fontSizeOptionText,
+                      fontSize === option.value && styles.fontSizeOptionTextActive,
+                    ]}
+                  >
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        </View>
+
         {/* Quick Actions */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
@@ -323,13 +362,6 @@ export function SettingsScreen({
             style={styles.actionButton}
             variant="outline"
           />
-
-          <Button
-            title="Font Debug"
-            onPress={onNavigateToFontDebug ?? (() => {})}
-            style={styles.actionButton}
-            variant="outline"
-          />
         </View>
 
         {/* Sign Out */}
@@ -350,11 +382,15 @@ export function SettingsScreen({
         animationType="fade"
         onRequestClose={() => setShowAccountModal(false)}
       >
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
           <ScrollView
             style={styles.modalScrollView}
             contentContainerStyle={styles.modalScrollContent}
             keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
           >
             <View style={styles.modalContent}>
               <Text style={styles.modalTitle}>Edit Account</Text>
@@ -455,7 +491,7 @@ export function SettingsScreen({
               </View>
             </View>
           </ScrollView>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );
@@ -522,6 +558,32 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     marginTop: spacing.xs,
   },
+  fontSizeSelector: {
+    flexDirection: 'row',
+    backgroundColor: colors.background,
+    borderRadius: borderRadius.md,
+    padding: 4,
+    marginTop: spacing.sm,
+  },
+  fontSizeOption: {
+    flex: 1,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fontSizeOptionActive: {
+    backgroundColor: colors.primary,
+  },
+  fontSizeOptionText: {
+    ...typography.bodySmall,
+    color: colors.textSecondary,
+  },
+  fontSizeOptionTextActive: {
+    color: colors.textOnPrimary,
+    fontFamily: fonts.bold,
+  },
   actionButton: {
     marginBottom: spacing.sm,
   },
@@ -538,12 +600,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: spacing.lg,
+    padding: spacing.md,
   },
   modalScrollView: {
     maxHeight: '90%',
-    width: '100%',
-    maxWidth: 400,
+    width: Math.min(Dimensions.get('window').width - spacing.md * 2, 400),
   },
   modalScrollContent: {
     flexGrow: 1,
@@ -552,7 +613,7 @@ const styles = StyleSheet.create({
   modalContent: {
     backgroundColor: colors.surface,
     borderRadius: borderRadius.lg,
-    padding: spacing.xl,
+    padding: spacing.lg,
     width: '100%',
   },
   modalTitle: {

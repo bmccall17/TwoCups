@@ -7,17 +7,17 @@ import {
   Platform,
 } from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
-import { Feather } from '@expo/vector-icons';
+import { Home, Heart, CheckCircle2, BarChart3, Settings } from 'lucide-react-native';
 import { colors } from '../../theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-// Icon mapping for tabs
-const TAB_ICONS: Record<string, keyof typeof Feather.glyphMap> = {
-  HomeTab: 'home',
-  LogTab: 'heart',
-  AcknowledgeTab: 'check-circle',
-  HistoryTab: 'bar-chart-2',
-  SettingsTab: 'settings',
+// Icon components mapping for tabs
+const TAB_ICONS: Record<string, React.ComponentType<{ size?: number; color?: string; strokeWidth?: number }>> = {
+  HomeTab: Home,
+  LogTab: Heart,
+  AcknowledgeTab: CheckCircle2,
+  HistoryTab: BarChart3,
+  SettingsTab: Settings,
 };
 
 const TAB_LABELS: Record<string, string> = {
@@ -43,7 +43,7 @@ interface TabItemProps {
 }
 
 const TabItem = memo(({ routeName, isFocused, onPress, onLongPress, badgeCount }: TabItemProps) => {
-  const iconName = TAB_ICONS[routeName] || 'circle';
+  const IconComponent = TAB_ICONS[routeName] || Home;
   const label = TAB_LABELS[routeName] || routeName;
   const hasNotification = badgeCount !== undefined && badgeCount > 0;
 
@@ -60,12 +60,13 @@ const TabItem = memo(({ routeName, isFocused, onPress, onLongPress, badgeCount }
       {/* Icon with active circle background */}
       <View style={styles.iconWrapper}>
         {isFocused && <View style={styles.activeCircle} />}
-        <Feather
-          name={iconName}
-          size={22}
-          color={isFocused ? ACTIVE_COLOR : INACTIVE_COLOR}
-          style={styles.icon}
-        />
+        <View style={styles.icon}>
+          <IconComponent
+            size={22}
+            color={isFocused ? ACTIVE_COLOR : INACTIVE_COLOR}
+            strokeWidth={isFocused ? 2.5 : 2}
+          />
+        </View>
         {/* Notification dot */}
         {hasNotification && <View style={styles.notificationDot} />}
       </View>
@@ -81,9 +82,6 @@ const TabItem = memo(({ routeName, isFocused, onPress, onLongPress, badgeCount }
 // Main CustomTabBar Component
 export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
-
-  // Debug marker - remove after verifying changes are loading
-  console.log('[CustomTabBar] render', new Date().toISOString());
 
   return (
     <View
@@ -149,9 +147,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     width: '100%',
     alignSelf: 'stretch',
-    // TEMP DEBUG: Red background to confirm visibility - change back to rgba(10, 10, 15, 0.98) after testing
-    backgroundColor: '#FF0000',
-    // TEMP DEBUG: Fixed height to ensure visibility
+    backgroundColor: 'rgba(10, 10, 15, 0.98)',
     minHeight: 80,
     borderTopWidth: 0,
     // Ensure tab bar is always on top

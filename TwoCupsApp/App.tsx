@@ -17,6 +17,7 @@ import { ToastProvider } from './src/context/ToastContext';
 import { GemAnimationProvider } from './src/context/GemAnimationContext';
 import { MilestoneCelebrationProvider } from './src/context/MilestoneCelebrationContext';
 import { NetworkProvider } from './src/context/NetworkContext';
+import { FontSizeProvider } from './src/context/FontSizeContext';
 import { LoadingSpinner, InstallAppModal, ToastContainer, OfflineBanner, ErrorBoundary, UpdatePrompt, CustomTabBar } from './src/components/common';
 import { useInstallPrompt, usePendingAcknowledgments } from './src/hooks';
 import { LoginScreen, SignUpScreen, PairingScreen } from './src/screens/auth';
@@ -28,7 +29,6 @@ import { ManageSuggestionsScreen } from './src/screens/ManageSuggestionsScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
 import { HistoryScreen } from './src/screens/HistoryScreen';
 import { GemHistoryScreen } from './src/screens/GemHistoryScreen';
-import { FontDebugScreen } from './src/screens/FontDebugScreen';
 import { colors } from './src/theme';
 import { initializeCrashlytics, log } from './src/services/crashlytics';
 
@@ -50,7 +50,6 @@ type MainStackParamList = {
   MakeRequest: undefined;
   ManageSuggestions: undefined;
   GemHistory: undefined;
-  FontDebug: undefined;
 };
 
 type AppStackParamList = {
@@ -156,7 +155,6 @@ function TabNavigator() {
             onNavigateToManageSuggestions={() => navigation.getParent()?.navigate('ManageSuggestions')}
             onNavigateToMakeRequest={() => navigation.getParent()?.navigate('MakeRequest')}
             onNavigateToGemHistory={() => navigation.getParent()?.navigate('GemHistory')}
-            onNavigateToFontDebug={() => navigation.getParent()?.navigate('FontDebug')}
           />
         )}
       </MainTab.Screen>
@@ -185,11 +183,6 @@ function MainTabNavigator() {
       <MainStack.Screen name="GemHistory">
         {({ navigation }) => (
           <GemHistoryScreen onGoBack={() => navigation.goBack()} />
-        )}
-      </MainStack.Screen>
-      <MainStack.Screen name="FontDebug">
-        {({ navigation }) => (
-          <FontDebugScreen onGoBack={() => navigation.goBack()} />
         )}
       </MainStack.Screen>
     </MainStack.Navigator>
@@ -277,22 +270,24 @@ export default function App() {
     <SafeAreaProvider>
       <ErrorBoundary>
         <StatusBar style="light" backgroundColor={colors.background} />
-        <ToastProvider>
-          <GemAnimationProvider>
-            <AuthProvider>
-              <NetworkProvider>
-                <MilestoneCelebrationProvider>
-                  <NavigationContainer>
-                    <UpdatePrompt />
-                    <RootNavigator />
-                    <OfflineBanner />
-                  </NavigationContainer>
-                  <ToastContainer />
-                </MilestoneCelebrationProvider>
-              </NetworkProvider>
-            </AuthProvider>
-          </GemAnimationProvider>
-        </ToastProvider>
+        <FontSizeProvider>
+          <ToastProvider>
+            <GemAnimationProvider>
+              <AuthProvider>
+                <NetworkProvider>
+                  <MilestoneCelebrationProvider>
+                    <NavigationContainer>
+                      <UpdatePrompt />
+                      <RootNavigator />
+                      <OfflineBanner />
+                    </NavigationContainer>
+                    <ToastContainer />
+                  </MilestoneCelebrationProvider>
+                </NetworkProvider>
+              </AuthProvider>
+            </GemAnimationProvider>
+          </ToastProvider>
+        </FontSizeProvider>
       </ErrorBoundary>
     </SafeAreaProvider>
   );

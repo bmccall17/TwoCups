@@ -71,43 +71,58 @@ export const getFontFamily = (weight: '300' | '400' | '500' | '600' | '700' | 'n
   }
 };
 
-export const typography = {
+// Base typography values (at scale 1.0)
+const baseTypography = {
+  h1: { fontSize: 32, fontFamily: fonts.bold, lineHeight: 40 },
+  h2: { fontSize: 24, fontFamily: fonts.bold, lineHeight: 32 },
+  h3: { fontSize: 20, fontFamily: fonts.bold, lineHeight: 28 },
+  body: { fontSize: 16, fontFamily: fonts.regular, lineHeight: 24 },
+  bodySmall: { fontSize: 14, fontFamily: fonts.regular, lineHeight: 20 },
+  caption: { fontSize: 12, fontFamily: fonts.regular, lineHeight: 16 },
+  button: { fontSize: 16, fontFamily: fonts.bold, lineHeight: 24 },
+};
+
+// Default typography export (medium size)
+export const typography = baseTypography;
+
+// Function to get scaled typography
+export const getScaledTypography = (scale: number) => ({
   h1: {
-    fontSize: 32,
-    fontFamily: fonts.bold,
-    lineHeight: 40,
+    fontSize: Math.round(baseTypography.h1.fontSize * scale),
+    fontFamily: baseTypography.h1.fontFamily,
+    lineHeight: Math.round(baseTypography.h1.lineHeight * scale),
   },
   h2: {
-    fontSize: 24,
-    fontFamily: fonts.bold,
-    lineHeight: 32,
+    fontSize: Math.round(baseTypography.h2.fontSize * scale),
+    fontFamily: baseTypography.h2.fontFamily,
+    lineHeight: Math.round(baseTypography.h2.lineHeight * scale),
   },
   h3: {
-    fontSize: 20,
-    fontFamily: fonts.bold,
-    lineHeight: 28,
+    fontSize: Math.round(baseTypography.h3.fontSize * scale),
+    fontFamily: baseTypography.h3.fontFamily,
+    lineHeight: Math.round(baseTypography.h3.lineHeight * scale),
   },
   body: {
-    fontSize: 16,
-    fontFamily: fonts.regular,
-    lineHeight: 24,
+    fontSize: Math.round(baseTypography.body.fontSize * scale),
+    fontFamily: baseTypography.body.fontFamily,
+    lineHeight: Math.round(baseTypography.body.lineHeight * scale),
   },
   bodySmall: {
-    fontSize: 14,
-    fontFamily: fonts.regular,
-    lineHeight: 20,
+    fontSize: Math.round(baseTypography.bodySmall.fontSize * scale),
+    fontFamily: baseTypography.bodySmall.fontFamily,
+    lineHeight: Math.round(baseTypography.bodySmall.lineHeight * scale),
   },
   caption: {
-    fontSize: 12,
-    fontFamily: fonts.regular,
-    lineHeight: 16,
+    fontSize: Math.round(baseTypography.caption.fontSize * scale),
+    fontFamily: baseTypography.caption.fontFamily,
+    lineHeight: Math.round(baseTypography.caption.lineHeight * scale),
   },
   button: {
-    fontSize: 16,
-    fontFamily: fonts.bold,
-    lineHeight: 24,
+    fontSize: Math.round(baseTypography.button.fontSize * scale),
+    fontFamily: baseTypography.button.fontFamily,
+    lineHeight: Math.round(baseTypography.button.lineHeight * scale),
   },
-};
+});
 
 export const borderRadius = {
   sm: 4,

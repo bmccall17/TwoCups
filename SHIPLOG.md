@@ -1,5 +1,140 @@
 # Two Cups - Ship Log
 
+## 2026-01-18 - Icon Library Migration (Feather → Lucide)
+
+**Status:** ✅ COMPLETE
+
+### Problem
+Feather icons from `@expo/vector-icons` were causing font loading issues on web. Icons were rendering inconsistently or not at all due to font decoding errors.
+
+### Fix Applied
+Migrated CustomTabBar from `@expo/vector-icons` (Feather) to `lucide-react-native`:
+
+| Before | After |
+|--------|-------|
+| `@expo/vector-icons` Feather | `lucide-react-native` |
+| Font-based icons | SVG-based icons |
+| `<Feather name="home" />` | `<Home />` component |
+
+### Changes
+- Replaced Feather icon imports with lucide-react-native components
+- Updated icon mapping to use component references instead of string names
+- Added `strokeWidth` prop for better visual weight on active state
+- Removed debug code (console.log, red background) used during troubleshooting
+
+### Files Modified
+- `TwoCupsApp/src/components/common/CustomTabBar.tsx` - Icon library swap + debug cleanup
+- `TwoCupsApp/package.json` - Added lucide-react-native dependency
+
+### Verification
+- ✅ All 5 tab icons render correctly (Home, Heart, CheckCircle2, BarChart3, Settings)
+- ✅ Active/inactive states display properly
+- ✅ No font loading errors in console
+- ✅ Icons work on web platform
+
+---
+
+## 2026-01-18 - Font Loading Fixed + OpenDyslexic Integration
+
+**Status:** ✅ COMPLETE
+
+### Problem
+Console showed font decoding / OTS parsing errors on Web. Navbar icons (Feather) and custom fonts were failing to load, causing broken/invisible icons and text rendering issues.
+
+### Root Cause
+**Corrupted font files in `assets/fonts/`.** The OTF files were all ~297KB (suspiciously identical sizes), when the correct files from the source zip vary from 175KB-234KB. The files were likely corrupted during a previous copy or extraction.
+
+### Fix Applied
+
+#### 1. Font Debug Screen Created
+- New `FontDebugScreen.tsx` for testing font loading in isolation
+- Shows `fontsLoaded` and `fontError` state
+- Displays text samples in system font and all OpenDyslexic variants
+- Shows Feather icons to verify icon font loading
+- Accessible via Settings > Font Debug button
+
+#### 2. Fresh Font Files Installed
+Extracted fresh OTF files from `opendyslexic-0.92.zip` and replaced corrupted files:
+
+| File | Old Size (corrupted) | New Size (correct) |
+|------|---------------------|-------------------|
+| OpenDyslexic-Regular.otf | 297,909 bytes | 175,808 bytes |
+| OpenDyslexic-Bold.otf | 297,878 bytes | 184,004 bytes |
+| OpenDyslexic-Italic.otf | 297,901 bytes | 189,768 bytes |
+| OpenDyslexic-BoldItalic.otf | 297,950 bytes | 234,364 bytes |
+
+#### 3. Firebase Hosting Cache Headers
+Added cache-control for fonts (NOT Content-Type - Firebase handles MIME types automatically):
+```json
+{
+  "source": "/fonts/**",
+  "headers": [
+    { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+  ]
+}
+```
+
+#### 4. Dynamic Tab Bar Height
+Replaced hardcoded `paddingBottom: 100` with `useBottomTabBarHeight()` hook in all tab screens:
+- HomeScreen
+- LogAttemptScreen
+- AcknowledgeScreen
+- HistoryScreen
+- SettingsScreen
+
+### Project Font Standard
+
+**OpenDyslexic is now the official font family for Two Cups.**
+
+| Variant | Font Family Name | Usage |
+|---------|-----------------|-------|
+| Regular | `OpenDyslexic-Regular` | Body text, default |
+| Bold | `OpenDyslexic-Bold` | Headers, emphasis |
+| Italic | `OpenDyslexic-Italic` | Quotes, subtle emphasis |
+| Bold Italic | `OpenDyslexic-BoldItalic` | Strong emphasis |
+
+**Why OpenDyslexic?**
+- Designed to increase readability for readers with dyslexia
+- Unique letter shapes reduce confusion between similar characters
+- Weighted bottoms help anchor letters and reduce rotation perception
+- Aligns with Two Cups' philosophy of accessibility and care
+
+**Usage in code:**
+```typescript
+import { fonts } from '../theme';
+
+// In styles:
+fontFamily: fonts.regular,  // OpenDyslexic-Regular
+fontFamily: fonts.bold,     // OpenDyslexic-Bold
+```
+
+### Files Created
+- `TwoCupsApp/src/screens/FontDebugScreen.tsx` - Font testing screen
+
+### Files Modified
+- `TwoCupsApp/App.tsx` - Added FontDebug navigation route
+- `TwoCupsApp/src/screens/SettingsScreen.tsx` - Added Font Debug button
+- `TwoCupsApp/assets/fonts/*.otf` - Replaced with fresh files from zip
+- `firebase.json` - Added font cache headers
+- `TwoCupsApp/src/components/common/CustomTabBar.tsx` - Debug styles (temp)
+- `TwoCupsApp/src/screens/HomeScreen.tsx` - useBottomTabBarHeight
+- `TwoCupsApp/src/screens/LogAttemptScreen.tsx` - useBottomTabBarHeight
+- `TwoCupsApp/src/screens/AcknowledgeScreen.tsx` - useBottomTabBarHeight
+- `TwoCupsApp/src/screens/HistoryScreen.tsx` - useBottomTabBarHeight
+- `TwoCupsApp/src/screens/SettingsScreen.tsx` - useBottomTabBarHeight
+
+### Verification
+- ✅ `fontsLoaded: true` on Font Debug screen (Web + Android)
+- ✅ Network tab shows font requests returning 200 with binary content
+- ✅ OpenDyslexic text renders distinctly from system font
+- ✅ Feather icons render correctly
+- ✅ Navbar visible and functional
+
+### Lesson Learned
+When font files fail to load with OTS parsing errors, check file sizes first. Corrupted or wrong files often have suspiciously similar sizes. Always keep the original source zip for reinstallation.
+
+---
+
 ## 2026-01-17 - Account Creation 400 Error (RESOLVED)
 
 **Status:** ✅ FIXED
