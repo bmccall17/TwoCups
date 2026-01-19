@@ -21,7 +21,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useGemAnimation } from '../context/GemAnimationContext';
 import { acknowledgeAttempt } from '../services/api';
-import { Button, LoadingSpinner, EmptyState, ErrorState, CelebrationOverlay, SectionHeader, EmptyHint } from '../components/common';
+import { AppText, Button, LoadingSpinner, EmptyState, ErrorState, CelebrationOverlay, SectionHeader, EmptyHint } from '../components/common';
 import { colors, spacing, typography, borderRadius } from '../theme';
 import { Attempt, Request, Suggestion } from '../types';
 import { getErrorMessage } from '../types/utils';
@@ -123,16 +123,16 @@ const AttemptCard = memo(function AttemptCard({
   return (
     <View style={styles.attemptCard}>
       <View style={styles.attemptHeader}>
-        <Text style={styles.attemptBy}>{partnerName}</Text>
-        <Text style={styles.attemptTime}>{formatDate(attempt.createdAt)}</Text>
+        <AppText variant="bodySmall" color={colors.primary} bold style={styles.attemptBy}>{partnerName}</AppText>
+        <AppText variant="caption" color={colors.textMuted}>{formatDate(attempt.createdAt)}</AppText>
       </View>
-      <Text style={styles.attemptAction}>{attempt.action}</Text>
+      <AppText variant="body" bold style={styles.attemptAction}>{attempt.action}</AppText>
       {attempt.description && (
-        <Text style={styles.attemptDescription}>{attempt.description}</Text>
+        <AppText variant="bodySmall" color={colors.textSecondary} style={styles.attemptDescription}>{attempt.description}</AppText>
       )}
       {attempt.fulfilledRequestId && (
         <View style={styles.fulfilledBadge}>
-          <Text style={styles.fulfilledText}>✨ Fulfilled your request!</Text>
+          <AppText variant="caption" color={colors.success} bold>✨ Fulfilled your request!</AppText>
         </View>
       )}
       <Button
@@ -159,15 +159,15 @@ const RequestItem = memo(function RequestItem({ request, partnerName }: RequestI
   return (
     <View style={styles.listItem}>
       <View style={styles.listItemContent}>
-        <Text style={styles.listItemTitle}>{request.action}</Text>
+        <AppText variant="body" style={styles.listItemTitle}>{request.action}</AppText>
         {request.description && (
-          <Text style={styles.listItemDescription}>{request.description}</Text>
+          <AppText variant="bodySmall" color={colors.textSecondary} style={styles.listItemDescription}>{request.description}</AppText>
         )}
         <View style={styles.listItemMeta}>
           <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
-          <Text style={[styles.statusText, { color: statusColor }]}>{statusText}</Text>
-          <Text style={styles.metaSeparator}>•</Text>
-          <Text style={styles.metaText}>for {partnerName}</Text>
+          <AppText variant="caption" color={statusColor} bold>{statusText}</AppText>
+          <AppText variant="caption" color={colors.textMuted} style={styles.metaSeparator}>•</AppText>
+          <AppText variant="caption" color={colors.textMuted}>for {partnerName}</AppText>
         </View>
       </View>
     </View>
@@ -183,13 +183,13 @@ const SuggestionItem = memo(function SuggestionItem({ suggestion }: SuggestionIt
   return (
     <View style={styles.listItem}>
       <View style={styles.listItemContent}>
-        <Text style={styles.listItemTitle}>{suggestion.action}</Text>
+        <AppText variant="body" style={styles.listItemTitle}>{suggestion.action}</AppText>
         {suggestion.description && (
-          <Text style={styles.listItemDescription}>{suggestion.description}</Text>
+          <AppText variant="bodySmall" color={colors.textSecondary} style={styles.listItemDescription}>{suggestion.description}</AppText>
         )}
         {suggestion.category && (
           <View style={styles.categoryChip}>
-            <Text style={styles.categoryChipText}>{suggestion.category}</Text>
+            <AppText variant="caption" color={colors.textSecondary}>{suggestion.category}</AppText>
           </View>
         )}
       </View>
@@ -212,8 +212,8 @@ const AddButton = memo(function AddButton({ title, subtitle, icon, onPress }: Ad
         <Text style={styles.addButtonEmoji}>{icon}</Text>
       </View>
       <View style={styles.addButtonContent}>
-        <Text style={styles.addButtonTitle}>{title}</Text>
-        <Text style={styles.addButtonSubtitle}>{subtitle}</Text>
+        <AppText variant="body" color={colors.primary} bold style={styles.addButtonTitle}>{title}</AppText>
+        <AppText variant="caption" color={colors.textSecondary}>{subtitle}</AppText>
       </View>
       <Feather name="plus-circle" size={24} color={colors.primary} />
     </TouchableOpacity>
@@ -446,12 +446,12 @@ export function AcknowledgeScreen({
       >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>Receive</Text>
-          <Text style={styles.subtitle}>
+          <AppText variant="h1" color={colors.primary} style={styles.title}>Receive</AppText>
+          <AppText variant="body" color={colors.textSecondary}>
             {hasPendingItems
               ? `${pendingAttempts.length} item${pendingAttempts.length !== 1 ? 's' : ''} need${pendingAttempts.length === 1 ? 's' : ''} your attention`
               : 'All caught up! Manage your requests below.'}
-          </Text>
+          </AppText>
         </View>
 
         {/* Dynamic Layout based on pending items */}
@@ -499,7 +499,7 @@ export function AcknowledgeScreen({
                   style={styles.viewAllButton}
                   onPress={onNavigateToMakeRequest}
                 >
-                  <Text style={styles.viewAllText}>View all {myRequests.length} requests</Text>
+                  <AppText variant="bodySmall" color={colors.primary}>View all {myRequests.length} requests</AppText>
                   <Feather name="arrow-right" size={16} color={colors.primary} />
                 </TouchableOpacity>
               )}
@@ -526,7 +526,7 @@ export function AcknowledgeScreen({
                   style={styles.viewAllButton}
                   onPress={onNavigateToManageSuggestions}
                 >
-                  <Text style={styles.viewAllText}>View all {mySuggestions.length} suggestions</Text>
+                  <AppText variant="bodySmall" color={colors.primary}>View all {mySuggestions.length} suggestions</AppText>
                   <Feather name="arrow-right" size={16} color={colors.primary} />
                 </TouchableOpacity>
               )}
@@ -537,10 +537,10 @@ export function AcknowledgeScreen({
             {/* When no pending items - Show Requests & Suggestions prominently */}
             <View style={styles.emptyStateCard}>
               <Text style={styles.emptyStateIcon}>✨</Text>
-              <Text style={styles.emptyStateTitle}>All caught up!</Text>
-              <Text style={styles.emptyStateText}>
+              <AppText variant="h3" style={styles.emptyStateTitle}>All caught up!</AppText>
+              <AppText variant="body" color={colors.textSecondary} style={styles.emptyStateText}>
                 No pending acknowledgements. Take this time to manage your requests and suggestions.
-              </Text>
+              </AppText>
             </View>
 
             {/* Requests Section - Prominent */}
@@ -573,7 +573,7 @@ export function AcknowledgeScreen({
                       style={styles.viewAllButton}
                       onPress={onNavigateToMakeRequest}
                     >
-                      <Text style={styles.viewAllText}>View all {myRequests.length} requests</Text>
+                      <AppText variant="bodySmall" color={colors.primary}>View all {myRequests.length} requests</AppText>
                       <Feather name="arrow-right" size={16} color={colors.primary} />
                     </TouchableOpacity>
                   )}
@@ -612,7 +612,7 @@ export function AcknowledgeScreen({
                       style={styles.viewAllButton}
                       onPress={onNavigateToManageSuggestions}
                     >
-                      <Text style={styles.viewAllText}>View all {mySuggestions.length} suggestions</Text>
+                      <AppText variant="bodySmall" color={colors.primary}>View all {mySuggestions.length} suggestions</AppText>
                       <Feather name="arrow-right" size={16} color={colors.primary} />
                     </TouchableOpacity>
                   )}
@@ -648,13 +648,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   title: {
-    ...typography.h1,
-    color: colors.primary,
     marginBottom: spacing.xs,
-  },
-  subtitle: {
-    ...typography.body,
-    color: colors.textSecondary,
   },
   // Collapsible Section
   collapsibleSection: {
@@ -690,23 +684,12 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   attemptBy: {
-    ...typography.bodySmall,
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  attemptTime: {
-    ...typography.caption,
-    color: colors.textMuted,
+    // Handled by AppText
   },
   attemptAction: {
-    ...typography.body,
-    color: colors.textPrimary,
-    fontWeight: '600',
     marginBottom: spacing.xs,
   },
   attemptDescription: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
     marginBottom: spacing.sm,
   },
   fulfilledBadge: {
@@ -716,11 +699,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
     borderRadius: borderRadius.full,
     marginBottom: spacing.sm,
-  },
-  fulfilledText: {
-    ...typography.caption,
-    color: colors.success,
-    fontWeight: '600',
   },
   acknowledgeButton: {
     marginTop: spacing.xs,
@@ -736,14 +714,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   listItemTitle: {
-    ...typography.body,
-    color: colors.textPrimary,
-    fontWeight: '500',
     marginBottom: 4,
   },
   listItemDescription: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
     marginBottom: spacing.xs,
   },
   listItemMeta: {
@@ -757,18 +730,8 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     marginRight: spacing.xs,
   },
-  statusText: {
-    ...typography.caption,
-    fontWeight: '600',
-  },
   metaSeparator: {
-    ...typography.caption,
-    color: colors.textMuted,
     marginHorizontal: spacing.xs,
-  },
-  metaText: {
-    ...typography.caption,
-    color: colors.textMuted,
   },
   categoryChip: {
     alignSelf: 'flex-start',
@@ -777,10 +740,6 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: borderRadius.full,
     marginTop: spacing.xs,
-  },
-  categoryChipText: {
-    ...typography.caption,
-    color: colors.textSecondary,
   },
   // Add Button
   addButton: {
@@ -810,14 +769,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   addButtonTitle: {
-    ...typography.body,
-    color: colors.primary,
-    fontWeight: '600',
     marginBottom: 2,
-  },
-  addButtonSubtitle: {
-    ...typography.caption,
-    color: colors.textSecondary,
   },
   // View All Button
   viewAllButton: {
@@ -825,10 +777,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: spacing.sm,
-  },
-  viewAllText: {
-    ...typography.bodySmall,
-    color: colors.primary,
     marginRight: spacing.xs,
   },
   // Empty State
@@ -844,13 +792,9 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   emptyStateTitle: {
-    ...typography.h3,
-    color: colors.textPrimary,
     marginBottom: spacing.xs,
   },
   emptyStateText: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
     textAlign: 'center',
   },
   // Prominent Section (when no pending items)

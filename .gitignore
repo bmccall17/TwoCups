@@ -72,3 +72,7 @@ TwoCupsApp_rn_backup/
 # OS files
 Thumbs.db
 .DS_Store
+
+# Firebase service keys
+serviceAccountKey.json
+migration-output.json

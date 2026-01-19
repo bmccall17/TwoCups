@@ -1,3 +1,5 @@
+export { AppText } from './AppText';
+export type { TextVariant } from './AppText';
 export { Button } from './Button';
 export { TextInput } from './TextInput';
 export { LoadingSpinner, useMinLoadingTime } from './LoadingSpinner';

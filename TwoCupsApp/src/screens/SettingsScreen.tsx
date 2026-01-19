@@ -7,6 +7,7 @@ import {
   ScrollView,
   Modal,
   TouchableOpacity,
+  Pressable,
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
@@ -23,7 +24,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useFontSize, FontSizeOption } from '../context/FontSizeContext';
 import { usePlayerData } from '../hooks';
-import { Button, ErrorState, TextInput } from '../components/common';
+import { AppText, Button, ErrorState, TextInput } from '../components/common';
 import { colors, spacing, typography, borderRadius, fonts } from '../theme';
 import { isUsernameAvailable, setUsername, updateUsername } from '../services/api/usernames';
 import {
@@ -36,19 +37,9 @@ import {
 } from '../utils/validation';
 import { auth } from '../services/firebase/config';
 
-interface SettingsScreenProps {
-  onNavigateToManageSuggestions?: () => void;
-  onNavigateToMakeRequest?: () => void;
-  onNavigateToGemHistory?: () => void;
-}
-
-export function SettingsScreen({
-  onNavigateToManageSuggestions,
-  onNavigateToMakeRequest,
-  onNavigateToGemHistory,
-}: SettingsScreenProps) {
+export function SettingsScreen() {
   const { user, userData, coupleData, signOut } = useAuth();
-  const { fontSize, setFontSize } = useFontSize();
+  const { fontSize, setFontSize, scaledTypography } = useFontSize();
   const { partnerName, error, refresh } = usePlayerData();
   const tabBarHeight = useBottomTabBarHeight();
 
@@ -251,17 +242,17 @@ export function SettingsScreen({
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: tabBarHeight }]}>
         <View style={styles.header}>
-          <Text style={styles.title}>Settings</Text>
+          <AppText variant="h1">Settings</AppText>
         </View>
 
         {/* Profile Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Profile</Text>
+          <AppText variant="h3" style={styles.sectionTitle}>Profile</AppText>
           <View style={styles.card}>
             <View style={styles.profileRow}>
               <View>
-                <Text style={styles.label}>Username</Text>
-                <Text style={styles.value}>{username}</Text>
+                <AppText variant="caption" color={colors.textSecondary} style={styles.label}>Username</AppText>
+                <AppText variant="body">{username}</AppText>
               </View>
               <Button
                 title="Change"
@@ -275,15 +266,15 @@ export function SettingsScreen({
                 <View style={styles.divider} />
                 <View style={styles.profileRow}>
                   <View style={styles.accountInfo}>
-                    <Text style={styles.label}>Email</Text>
-                    <Text style={styles.value} numberOfLines={1}>{userEmail}</Text>
+                    <AppText variant="caption" color={colors.textSecondary} style={styles.label}>Email</AppText>
+                    <AppText variant="body" numberOfLines={1}>{userEmail}</AppText>
                   </View>
                 </View>
                 <View style={styles.divider} />
                 <View style={styles.profileRow}>
                   <View>
-                    <Text style={styles.label}>Password</Text>
-                    <Text style={styles.value}>••••••••</Text>
+                    <AppText variant="caption" color={colors.textSecondary} style={styles.label}>Password</AppText>
+                    <AppText variant="body">••••••••</AppText>
                   </View>
                 </View>
               </>
@@ -293,75 +284,64 @@ export function SettingsScreen({
 
         {/* Couple Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Couple</Text>
+          <AppText variant="h3" style={styles.sectionTitle}>Couple</AppText>
           {isActive ? (
             <View style={styles.card}>
-              <Text style={styles.label}>Partner</Text>
-              <Text style={styles.value}>{partnerName || 'Partner'}</Text>
+              <AppText variant="caption" color={colors.textSecondary} style={styles.label}>Partner</AppText>
+              <AppText variant="body">{partnerName || 'Partner'}</AppText>
             </View>
           ) : (
             <View style={styles.card}>
-              <Text style={styles.label}>Invite Code</Text>
-              <Text style={styles.value}>{inviteCode}</Text>
-              <Text style={styles.hint}>Share this code with your partner</Text>
+              <AppText variant="caption" color={colors.textSecondary} style={styles.label}>Invite Code</AppText>
+              <AppText variant="body">{inviteCode}</AppText>
+              <AppText variant="caption" color={colors.textMuted} style={styles.hint}>Share this code with your partner</AppText>
             </View>
           )}
         </View>
 
         {/* Accessibility Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Accessibility</Text>
+          <AppText variant="h3" style={styles.sectionTitle}>Accessibility</AppText>
           <View style={styles.card}>
-            <Text style={styles.label}>Font Size</Text>
+            <AppText variant="caption" color={colors.textSecondary} style={styles.label}>Font Size</AppText>
             <View style={styles.fontSizeSelector}>
               {FONT_SIZE_OPTIONS.map((option) => (
-                <TouchableOpacity
+                <Pressable
                   key={option.value}
-                  style={[
+                  style={({ pressed }) => [
                     styles.fontSizeOption,
                     fontSize === option.value && styles.fontSizeOptionActive,
+                    pressed && styles.fontSizeOptionPressed,
                   ]}
                   onPress={() => setFontSize(option.value)}
-                  activeOpacity={0.7}
                 >
                   <Text
                     style={[
+                      { fontSize: scaledTypography.bodySmall.fontSize },
                       styles.fontSizeOptionText,
                       fontSize === option.value && styles.fontSizeOptionTextActive,
                     ]}
                   >
                     {option.label}
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
               ))}
             </View>
-          </View>
-        </View>
 
-        {/* Quick Actions */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Quick Actions</Text>
-          
-          <Button
-            title="💎 Gem History"
-            onPress={onNavigateToGemHistory ?? (() => {})}
-            style={styles.actionButton}
-            variant="outline"
-          />
-          
-          <Button
-            title="💡 Manage My Suggestions"
-            onPress={onNavigateToManageSuggestions ?? (() => {})}
-            style={styles.actionButton}
-            variant="outline"
-          />
-          
-          <Button
-            title="📝 Make a Request"
-            onPress={onNavigateToMakeRequest ?? (() => {})}
-            style={styles.actionButton}
-            variant="outline"
-          />
+            {/* Preview */}
+            <View style={styles.fontSizePreview}>
+              <Text style={styles.previewLabel}>Preview</Text>
+              <AppText variant="h3" style={styles.previewHeading}>
+                Heading Text
+              </AppText>
+              <AppText variant="body" style={styles.previewBody}>
+                Body text shows how your content will look.
+              </AppText>
+              <AppText variant="caption" color={colors.textSecondary} style={styles.previewCaption}>
+                Caption text for smaller details
+              </AppText>
+            </View>
+          </View>
         </View>
 
         {/* Sign Out */}
@@ -509,16 +489,10 @@ const styles = StyleSheet.create({
   header: {
     marginBottom: spacing.xl,
   },
-  title: {
-    ...typography.h1,
-    color: colors.textPrimary,
-  },
   section: {
     marginBottom: spacing.xl,
   },
   sectionTitle: {
-    ...typography.h3,
-    color: colors.textPrimary,
     marginBottom: spacing.md,
   },
   card: {
@@ -545,17 +519,9 @@ const styles = StyleSheet.create({
     marginVertical: spacing.md,
   },
   label: {
-    ...typography.caption,
-    color: colors.textSecondary,
     marginBottom: spacing.xs,
   },
-  value: {
-    ...typography.body,
-    color: colors.textPrimary,
-  },
   hint: {
-    ...typography.caption,
-    color: colors.textMuted,
     marginTop: spacing.xs,
   },
   fontSizeSelector: {
@@ -584,8 +550,30 @@ const styles = StyleSheet.create({
     color: colors.textOnPrimary,
     fontFamily: fonts.bold,
   },
-  actionButton: {
+  fontSizeOptionPressed: {
+    opacity: 0.7,
+  },
+  fontSizePreview: {
+    marginTop: spacing.lg,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  previewLabel: {
+    ...typography.caption,
+    color: colors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
     marginBottom: spacing.sm,
+  },
+  previewHeading: {
+    marginBottom: spacing.xs,
+  },
+  previewBody: {
+    marginBottom: spacing.xs,
+  },
+  previewCaption: {
+    // Color set via AppText color prop
   },
   footer: {
     marginTop: 'auto',

@@ -16,7 +16,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useGemAnimation } from '../context/GemAnimationContext';
 import { logAttempt, getDailyAttemptsInfo, DailyAttemptsInfo } from '../services/api';
-import { Button, TextInput, LoadingSpinner, EmptyState, ErrorState } from '../components/common';
+import { AppText, Button, TextInput, LoadingSpinner, EmptyState, ErrorState } from '../components/common';
 import { colors, spacing, typography, borderRadius } from '../theme';
 import { Request, Suggestion } from '../types';
 import { getErrorMessage } from '../types/utils';
@@ -263,7 +263,7 @@ export function LogAttemptScreen({ onGoBack }: LogAttemptScreenProps) {
       <SafeAreaView style={styles.container}>
         <View style={styles.scrollContent}>
           <TouchableOpacity onPress={onGoBack} style={styles.backButton}>
-            <Text style={styles.backText}>← Back</Text>
+            <AppText variant="body" color={colors.primary}>← Back</AppText>
           </TouchableOpacity>
           <ErrorState error={error} onRetry={handleRetry} />
         </View>
@@ -287,10 +287,10 @@ export function LogAttemptScreen({ onGoBack }: LogAttemptScreenProps) {
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={onGoBack} style={styles.backButton}>
-            <Text style={styles.backText}>← Back</Text>
+            <AppText variant="body" color={colors.primary}>← Back</AppText>
           </TouchableOpacity>
-          <Text style={styles.title}>Log an Attempt</Text>
-          <Text style={styles.subtitle}>What did you do for your partner?</Text>
+          <AppText variant="h1" color={colors.primary} style={styles.title}>Log an Attempt</AppText>
+          <AppText variant="body" color={colors.textSecondary}>What did you do for your partner?</AppText>
           
           {/* Daily attempts counter */}
           {dailyAttemptsInfo && (
@@ -298,14 +298,16 @@ export function LogAttemptScreen({ onGoBack }: LogAttemptScreenProps) {
               styles.attemptsCounter,
               dailyAttemptsInfo.remaining === 0 && styles.attemptsCounterLimit
             ]}>
-              <Text style={[
-                styles.attemptsCounterText,
-                dailyAttemptsInfo.remaining === 0 && styles.attemptsCounterTextLimit
-              ]}>
+              <AppText
+                variant="bodySmall"
+                color={dailyAttemptsInfo.remaining === 0 ? colors.error : colors.textSecondary}
+                bold={dailyAttemptsInfo.remaining === 0}
+                style={styles.attemptsCounterText}
+              >
                 {dailyAttemptsInfo.remaining === 0
                   ? `Daily limit reached (${dailyAttemptsInfo.limit}/${dailyAttemptsInfo.limit})`
                   : `${dailyAttemptsInfo.remaining} of ${dailyAttemptsInfo.limit} attempts remaining today`}
-              </Text>
+              </AppText>
             </View>
           )}
         </View>
@@ -313,17 +315,17 @@ export function LogAttemptScreen({ onGoBack }: LogAttemptScreenProps) {
         {/* Partner's Requests */}
         {partnerRequests.length > 0 && (
           <View style={styles.requestsSection}>
-            <Text style={styles.sectionTitle}>Partner's Requests</Text>
-            <Text style={styles.sectionHint}>Fulfill a request for +2 bonus gems!</Text>
+            <AppText variant="h3" style={styles.sectionTitle}>Partner's Requests</AppText>
+            <AppText variant="caption" color={colors.success} style={styles.sectionHint}>Fulfill a request for +2 bonus gems!</AppText>
             {partnerRequests.map((request) => (
               <TouchableOpacity
                 key={request.id}
                 style={styles.requestCard}
                 onPress={() => handleSelectRequest(request)}
               >
-                <Text style={styles.requestAction}>{request.action}</Text>
+                <AppText variant="body" style={styles.requestAction}>{request.action}</AppText>
                 {request.category && (
-                  <Text style={styles.requestCategory}>{request.category}</Text>
+                  <AppText variant="caption" color={colors.textSecondary}>{request.category}</AppText>
                 )}
               </TouchableOpacity>
             ))}
@@ -332,8 +334,8 @@ export function LogAttemptScreen({ onGoBack }: LogAttemptScreenProps) {
 
         {/* Partner's Suggestions */}
         <View style={styles.suggestionsSection}>
-          <Text style={styles.sectionTitle}>Partner's Suggestions</Text>
-          <Text style={styles.suggestionHint}>Ways to fill your partner's cup</Text>
+          <AppText variant="h3" style={styles.sectionTitle}>Partner's Suggestions</AppText>
+          <AppText variant="caption" color={colors.textSecondary} style={styles.suggestionHint}>Ways to fill your partner's cup</AppText>
           
           {/* Category filter chips */}
           {partnerSuggestions.length > 0 && (
@@ -350,14 +352,12 @@ export function LogAttemptScreen({ onGoBack }: LogAttemptScreenProps) {
                 ]}
                 onPress={() => setSuggestionFilter(null)}
               >
-                <Text
-                  style={[
-                    styles.filterChipText,
-                    suggestionFilter === null && styles.filterChipTextSelected,
-                  ]}
+                <AppText
+                  variant="caption"
+                  color={suggestionFilter === null ? colors.textOnPrimary : colors.textSecondary}
                 >
                   All ({partnerSuggestions.length})
-                </Text>
+                </AppText>
               </TouchableOpacity>
               {categoriesWithSuggestions.map((cat) => (
                 <TouchableOpacity
@@ -368,14 +368,12 @@ export function LogAttemptScreen({ onGoBack }: LogAttemptScreenProps) {
                   ]}
                   onPress={() => setSuggestionFilter(suggestionFilter === cat ? null : cat)}
                 >
-                  <Text
-                    style={[
-                      styles.filterChipText,
-                      suggestionFilter === cat && styles.filterChipTextSelected,
-                    ]}
+                  <AppText
+                    variant="caption"
+                    color={suggestionFilter === cat ? colors.textOnPrimary : colors.textSecondary}
                   >
                     {cat} ({categoryCounts[cat]})
-                  </Text>
+                  </AppText>
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -390,16 +388,16 @@ export function LogAttemptScreen({ onGoBack }: LogAttemptScreenProps) {
                   style={styles.suggestionCard}
                   onPress={() => handleSelectSuggestion(suggestion)}
                 >
-                  <Text style={styles.suggestionAction}>{suggestion.action}</Text>
+                  <AppText variant="body" style={styles.suggestionAction}>{suggestion.action}</AppText>
                   {suggestion.category && (
-                    <Text style={styles.suggestionCategory}>{suggestion.category}</Text>
+                    <AppText variant="caption" color={colors.textSecondary}>{suggestion.category}</AppText>
                   )}
                 </TouchableOpacity>
               ))}
               {filteredSuggestions.length === 0 && suggestionFilter && (
-                <Text style={styles.noSuggestionsText}>
+                <AppText variant="body" color={colors.textMuted} style={styles.noSuggestionsText}>
                   No suggestions in this category
-                </Text>
+                </AppText>
               )}
             </View>
           ) : (
@@ -424,7 +422,7 @@ export function LogAttemptScreen({ onGoBack }: LogAttemptScreenProps) {
         {/* Custom Entry Section */}
         {showForm && (
           <View style={styles.formSection}>
-            <Text style={styles.formSectionTitle}>Log an Attempt</Text>
+            <AppText variant="h3" style={styles.formSectionTitle}>Log an Attempt</AppText>
             <TextInput
               label="Action"
               value={action}
@@ -446,7 +444,7 @@ export function LogAttemptScreen({ onGoBack }: LogAttemptScreenProps) {
             />
 
             {/* Category Picker */}
-            <Text style={styles.inputLabel}>Category</Text>
+            <AppText variant="caption" color={colors.textSecondary} style={styles.inputLabel}>Category</AppText>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
               {CATEGORIES.map((cat) => (
                 <TouchableOpacity
@@ -457,14 +455,12 @@ export function LogAttemptScreen({ onGoBack }: LogAttemptScreenProps) {
                   ]}
                   onPress={() => setCategory(category === cat ? null : cat)}
                 >
-                  <Text
-                    style={[
-                      styles.categoryChipText,
-                      category === cat && styles.categoryChipTextSelected,
-                    ]}
+                  <AppText
+                    variant="caption"
+                    color={category === cat ? colors.textOnPrimary : colors.textSecondary}
                   >
                     {cat}
-                  </Text>
+                  </AppText>
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -511,18 +507,8 @@ const styles = StyleSheet.create({
   backButton: {
     marginBottom: spacing.md,
   },
-  backText: {
-    ...typography.body,
-    color: colors.primary,
-  },
   title: {
-    ...typography.h1,
-    color: colors.primary,
     marginBottom: spacing.xs,
-  },
-  subtitle: {
-    ...typography.body,
-    color: colors.textSecondary,
   },
   attemptsCounter: {
     backgroundColor: colors.surface,
@@ -538,25 +524,15 @@ const styles = StyleSheet.create({
     borderColor: colors.error,
   },
   attemptsCounterText: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
     textAlign: 'center',
-  },
-  attemptsCounterTextLimit: {
-    color: colors.error,
-    fontWeight: '600',
   },
   requestsSection: {
     marginBottom: spacing.xl,
   },
   sectionTitle: {
-    ...typography.h3,
-    color: colors.textPrimary,
     marginBottom: spacing.xs,
   },
   sectionHint: {
-    ...typography.caption,
-    color: colors.success,
     marginBottom: spacing.md,
   },
   requestCard: {
@@ -568,14 +544,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   requestAction: {
-    ...typography.body,
-    color: colors.textPrimary,
-    fontWeight: '600',
-  },
-  requestCategory: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    marginTop: spacing.xs,
+    // Handled by AppText
   },
   suggestionsSection: {
     marginBottom: spacing.xl,
@@ -586,8 +555,6 @@ const styles = StyleSheet.create({
     borderColor: colors.primary + '20',
   },
   suggestionHint: {
-    ...typography.caption,
-    color: colors.textSecondary,
     marginBottom: spacing.md,
   },
   filterChipsScroll: {
@@ -609,14 +576,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     borderColor: colors.primary,
   },
-  filterChipText: {
-    ...typography.caption,
-    color: colors.textSecondary,
-  },
-  filterChipTextSelected: {
-    color: colors.textOnPrimary,
-    fontWeight: '600',
-  },
   suggestionsList: {
     maxHeight: 300,
   },
@@ -629,17 +588,9 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   suggestionAction: {
-    ...typography.body,
-    color: colors.textPrimary,
-  },
-  suggestionCategory: {
-    ...typography.caption,
-    color: colors.primary,
-    marginTop: spacing.xs,
+    // Handled by AppText
   },
   noSuggestionsText: {
-    ...typography.body,
-    color: colors.textSecondary,
     textAlign: 'center',
     paddingVertical: spacing.lg,
   },
@@ -663,13 +614,9 @@ const styles = StyleSheet.create({
     marginRight: spacing.sm,
   },
   formSectionTitle: {
-    ...typography.h3,
-    color: colors.textPrimary,
     marginBottom: spacing.md,
   },
   inputLabel: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
     marginBottom: spacing.sm,
     marginTop: spacing.md,
   },
@@ -688,13 +635,6 @@ const styles = StyleSheet.create({
   categoryChipSelected: {
     backgroundColor: colors.primary,
     borderColor: colors.primary,
-  },
-  categoryChipText: {
-    ...typography.caption,
-    color: colors.textSecondary,
-  },
-  categoryChipTextSelected: {
-    color: colors.textOnPrimary,
   },
   submitButton: {
     flex: 2,

@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   SafeAreaView,
   FlatList,
@@ -20,8 +19,8 @@ import { useNavigation } from '@react-navigation/native';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { db } from '../services/firebase/config';
 import { useAuth } from '../context/AuthContext';
-import { LoadingSpinner, EmptyState, ErrorState } from '../components/common';
-import { colors, spacing, typography } from '../theme';
+import { LoadingSpinner, EmptyState, ErrorState, AppText } from '../components/common';
+import { colors, spacing } from '../theme';
 import { Attempt, Request, Suggestion } from '../types';
 import { usePlayerData } from '../hooks/usePlayerData';
 import {
@@ -348,7 +347,7 @@ export function HistoryScreen() {
       />
 
       {/* Timeline Header */}
-      <Text style={styles.timelineHeader}>Timeline</Text>
+      <AppText variant="h3" style={styles.timelineHeader}>Timeline</AppText>
     </View>
   ), [
     getDateFilterLabel,
@@ -424,8 +423,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   timelineHeader: {
-    ...typography.h3,
-    color: colors.textPrimary,
     marginTop: spacing.sm,
   },
 });

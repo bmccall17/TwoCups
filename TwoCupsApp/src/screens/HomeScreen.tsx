@@ -4,7 +4,7 @@ import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { useAuth } from '../context/AuthContext';
 import { useMilestoneCelebration } from '../context/MilestoneCelebrationContext';
 import { usePlayerData } from '../hooks';
-import { LoadingSpinner, ErrorState, SacredGeometryBackground, SectionDivider } from '../components/common';
+import { AppText, LoadingSpinner, ErrorState, SacredGeometryBackground, SectionDivider } from '../components/common';
 import { CupVisualization } from '../components/cups';
 import { colors, spacing, typography, borderRadius, fonts } from '../theme';
 
@@ -91,8 +91,8 @@ export function HomeScreen({
       >
         {/* Compact Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>Two Cups</Text>
-          <Text style={styles.subtitle}>Welcome, {myName}</Text>
+          <AppText variant="h2" style={styles.title}>Two Cups</AppText>
+          <AppText variant="caption" color={colors.textSecondary} style={styles.subtitle}>Welcome, {myName}</AppText>
         </View>
 
         {/* Connection Section - Two cups with Vesica Piscis */}
@@ -159,7 +159,7 @@ export function HomeScreen({
           <View style={styles.collectiveContent}>
             <View style={styles.collectiveHeader}>
               <Text style={styles.collectiveEmoji}>✨</Text>
-              <Text style={styles.collectiveLabel}>Our Cup Together</Text>
+              <AppText variant="body" color={colors.primary} bold style={styles.collectiveLabel}>Our Cup Together</AppText>
               <Text style={styles.collectiveEmoji}>✨</Text>
             </View>
 
@@ -172,7 +172,7 @@ export function HomeScreen({
               />
             </View>
 
-            <Text style={styles.collectiveSublabel}>Fill it with love & care</Text>
+            <AppText variant="bodySmall" color={colors.textSecondary} style={styles.collectiveSublabel}>Fill it with love & care</AppText>
           </View>
         </View>
 
@@ -182,10 +182,10 @@ export function HomeScreen({
           onPress={onNavigateToGemHistory}
           activeOpacity={0.8}
         >
-          <Text style={styles.gemsLabel}>Shared Gems</Text>
+          <AppText variant="caption" color={colors.gem} style={styles.gemsLabel}>Shared Gems</AppText>
           <View style={styles.gemsRow}>
             <Text style={styles.gemsIcon}>💎</Text>
-            <Text style={styles.gemsCount}>{totalGems.toLocaleString()}</Text>
+            <AppText variant="h2" bold style={styles.gemsCount}>{totalGems.toLocaleString()}</AppText>
           </View>
         </TouchableOpacity>
       </ScrollView>
@@ -208,15 +208,10 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   title: {
-    fontSize: 24,
-    fontFamily: fonts.regular,
-    color: colors.textPrimary,
     letterSpacing: 2,
     textTransform: 'uppercase',
   },
   subtitle: {
-    ...typography.caption,
-    color: colors.textSecondary,
     marginTop: 2,
   },
   // Connection section - compact
@@ -280,9 +275,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   collectiveLabel: {
-    fontSize: 18,
-    color: colors.primary,
-    fontFamily: fonts.bold,
     textTransform: 'uppercase',
     letterSpacing: 2,
     marginHorizontal: spacing.sm,
@@ -291,8 +283,6 @@ const styles = StyleSheet.create({
     marginVertical: spacing.sm,
   },
   collectiveSublabel: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
     fontStyle: 'italic',
     marginTop: spacing.xs,
   },
@@ -307,8 +297,6 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   gemsLabel: {
-    ...typography.caption,
-    color: colors.gem,
     textTransform: 'uppercase',
     letterSpacing: 1,
     marginBottom: spacing.xs,
@@ -322,8 +310,6 @@ const styles = StyleSheet.create({
     marginRight: spacing.sm,
   },
   gemsCount: {
-    fontSize: 28,
-    fontFamily: fonts.bold,
-    color: colors.textPrimary,
+    // Size handled by AppText variant
   },
 });
