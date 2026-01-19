@@ -42,7 +42,8 @@
       "Bash(timeout 30 npx expo start:*)",
       "Bash(npx expo lint:*)",
       "Bash(npx eslint:*)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Bash(git status:*)"
     ]
   }
 }

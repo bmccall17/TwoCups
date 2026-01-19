@@ -261,7 +261,7 @@ Documented exceptions:
 6. `TwoCupsApp/docs/UI_DEBT.md`
 7. `.github/pull_request_template.md`
 
-### Modified (12 files)
+### Modified (15 files)
 1. `src/components/common/index.ts`
 2. `src/components/common/CustomTabBar.tsx`
 3. `App.tsx`
@@ -274,6 +274,9 @@ Documented exceptions:
 10. `src/screens/ManageSuggestionsScreen.tsx`
 11. `src/screens/GemHistoryScreen.tsx`
 12. `eslint.config.js`
+13. `src/components/history/SpinningGeometryHeader.tsx` - Text → AppText migration
+14. `src/components/history/StatusSnapshotCard.tsx` - Text → AppText migration
+15. `src/components/history/CollapsibleFilterControls.tsx` - Text → AppText migration
 
 ---
 

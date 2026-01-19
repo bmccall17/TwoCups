@@ -1267,3 +1267,154 @@ Common styles eliminated from each migrated screen:
 **Status:** ✅ Phases 0-4 Complete
 **Sign Out Bug:** ✅ Fixed on both web and Android
 **Next:** Phase 5 enforcement rules (optional, low priority)
+
+---
+
+## 2026-01-19 (Session 3) - Phase 5 Enforcement & History Text Fixes
+
+### Overview
+Completed Phase 5 of the systemic cleanup (enforcement rules) and fixed remaining raw `<Text>` usages in History tab components.
+
+### Phase 5 - Enforcement Complete
+
+#### 5.1 ESLint Rule for Text/AppText
+
+**File Modified:** `eslint.config.js`
+
+Added custom rule to warn on raw `<Text>` usage:
+```js
+{
+  files: ["src/**/*.tsx", "src/**/*.ts"],
+  rules: {
+    "no-restricted-syntax": [
+      "warn",
+      {
+        selector: "JSXOpeningElement[name.name='Text']",
+        message: "Use <AppText> instead of <Text> for consistent typography. Import from 'components/common'."
+      }
+    ],
+  },
+}
+```
+
+**Intentional Exception:** `CustomTabBar.tsx` uses raw `<Text>` for tab labels (fixed nav chrome). Added eslint-disable comment and documented in UI_DEBT.md.
+
+#### 5.2 PR Template Created
+
+**File Created:** `.github/pull_request_template.md`
+
+Template includes:
+- Summary section with bullet points
+- Type of change checkboxes (bug fix, feature, enhancement, refactoring, docs)
+- **UI Changes Checklist:**
+  - Layout & Structure (Screen, Stack, Row, AppText usage)
+  - Cross-Platform Verification (web desktop, web mobile, Android, iOS)
+  - Interaction & Scroll (tap targets, keyboard, pull-to-refresh)
+- Before/after screenshot table
+- Test plan section
+
+#### 5.3 UI Debt Documentation
+
+**File Created:** `TwoCupsApp/docs/UI_DEBT.md`
+
+Documented exceptions:
+1. **Sacred Geometry Background (HomeScreen)** - Absolute positioning for visual effect (acceptable)
+2. **FlatList Screens (HistoryScreen, GemHistoryScreen)** - SafeAreaView used directly for virtualization (acceptable)
+3. **CustomTabBar Text Labels** - Raw Text for fixed nav chrome (acceptable)
+
+Includes guidelines for documenting new exceptions.
+
+---
+
+### History Tab Text Fixes
+
+ESLint caught raw `<Text>` usage in three History tab components. All migrated to `<AppText>`.
+
+#### SpinningGeometryHeader.tsx
+**Changes:**
+- Removed `Text` from react-native imports
+- Added `AppText` import from `../common`
+- Replaced `<Text style={styles.title}>` → `<AppText style={styles.title}>`
+- Replaced `<Text style={styles.subtitle}>` → `<AppText style={styles.subtitle}>`
+- Added display name to `GeometryCircle` memo component
+
+#### StatusSnapshotCard.tsx
+**Changes:**
+- Removed `Text` from react-native imports
+- Added `AppText` import from `../common`
+- Replaced party emoji `<Text>` → `<AppText>`
+- Replaced label `<Text>` → `<AppText>`
+- Replaced badge count `<Text>` → `<AppText>`
+- Added display names to `BouncingDots` and `Confetti` memo components
+
+#### CollapsibleFilterControls.tsx
+**Changes:**
+- Removed `Text` from react-native imports
+- Added `AppText` import from `../common`
+- Replaced all Text elements with AppText:
+  - Header text ("Filters")
+  - Filter badges (date/status labels)
+  - Chevron indicator (▲/▼)
+  - Section labels ("Period", "Status")
+  - Filter option icons (📅, 📆, ∞, ✨, ⏳, ✓)
+  - Filter option text (7d, 30d, All, Waiting, Done)
+
+---
+
+### Settings Screen Fix
+
+**File Modified:** `src/screens/SettingsScreen.tsx`
+
+Removed leftover spacer View that was pushing Sign Out button below the fold on Android:
+```tsx
+// Removed:
+<View style={styles.spacer} />  // Had flexGrow: 1
+
+// Removed style:
+spacer: {
+  flexGrow: 1,
+  minHeight: spacing.lg,
+},
+```
+
+---
+
+### Files Created (2)
+1. `.github/pull_request_template.md` - PR template with UI checklist
+2. `TwoCupsApp/docs/UI_DEBT.md` - UI debt documentation
+
+### Files Modified (5)
+1. `eslint.config.js` - Added no-restricted-syntax rule for Text
+2. `src/components/common/CustomTabBar.tsx` - Removed unused import, added eslint-disable, added displayName
+3. `src/components/history/SpinningGeometryHeader.tsx` - Text → AppText migration
+4. `src/components/history/StatusSnapshotCard.tsx` - Text → AppText migration
+5. `src/components/history/CollapsibleFilterControls.tsx` - Text → AppText migration
+6. `src/screens/SettingsScreen.tsx` - Removed spacer View
+
+---
+
+### Systemic Cleanup Sprint Complete
+
+All 5 phases of the systemic layout cleanup are now complete:
+
+| Phase | Status | Summary |
+|-------|--------|---------|
+| Phase 0 | ✅ | Audit doc created, golden screens identified |
+| Phase 1 | ✅ | DOM depth audit, top 5 causes identified |
+| Phase 2 | ✅ | Screen, Stack, Row primitives created |
+| Phase 3 | ✅ | TabBarHeightContext created, Android fix |
+| Phase 4 | ✅ | All 8 screens migrated |
+| Phase 5 | ✅ | ESLint rules, PR template, UI debt documented |
+
+**Goals Achieved:**
+- ✅ DOM depth reduced (fewer wrapper Views)
+- ✅ Click targets behave (Sign Out visible)
+- ✅ Spacing is predictable (gap-based layout)
+- ✅ Typography is consistent (AppText everywhere)
+- ✅ Enforcement rules in place (ESLint + PR template)
+
+---
+
+**Status:** ✅ Sprint Complete
+**All Phases:** ✅ Done
+**Verification:** ESLint passes on all modified files
