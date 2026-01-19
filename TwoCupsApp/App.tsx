@@ -18,6 +18,7 @@ import { GemAnimationProvider } from './src/context/GemAnimationContext';
 import { MilestoneCelebrationProvider } from './src/context/MilestoneCelebrationContext';
 import { NetworkProvider } from './src/context/NetworkContext';
 import { FontSizeProvider } from './src/context/FontSizeContext';
+import { TabBarHeightProvider } from './src/context/TabBarHeightContext';
 import { LoadingSpinner, InstallAppModal, ToastContainer, OfflineBanner, ErrorBoundary, UpdatePrompt, CustomTabBar } from './src/components/common';
 import { useInstallPrompt, usePendingAcknowledgments } from './src/hooks';
 import { LoginScreen, SignUpScreen, PairingScreen } from './src/screens/auth';
@@ -276,11 +277,13 @@ export default function App() {
               <AuthProvider>
                 <NetworkProvider>
                   <MilestoneCelebrationProvider>
-                    <NavigationContainer>
-                      <UpdatePrompt />
-                      <RootNavigator />
-                      <OfflineBanner />
-                    </NavigationContainer>
+                    <TabBarHeightProvider>
+                      <NavigationContainer>
+                        <UpdatePrompt />
+                        <RootNavigator />
+                        <OfflineBanner />
+                      </NavigationContainer>
+                    </TabBarHeightProvider>
                     <ToastContainer />
                   </MilestoneCelebrationProvider>
                 </NetworkProvider>

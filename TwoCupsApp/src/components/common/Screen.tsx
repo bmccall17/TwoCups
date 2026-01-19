@@ -10,15 +10,22 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs';
 import { colors, spacing } from '../../theme';
+import { useTabBarHeightContext } from '../../context/TabBarHeightContext';
 
 /**
  * Hook to safely get tab bar height.
- * Returns 0 if not inside a BottomTabNavigator (e.g., stack screens).
+ * Uses our custom TabBarHeightContext (set by CustomTabBar) as primary source,
+ * falls back to React Navigation's context, then to 0.
  * Exported for use in screens that use FlatList or other custom scroll implementations.
  */
 export function useTabBarHeight(): number {
-  const height = React.useContext(BottomTabBarHeightContext);
-  return height ?? 0;
+  // Try our custom context first (works with custom tab bar)
+  const customHeight = useTabBarHeightContext();
+  // Fall back to React Navigation's context
+  const rnHeight = React.useContext(BottomTabBarHeightContext);
+
+  // Prefer custom context if it has a value, otherwise use RN context
+  return customHeight > 0 ? customHeight : (rnHeight ?? 0);
 }
 
 export interface ScreenProps {

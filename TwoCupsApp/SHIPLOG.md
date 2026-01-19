@@ -1055,3 +1055,215 @@ Only decorative emoji/icons retain hardcoded font sizes (as planned):
 
 **Status:** ✅ Complete
 **Typography Migration:** ✅ All phases complete
+
+---
+
+## 2026-01-19 (Session 2) - Systemic Layout Cleanup (Phases 0-4)
+
+### Overview
+Major cleanup session implementing the layout primitive system outlined in `systemiccleanuppass.md`. Created `Screen`, `Stack`, and `Row` components, migrated all 8 screens, and fixed the Android tab bar height issue that was causing the "Sign Out button buried" bug.
+
+### Phase 0 & 1 - Audit Complete
+
+**Audit Document Created:** `TwoCupsApp/docs/LAYOUT_AUDIT.md`
+
+#### Screens Inventory (8 total)
+**Tab Screens (5):**
+| Screen | Uses tabBarHeight | Scrollable |
+|--------|-------------------|------------|
+| HomeScreen | ✅ Yes | ScrollView |
+| LogAttemptScreen | ✅ Yes | ScrollView |
+| AcknowledgeScreen | ✅ Yes | ScrollView |
+| HistoryScreen | ✅ Yes | FlatList |
+| SettingsScreen | ✅ Yes | ScrollView |
+
+**Stack Screens (3):**
+| Screen | Uses tabBarHeight | Scrollable |
+|--------|-------------------|------------|
+| MakeRequestScreen | ❌ (stack screen) | ScrollView |
+| ManageSuggestionsScreen | ❌ (stack screen) | ScrollView |
+| GemHistoryScreen | ❌ (stack screen) | FlatList |
+
+#### Top 5 Structural Causes Identified
+1. **No shared Screen container** - Every screen manually handled SafeAreaView + useBottomTabBarHeight
+2. **Wrapper Views for spacing** - Views existed only for margins/padding
+3. **Inconsistent scrolling patterns** - Mixed ScrollView/FlatList usage
+4. **Absolute positioning hacks** - Sacred geometry used transform tricks
+5. **Per-screen style duplication** - container/scrollContent/header styles repeated everywhere
+
+### Phase 2 - Layout Primitives Created
+
+#### New Files Created
+
+**`src/components/common/Screen.tsx`**
+```tsx
+interface ScreenProps {
+  children: ReactNode;
+  scroll?: boolean;           // Enable ScrollView
+  padding?: boolean;          // Apply horizontal padding (default: true)
+  tabBarInset?: boolean;      // Account for tab bar (default: true)
+  backgroundColor?: string;   // Override background
+  onRefresh?: () => void;     // Pull-to-refresh handler
+  refreshing?: boolean;       // Refresh state
+  style?: StyleProp<ViewStyle>;
+  contentContainerStyle?: StyleProp<ViewStyle>;
+}
+```
+Handles: SafeAreaView, tab bar bottom inset, optional scrolling with pull-to-refresh.
+
+**`src/components/common/Stack.tsx`**
+```tsx
+interface StackProps {
+  children: ReactNode;
+  gap?: SpacingKey | number;  // 'xs' | 'sm' | 'md' | 'lg' | 'xl' or number
+  align?: 'start' | 'center' | 'end' | 'stretch';
+  justify?: 'start' | 'center' | 'end' | 'between' | 'around';
+  style?: StyleProp<ViewStyle>;
+}
+```
+Vertical layout with gap-based spacing. Replaces wrapper Views with marginBottom.
+
+**`src/components/common/Row.tsx`**
+```tsx
+interface RowProps {
+  children: ReactNode;
+  gap?: SpacingKey | number;
+  align?: 'start' | 'center' | 'end' | 'stretch' | 'baseline';
+  justify?: 'start' | 'center' | 'end' | 'between' | 'around';
+  wrap?: boolean;
+  style?: StyleProp<ViewStyle>;
+}
+```
+Horizontal layout with gap-based spacing. Replaces flexDirection: 'row' wrapper Views.
+
+**`src/context/TabBarHeightContext.tsx`**
+```tsx
+export function TabBarHeightProvider({ children }: { children: ReactNode });
+export function useTabBarHeightContext(): number;
+export function useSetTabBarHeight(): (height: number) => void;
+```
+Custom context for tab bar height - solves Android issue where React Navigation's `BottomTabBarHeightContext` wasn't being populated with custom tab bars.
+
+#### Exports Added to `src/components/common/index.ts`
+```tsx
+export { Screen, useTabBarHeight } from './Screen';
+export { Stack } from './Stack';
+export { Row } from './Row';
+```
+
+### Phase 3 - Tab Bar Height Fix (Android)
+
+**Problem:** On Android, the Sign Out button was still hidden behind the tab bar even after migration. The `useBottomTabBarHeight()` from React Navigation returns 0 when using a custom tab bar.
+
+**Root Cause:** React Navigation's `BottomTabBarHeightContext` is only populated when using the default tab bar component. Our `CustomTabBar` is absolutely positioned and floats over content.
+
+**Solution:**
+1. Created `TabBarHeightContext` to share tab bar height across the app
+2. Updated `CustomTabBar.tsx` to measure and report its height:
+   ```tsx
+   const TAB_BAR_BASE_HEIGHT = 80;
+   const bottomPadding = Math.max(insets.bottom, 8);
+   const totalHeight = TAB_BAR_BASE_HEIGHT + bottomPadding;
+
+   useEffect(() => {
+     setTabBarHeight(totalHeight);
+   }, [totalHeight, setTabBarHeight]);
+   ```
+3. Updated `Screen.tsx` to use our custom context as primary source:
+   ```tsx
+   export function useTabBarHeight(): number {
+     const customHeight = useTabBarHeightContext();
+     const rnHeight = React.useContext(BottomTabBarHeightContext);
+     return customHeight > 0 ? customHeight : (rnHeight ?? 0);
+   }
+   ```
+4. Wrapped `NavigationContainer` with `TabBarHeightProvider` in `App.tsx`
+
+### Phase 4 - Screen Migrations Complete
+
+#### Tab Screens Migrated (5)
+
+**SettingsScreen.tsx**
+- Replaced SafeAreaView + ScrollView + useBottomTabBarHeight with `<Screen scroll>`
+- Replaced wrapper Views with `<Stack gap="...">` and `<Row>`
+- Removed ~50 lines of duplicate styles
+- **Bug Fixed:** Sign Out button now visible above tab bar
+
+**HomeScreen.tsx**
+- Reduced from 316 to 239 lines (24% reduction)
+- Sacred geometry backgrounds preserved (absolute positioning kept)
+- Uses `<Screen scroll onRefresh={...} refreshing={...}>`
+
+**AcknowledgeScreen.tsx**
+- Replaced SafeAreaView + ScrollView pattern
+- CollapsibleSection sub-components kept intact
+- Loading/error states use `<Screen>`
+
+**LogAttemptScreen.tsx**
+- Migrated to `<Screen scroll>` with Stack layout
+- Removed manual tabBarHeight handling
+
+**HistoryScreen.tsx**
+- Uses FlatList (not ScrollView), so kept SafeAreaView
+- Updated to use `useTabBarHeight` from common exports instead of React Navigation
+
+#### Stack Screens Migrated (3)
+
+**MakeRequestScreen.tsx**
+- Uses `<Screen scroll tabBarInset={false}>` (no tab bar visible)
+- Replaced wrapper Views with Stack
+
+**ManageSuggestionsScreen.tsx**
+- Uses `<Screen scroll tabBarInset={false}>`
+- Similar migration pattern
+
+**GemHistoryScreen.tsx**
+- Uses FlatList, kept SafeAreaView for main view
+- Loading/error states use `<Screen tabBarInset={false}>`
+
+### Styles Removed (Per-Screen Cleanup)
+
+Common styles eliminated from each migrated screen:
+- `container: { flex: 1, backgroundColor: colors.background }`
+- `scrollContent: { flexGrow: 1, padding: spacing.lg }`
+- `header: { marginBottom: spacing.xl }`
+- `title: { marginBottom: spacing.xs }`
+
+### Files Created (4)
+1. `src/components/common/Screen.tsx` - Screen container primitive
+2. `src/components/common/Stack.tsx` - Vertical gap-based layout
+3. `src/components/common/Row.tsx` - Horizontal gap-based layout
+4. `src/context/TabBarHeightContext.tsx` - Custom tab bar height context
+
+### Files Modified (10)
+1. `src/components/common/index.ts` - Added primitive exports
+2. `src/components/common/CustomTabBar.tsx` - Reports height via context
+3. `App.tsx` - Added TabBarHeightProvider wrapper
+4. `src/screens/SettingsScreen.tsx` - Full migration
+5. `src/screens/HomeScreen.tsx` - Full migration
+6. `src/screens/AcknowledgeScreen.tsx` - Full migration
+7. `src/screens/LogAttemptScreen.tsx` - Full migration
+8. `src/screens/HistoryScreen.tsx` - useTabBarHeight update
+9. `src/screens/MakeRequestScreen.tsx` - Full migration
+10. `src/screens/ManageSuggestionsScreen.tsx` - Full migration
+11. `src/screens/GemHistoryScreen.tsx` - Partial migration (FlatList)
+
+### Verification
+✅ Web build passes (`npx expo export --platform web`)
+✅ Desktop web - Sign Out button visible
+✅ Android emulator - Sign Out button visible (after TabBarHeightContext fix)
+✅ All screens compile without errors
+
+### What's Left (Phase 5 - Enforcement)
+
+**Not Yet Implemented:**
+- [ ] Lint rules to disallow raw `<Text>` outside AppText
+- [ ] Lint rules to warn on deeply nested Views
+- [ ] PR checklist template for UI changes
+- [ ] UI Debt bucket documentation
+
+---
+
+**Status:** ✅ Phases 0-4 Complete
+**Sign Out Bug:** ✅ Fixed on both web and Android
+**Next:** Phase 5 enforcement rules (optional, low priority)

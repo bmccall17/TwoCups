@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import React, { memo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { Home, Heart, CheckCircle2, BarChart3, Settings } from 'lucide-react-native';
 import { colors } from '../../theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSetTabBarHeight } from '../../context/TabBarHeightContext';
 
 // Icon components mapping for tabs
 const TAB_ICONS: Record<string, React.ComponentType<{ size?: number; color?: string; strokeWidth?: number }>> = {
@@ -79,9 +80,21 @@ const TabItem = memo(({ routeName, isFocused, onPress, onLongPress, badgeCount }
   );
 });
 
+// Tab bar base height (without safe area)
+const TAB_BAR_BASE_HEIGHT = 80;
+
 // Main CustomTabBar Component
 export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
+  const setTabBarHeight = useSetTabBarHeight();
+
+  // Calculate and report the total tab bar height
+  const bottomPadding = Math.max(insets.bottom, 8);
+  const totalHeight = TAB_BAR_BASE_HEIGHT + bottomPadding;
+
+  useEffect(() => {
+    setTabBarHeight(totalHeight);
+  }, [totalHeight, setTabBarHeight]);
 
   return (
     <View
