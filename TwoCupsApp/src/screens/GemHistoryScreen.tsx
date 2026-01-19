@@ -26,7 +26,7 @@ import {
 } from 'firebase/firestore';
 import { db, getCurrentUserId } from '../services/firebase/config';
 import { useAuth } from '../context/AuthContext';
-import { LoadingSpinner, EmptyState, ErrorState, Button } from '../components/common';
+import { LoadingSpinner, EmptyState, ErrorState, Button, AppText } from '../components/common';
 import { colors, spacing, typography, borderRadius, shadows } from '../theme';
 import { Attempt } from '../types';
 
@@ -289,20 +289,20 @@ export function GemHistoryScreen({ onGoBack }: GemHistoryScreenProps) {
           </View>
           
           <View style={styles.entryContent}>
-            <Text style={styles.entryReason}>{item.reasonLabel}</Text>
+            <AppText variant="body" bold style={styles.entryReason}>{item.reasonLabel}</AppText>
             {item.attemptAction && (
-              <Text style={styles.entryAction} numberOfLines={1}>
+              <AppText variant="bodySmall" color={colors.textSecondary} style={styles.entryAction} numberOfLines={1}>
                 "{item.attemptAction}"
-              </Text>
+              </AppText>
             )}
-            <Text style={styles.entryTime}>{formatTime(item.timestamp)}</Text>
+            <AppText variant="caption" color={colors.textMuted} style={styles.entryTime}>{formatTime(item.timestamp)}</AppText>
           </View>
 
           <View style={styles.entryAmount}>
-            <Text style={[styles.gemBadge, { backgroundColor: reasonColor + '20' }]}>
-              <Text style={[styles.gemBadgeText, { color: reasonColor }]}>+{item.amount}</Text>
+            <View style={[styles.gemBadge, { backgroundColor: reasonColor + '20' }]}>
+              <AppText variant="body" bold color={reasonColor}>+{item.amount}</AppText>
               <Text style={styles.gemBadgeIcon}> 💎</Text>
-            </Text>
+            </View>
           </View>
         </View>
       </View>
@@ -314,7 +314,7 @@ export function GemHistoryScreen({ onGoBack }: GemHistoryScreenProps) {
     return (
       <View style={styles.footerLoader}>
         <ActivityIndicator size="small" color={colors.primary} />
-        <Text style={styles.loadingMoreText}>Loading more...</Text>
+        <AppText variant="bodySmall" color={colors.textSecondary}>Loading more...</AppText>
       </View>
     );
   };
@@ -324,13 +324,13 @@ export function GemHistoryScreen({ onGoBack }: GemHistoryScreenProps) {
       <View style={styles.summaryRow}>
         <Text style={styles.summaryIcon}>💎</Text>
         <View style={styles.summaryContent}>
-          <Text style={styles.summaryLabel}>Gems Shown</Text>
-          <Text style={styles.summaryValue}>{runningTotal.toLocaleString()}</Text>
+          <AppText variant="caption" color={colors.textSecondary}>Gems Shown</AppText>
+          <AppText variant="h1" color={colors.gem} bold>{runningTotal.toLocaleString()}</AppText>
         </View>
       </View>
-      <Text style={styles.summaryHint}>
+      <AppText variant="caption" color={colors.textMuted} style={styles.summaryHint}>
         Showing gem earnings from your activity. Scroll for more history.
-      </Text>
+      </AppText>
     </View>
   );
 
@@ -340,10 +340,10 @@ export function GemHistoryScreen({ onGoBack }: GemHistoryScreenProps) {
         <View style={styles.header}>
           {onGoBack && (
             <TouchableOpacity onPress={onGoBack} style={styles.backButton}>
-              <Text style={styles.backButtonText}>← Back</Text>
+              <AppText variant="body" color={colors.primary}>← Back</AppText>
             </TouchableOpacity>
           )}
-          <Text style={styles.title}>Gem History</Text>
+          <AppText variant="h2" style={styles.title}>Gem History</AppText>
         </View>
         <LoadingSpinner message="Loading gem history..." />
       </SafeAreaView>
@@ -356,10 +356,10 @@ export function GemHistoryScreen({ onGoBack }: GemHistoryScreenProps) {
         <View style={styles.header}>
           {onGoBack && (
             <TouchableOpacity onPress={onGoBack} style={styles.backButton}>
-              <Text style={styles.backButtonText}>← Back</Text>
+              <AppText variant="body" color={colors.primary}>← Back</AppText>
             </TouchableOpacity>
           )}
-          <Text style={styles.title}>Gem History</Text>
+          <AppText variant="h2" style={styles.title}>Gem History</AppText>
         </View>
         <View style={{ flex: 1, paddingHorizontal: spacing.lg }}>
           <ErrorState error={error} onRetry={() => fetchEntries()} />
@@ -373,10 +373,10 @@ export function GemHistoryScreen({ onGoBack }: GemHistoryScreenProps) {
       <View style={styles.header}>
         {onGoBack && (
           <TouchableOpacity onPress={onGoBack} style={styles.backButton}>
-            <Text style={styles.backButtonText}>← Back</Text>
+            <AppText variant="body" color={colors.primary}>← Back</AppText>
           </TouchableOpacity>
         )}
-        <Text style={styles.title}>Gem History</Text>
+        <AppText variant="h2" style={styles.title}>Gem History</AppText>
         <Text style={styles.subtitle}>💎</Text>
       </View>
 
@@ -426,13 +426,7 @@ const styles = StyleSheet.create({
   backButton: {
     marginRight: spacing.md,
   },
-  backButtonText: {
-    ...typography.body,
-    color: colors.primary,
-  },
   title: {
-    ...typography.h2,
-    color: colors.textPrimary,
     flex: 1,
   },
   subtitle: {
@@ -463,18 +457,7 @@ const styles = StyleSheet.create({
   summaryContent: {
     flex: 1,
   },
-  summaryLabel: {
-    ...typography.caption,
-    color: colors.textSecondary,
-  },
-  summaryValue: {
-    ...typography.h1,
-    color: colors.gem,
-    fontWeight: '700',
-  },
   summaryHint: {
-    ...typography.caption,
-    color: colors.textMuted,
     fontStyle: 'italic',
   },
   entryCard: {
@@ -506,19 +489,12 @@ const styles = StyleSheet.create({
     marginRight: spacing.md,
   },
   entryReason: {
-    ...typography.body,
-    color: colors.textPrimary,
-    fontWeight: '600',
   },
   entryAction: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
     fontStyle: 'italic',
     marginTop: 2,
   },
   entryTime: {
-    ...typography.caption,
-    color: colors.textMuted,
     marginTop: spacing.xs,
   },
   entryAmount: {
@@ -531,10 +507,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  gemBadgeText: {
-    ...typography.body,
-    fontWeight: '700',
-  },
   gemBadgeIcon: {
     fontSize: 14,
   },
@@ -544,9 +516,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: spacing.lg,
     gap: spacing.sm,
-  },
-  loadingMoreText: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
   },
 });

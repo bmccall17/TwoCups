@@ -25,7 +25,7 @@ import { useAuth } from '../context/AuthContext';
 import { useFontSize, FontSizeOption } from '../context/FontSizeContext';
 import { usePlayerData } from '../hooks';
 import { AppText, Button, ErrorState, TextInput } from '../components/common';
-import { colors, spacing, typography, borderRadius, fonts } from '../theme';
+import { colors, spacing, typography, borderRadius } from '../theme';
 import { isUsernameAvailable, setUsername, updateUsername } from '../services/api/usernames';
 import {
   validateUsername,
@@ -230,7 +230,7 @@ export function SettingsScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.scrollContent}>
           <View style={styles.header}>
-            <Text style={styles.title}>Settings</Text>
+            <AppText variant="h1">Settings</AppText>
           </View>
           <ErrorState error={error} onRetry={refresh} />
         </View>
@@ -315,22 +315,20 @@ export function SettingsScreen() {
                   ]}
                   onPress={() => setFontSize(option.value)}
                 >
-                  <Text
-                    style={[
-                      { fontSize: scaledTypography.bodySmall.fontSize },
-                      styles.fontSizeOptionText,
-                      fontSize === option.value && styles.fontSizeOptionTextActive,
-                    ]}
+                  <AppText
+                    variant="bodySmall"
+                    color={fontSize === option.value ? colors.textOnPrimary : colors.textSecondary}
+                    bold={fontSize === option.value}
                   >
                     {option.label}
-                  </Text>
+                  </AppText>
                 </Pressable>
               ))}
             </View>
 
             {/* Preview */}
             <View style={styles.fontSizePreview}>
-              <Text style={styles.previewLabel}>Preview</Text>
+              <AppText variant="caption" color={colors.textMuted} style={styles.previewLabel}>Preview</AppText>
               <AppText variant="h3" style={styles.previewHeading}>
                 Heading Text
               </AppText>
@@ -373,17 +371,17 @@ export function SettingsScreen() {
             showsVerticalScrollIndicator={false}
           >
             <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Edit Account</Text>
-              <Text style={styles.modalSubtitle}>
+              <AppText variant="h2" style={styles.modalTitle}>Edit Account</AppText>
+              <AppText variant="body" color={colors.textSecondary} style={styles.modalSubtitle}>
                 Update your account details
-              </Text>
+              </AppText>
 
               {accountError && (
-                <Text style={styles.accountErrorText}>{accountError}</Text>
+                <AppText variant="body" color={colors.error} style={styles.accountErrorText}>{accountError}</AppText>
               )}
 
               {/* Username Section */}
-              <Text style={styles.modalSectionTitle}>Username</Text>
+              <AppText variant="caption" color={colors.textSecondary} style={styles.modalSectionTitle}>Username</AppText>
               <View style={styles.usernameInputContainer}>
                 <TextInput
                   label="New Username"
@@ -402,7 +400,7 @@ export function SettingsScreen() {
                 )}
                 {!checkingUsername && usernameAvailable === true && (
                   <View style={styles.usernameStatus}>
-                    <Text style={styles.availableText}>Available</Text>
+                    <AppText variant="caption" color={colors.success} bold>Available</AppText>
                   </View>
                 )}
               </View>
@@ -410,7 +408,7 @@ export function SettingsScreen() {
               {/* Email Section - only show for non-anonymous users */}
               {!isAnonymous && (
                 <>
-                  <Text style={styles.modalSectionTitle}>Email</Text>
+                  <AppText variant="caption" color={colors.textSecondary} style={styles.modalSectionTitle}>Email</AppText>
                   <TextInput
                     label="Email Address"
                     value={newEmail}
@@ -424,7 +422,7 @@ export function SettingsScreen() {
                   />
 
                   {/* Password Section */}
-                  <Text style={styles.modalSectionTitle}>Password</Text>
+                  <AppText variant="caption" color={colors.textSecondary} style={styles.modalSectionTitle}>Password</AppText>
                   <TextInput
                     label="Current Password"
                     value={currentPassword}
@@ -542,14 +540,6 @@ const styles = StyleSheet.create({
   fontSizeOptionActive: {
     backgroundColor: colors.primary,
   },
-  fontSizeOptionText: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-  },
-  fontSizeOptionTextActive: {
-    color: colors.textOnPrimary,
-    fontFamily: fonts.bold,
-  },
   fontSizeOptionPressed: {
     opacity: 0.7,
   },
@@ -560,8 +550,6 @@ const styles = StyleSheet.create({
     borderTopColor: colors.border,
   },
   previewLabel: {
-    ...typography.caption,
-    color: colors.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: spacing.sm,
@@ -605,29 +593,20 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   modalTitle: {
-    ...typography.h2,
-    color: colors.textPrimary,
     textAlign: 'center',
     marginBottom: spacing.xs,
   },
   modalSubtitle: {
-    ...typography.body,
-    color: colors.textSecondary,
     textAlign: 'center',
     marginBottom: spacing.lg,
   },
   modalSectionTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.textSecondary,
     marginTop: spacing.md,
     marginBottom: spacing.xs,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   accountErrorText: {
-    ...typography.body,
-    color: colors.error,
     textAlign: 'center',
     marginBottom: spacing.md,
     padding: spacing.sm,
@@ -642,11 +621,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 12,
     top: 38,
-  },
-  availableText: {
-    ...typography.caption,
-    color: colors.success,
-    fontWeight: '600',
   },
   modalButtons: {
     flexDirection: 'row',

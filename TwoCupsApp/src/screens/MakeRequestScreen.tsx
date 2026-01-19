@@ -16,7 +16,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { createRequest, deleteRequest, getActiveRequestsInfo } from '../services/api';
 import type { ActiveRequestsInfo } from '../services/api';
-import { Button, TextInput, LoadingSpinner, EmptyState, ErrorState } from '../components/common';
+import { Button, TextInput, LoadingSpinner, EmptyState, ErrorState, AppText } from '../components/common';
 import { colors, spacing, typography, borderRadius } from '../theme';
 import { Request } from '../types';
 import { getErrorMessage } from '../types/utils';
@@ -240,7 +240,7 @@ export function MakeRequestScreen({ onGoBack }: MakeRequestScreenProps) {
       <SafeAreaView style={styles.container}>
         <View style={styles.scrollContent}>
           <TouchableOpacity onPress={onGoBack} style={styles.backButton}>
-            <Text style={styles.backText}>← Back</Text>
+            <AppText variant="body" color={colors.primary}>← Back</AppText>
           </TouchableOpacity>
           <ErrorState error={error} onRetry={handleRetry} />
         </View>
@@ -264,19 +264,23 @@ export function MakeRequestScreen({ onGoBack }: MakeRequestScreenProps) {
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={onGoBack} style={styles.backButton}>
-            <Text style={styles.backText}>← Back</Text>
+            <AppText variant="body" color={colors.primary}>← Back</AppText>
           </TouchableOpacity>
-          <Text style={styles.title}>Make a Request</Text>
-          <Text style={styles.subtitle}>Ask your partner for something specific</Text>
+          <AppText variant="h1" color={colors.primary} style={styles.title}>Make a Request</AppText>
+          <AppText variant="body" color={colors.textSecondary}>Ask your partner for something specific</AppText>
 
           {/* Active Requests Counter */}
           {requestsInfo && (
             <View style={[styles.counterContainer, atLimit && styles.counterContainerLimit]}>
-              <Text style={[styles.counterText, atLimit && styles.counterTextLimit]}>
+              <AppText
+                variant="bodySmall"
+                color={atLimit ? colors.error : colors.textSecondary}
+                bold={atLimit}
+              >
                 {atLimit
                   ? `⚠️ Limit reached (${requestsInfo.count}/${requestsInfo.limit} active requests)`
                   : `📋 ${requestsInfo.count}/${requestsInfo.limit} active requests`}
-              </Text>
+              </AppText>
             </View>
           )}
         </View>
@@ -284,9 +288,9 @@ export function MakeRequestScreen({ onGoBack }: MakeRequestScreenProps) {
         {/* Info Box - only show for first-time users */}
         {visibleRequests.length === 0 && (
           <View style={styles.infoBox}>
-            <Text style={styles.infoText}>
+            <AppText variant="bodySmall" color={colors.textSecondary}>
               Your request will appear in your partner's Log Attempt screen. When they fulfill it, you both get bonus gems!
-            </Text>
+            </AppText>
           </View>
         )}
 
@@ -324,7 +328,7 @@ export function MakeRequestScreen({ onGoBack }: MakeRequestScreenProps) {
             />
 
             {/* Category Picker */}
-            <Text style={styles.inputLabel}>Category</Text>
+            <AppText variant="bodySmall" color={colors.textSecondary} style={styles.inputLabel}>Category</AppText>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
               {CATEGORIES.map((cat) => (
                 <TouchableOpacity
@@ -335,14 +339,12 @@ export function MakeRequestScreen({ onGoBack }: MakeRequestScreenProps) {
                   ]}
                   onPress={() => setCategory(category === cat ? null : cat)}
                 >
-                  <Text
-                    style={[
-                      styles.categoryChipText,
-                      category === cat && styles.categoryChipTextSelected,
-                    ]}
+                  <AppText
+                    variant="caption"
+                    color={category === cat ? colors.textOnPrimary : colors.textSecondary}
                   >
                     {cat}
-                  </Text>
+                  </AppText>
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -372,7 +374,7 @@ export function MakeRequestScreen({ onGoBack }: MakeRequestScreenProps) {
 
         {/* Requests Section */}
         <View style={styles.requestsSection}>
-          <Text style={styles.sectionTitle}>Your Requests</Text>
+          <AppText variant="h3" style={styles.sectionTitle}>Your Requests</AppText>
 
           {/* Filter Tabs */}
           <View style={styles.filterContainer}>
@@ -380,25 +382,37 @@ export function MakeRequestScreen({ onGoBack }: MakeRequestScreenProps) {
               style={[styles.filterTab, filter === 'all' && styles.filterTabActive]}
               onPress={() => setFilter('all')}
             >
-              <Text style={[styles.filterText, filter === 'all' && styles.filterTextActive]}>
+              <AppText
+                variant="bodySmall"
+                color={filter === 'all' ? colors.textOnPrimary : colors.textSecondary}
+                bold={filter === 'all'}
+              >
                 All ({visibleRequests.length})
-              </Text>
+              </AppText>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.filterTab, filter === 'active' && styles.filterTabActive]}
               onPress={() => setFilter('active')}
             >
-              <Text style={[styles.filterText, filter === 'active' && styles.filterTextActive]}>
+              <AppText
+                variant="bodySmall"
+                color={filter === 'active' ? colors.textOnPrimary : colors.textSecondary}
+                bold={filter === 'active'}
+              >
                 Active ({activeCount})
-              </Text>
+              </AppText>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.filterTab, filter === 'fulfilled' && styles.filterTabActive]}
               onPress={() => setFilter('fulfilled')}
             >
-              <Text style={[styles.filterText, filter === 'fulfilled' && styles.filterTextActive]}>
+              <AppText
+                variant="bodySmall"
+                color={filter === 'fulfilled' ? colors.textOnPrimary : colors.textSecondary}
+                bold={filter === 'fulfilled'}
+              >
                 Fulfilled ({fulfilledCount})
-              </Text>
+              </AppText>
             </TouchableOpacity>
           </View>
 
@@ -417,48 +431,49 @@ export function MakeRequestScreen({ onGoBack }: MakeRequestScreenProps) {
                     styles.statusBadge,
                     request.status === 'fulfilled' ? styles.statusBadgeFulfilled : styles.statusBadgeActive,
                   ]}>
-                    <Text style={[
-                      styles.statusText,
-                      request.status === 'fulfilled' ? styles.statusTextFulfilled : styles.statusTextActive,
-                    ]}>
+                    <AppText
+                      variant="caption"
+                      color={request.status === 'fulfilled' ? colors.success : colors.primary}
+                      bold
+                    >
                       {request.status === 'fulfilled' ? '✓ Fulfilled' : '● Active'}
-                    </Text>
+                    </AppText>
                   </View>
                   <View style={styles.requestHeaderRight}>
-                    <Text style={styles.requestTime}>
+                    <AppText variant="caption" color={colors.textMuted}>
                       {formatDate(request.createdAt)}
-                    </Text>
+                    </AppText>
                     {request.status === 'active' && (
                       <TouchableOpacity
                         style={styles.deleteButton}
                         onPress={() => handleDeleteRequest(request)}
                         disabled={deleting === request.id}
                       >
-                        <Text style={styles.deleteButtonText}>
+                        <AppText variant="body" color={colors.error} bold style={styles.deleteButtonText}>
                           {deleting === request.id ? '...' : '✕'}
-                        </Text>
+                        </AppText>
                       </TouchableOpacity>
                     )}
                   </View>
                 </View>
 
-                <Text style={styles.requestAction}>{request.action}</Text>
+                <AppText variant="body" bold style={styles.requestAction}>{request.action}</AppText>
 
                 {request.description && (
-                  <Text style={styles.requestDescription}>{request.description}</Text>
+                  <AppText variant="bodySmall" color={colors.textSecondary} style={styles.requestDescription}>{request.description}</AppText>
                 )}
 
                 {request.category && (
                   <View style={styles.categoryBadge}>
-                    <Text style={styles.categoryBadgeText}>{request.category}</Text>
+                    <AppText variant="caption" color={colors.textSecondary}>{request.category}</AppText>
                   </View>
                 )}
 
                 {request.status === 'fulfilled' && request.fulfilledAt && (
                   <View style={styles.fulfilledInfo}>
-                    <Text style={styles.fulfilledInfoText}>
+                    <AppText variant="caption" color={colors.success}>
                       Fulfilled {formatDate(request.fulfilledAt)}
-                    </Text>
+                    </AppText>
                   </View>
                 )}
               </View>
@@ -497,18 +512,8 @@ const styles = StyleSheet.create({
   backButton: {
     marginBottom: spacing.md,
   },
-  backText: {
-    ...typography.body,
-    color: colors.primary,
-  },
   title: {
-    ...typography.h1,
-    color: colors.primary,
     marginBottom: spacing.xs,
-  },
-  subtitle: {
-    ...typography.body,
-    color: colors.textSecondary,
   },
   counterContainer: {
     marginTop: spacing.md,
@@ -521,17 +526,7 @@ const styles = StyleSheet.create({
   counterContainerLimit: {
     backgroundColor: colors.error + '20',
   },
-  counterText: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-  },
-  counterTextLimit: {
-    color: colors.error,
-    fontWeight: '600',
-  },
   inputLabel: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
     marginBottom: spacing.sm,
     marginTop: spacing.md,
   },
@@ -551,13 +546,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     borderColor: colors.primary,
   },
-  categoryChipText: {
-    ...typography.caption,
-    color: colors.textSecondary,
-  },
-  categoryChipTextSelected: {
-    color: colors.textOnPrimary,
-  },
   infoBox: {
     backgroundColor: colors.surface,
     borderRadius: borderRadius.md,
@@ -565,10 +553,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
     borderLeftWidth: 4,
     borderLeftColor: colors.primary,
-  },
-  infoText: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
   },
   addButton: {
     marginBottom: spacing.lg,
@@ -594,8 +578,6 @@ const styles = StyleSheet.create({
     marginTop: spacing.xl,
   },
   sectionTitle: {
-    ...typography.h3,
-    color: colors.textPrimary,
     marginBottom: spacing.md,
   },
   filterContainer: {
@@ -613,14 +595,6 @@ const styles = StyleSheet.create({
   },
   filterTabActive: {
     backgroundColor: colors.primary,
-  },
-  filterText: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-  },
-  filterTextActive: {
-    color: colors.textOnPrimary,
-    fontWeight: '600',
   },
   requestCard: {
     backgroundColor: colors.surface,
@@ -656,29 +630,10 @@ const styles = StyleSheet.create({
   statusBadgeFulfilled: {
     backgroundColor: colors.success + '20',
   },
-  statusText: {
-    ...typography.caption,
-    fontWeight: '600',
-  },
-  statusTextActive: {
-    color: colors.primary,
-  },
-  statusTextFulfilled: {
-    color: colors.success,
-  },
-  requestTime: {
-    ...typography.caption,
-    color: colors.textMuted,
-  },
   requestAction: {
-    ...typography.body,
-    color: colors.textPrimary,
-    fontWeight: '600',
     marginBottom: spacing.xs,
   },
   requestDescription: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
     marginBottom: spacing.sm,
   },
   categoryBadge: {
@@ -689,27 +644,16 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.full,
     marginBottom: spacing.sm,
   },
-  categoryBadgeText: {
-    ...typography.caption,
-    color: colors.textSecondary,
-  },
   fulfilledInfo: {
     marginTop: spacing.sm,
     paddingTop: spacing.sm,
     borderTopWidth: 1,
     borderTopColor: colors.border,
   },
-  fulfilledInfoText: {
-    ...typography.caption,
-    color: colors.success,
-  },
   deleteButton: {
     padding: spacing.sm,
   },
   deleteButtonText: {
-    ...typography.body,
-    color: colors.error,
-    fontWeight: '600',
     fontSize: 18,
   },
 });

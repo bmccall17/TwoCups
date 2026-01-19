@@ -14,7 +14,7 @@ import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestor
 import { db } from '../services/firebase/config';
 import { useAuth } from '../context/AuthContext';
 import { createSuggestion, deleteSuggestion } from '../services/api';
-import { Button, TextInput, LoadingSpinner, EmptyState, ErrorState } from '../components/common';
+import { Button, TextInput, LoadingSpinner, EmptyState, ErrorState, AppText } from '../components/common';
 import { colors, spacing, typography, borderRadius } from '../theme';
 import { Suggestion } from '../types';
 import { getErrorMessage } from '../types/utils';
@@ -188,7 +188,7 @@ export function ManageSuggestionsScreen({ onGoBack }: ManageSuggestionsScreenPro
       <SafeAreaView style={styles.container}>
         <View style={styles.scrollContent}>
           <TouchableOpacity onPress={onGoBack} style={styles.backButton}>
-            <Text style={styles.backText}>← Back</Text>
+            <AppText variant="body" color={colors.primary}>← Back</AppText>
           </TouchableOpacity>
           <ErrorState error={error} onRetry={handleRetry} />
         </View>
@@ -211,17 +211,17 @@ export function ManageSuggestionsScreen({ onGoBack }: ManageSuggestionsScreenPro
       >
         <View style={styles.header}>
           <TouchableOpacity onPress={onGoBack} style={styles.backButton}>
-            <Text style={styles.backText}>← Back</Text>
+            <AppText variant="body" color={colors.primary}>← Back</AppText>
           </TouchableOpacity>
-          <Text style={styles.title}>My Suggestions</Text>
-          <Text style={styles.subtitle}>Ways your partner can fill your cup</Text>
+          <AppText variant="h1" color={colors.primary} style={styles.title}>My Suggestions</AppText>
+          <AppText variant="body" color={colors.textSecondary}>Ways your partner can fill your cup</AppText>
         </View>
 
         {suggestions.length === 0 && (
           <View style={styles.infoBox}>
-            <Text style={styles.infoText}>
+            <AppText variant="bodySmall" color={colors.textSecondary}>
               Add suggestions for things that make you feel loved. Your partner will see these in their Log Attempt screen.
-            </Text>
+            </AppText>
           </View>
         )}
 
@@ -255,7 +255,7 @@ export function ManageSuggestionsScreen({ onGoBack }: ManageSuggestionsScreenPro
               showCharacterCount
             />
 
-            <Text style={styles.inputLabel}>Category</Text>
+            <AppText variant="bodySmall" color={colors.textSecondary} style={styles.inputLabel}>Category</AppText>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
               {CATEGORIES.map((cat) => (
                 <TouchableOpacity
@@ -266,14 +266,12 @@ export function ManageSuggestionsScreen({ onGoBack }: ManageSuggestionsScreenPro
                   ]}
                   onPress={() => setCategory(category === cat ? null : cat)}
                 >
-                  <Text
-                    style={[
-                      styles.categoryChipText,
-                      category === cat && styles.categoryChipTextSelected,
-                    ]}
+                  <AppText
+                    variant="caption"
+                    color={category === cat ? colors.textOnPrimary : colors.textSecondary}
                   >
                     {cat}
-                  </Text>
+                  </AppText>
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -302,9 +300,9 @@ export function ManageSuggestionsScreen({ onGoBack }: ManageSuggestionsScreenPro
         )}
 
         <View style={styles.suggestionsSection}>
-          <Text style={styles.sectionTitle}>
+          <AppText variant="h3" style={styles.sectionTitle}>
             Your Suggestions ({suggestions.length})
-          </Text>
+          </AppText>
 
           {suggestions.length === 0 ? (
             <EmptyState
@@ -315,22 +313,22 @@ export function ManageSuggestionsScreen({ onGoBack }: ManageSuggestionsScreenPro
           ) : (
             Object.entries(groupedSuggestions).map(([cat, items]) => (
               <View key={cat} style={styles.categoryGroup}>
-                <Text style={styles.categoryTitle}>{cat}</Text>
+                <AppText variant="bodySmall" color={colors.primary} bold style={styles.categoryTitle}>{cat}</AppText>
                 {items.map((suggestion) => (
                   <View key={suggestion.id} style={styles.suggestionCard}>
                     <View style={styles.suggestionContent}>
-                      <Text style={styles.suggestionAction}>{suggestion.action}</Text>
+                      <AppText variant="body" bold>{suggestion.action}</AppText>
                       {suggestion.description && (
-                        <Text style={styles.suggestionDescription}>
+                        <AppText variant="bodySmall" color={colors.textSecondary} style={styles.suggestionDescription}>
                           {suggestion.description}
-                        </Text>
+                        </AppText>
                       )}
                     </View>
                     <TouchableOpacity
                       onPress={() => handleDelete(suggestion.id)}
                       style={styles.deleteButton}
                     >
-                      <Text style={styles.deleteText}>✕</Text>
+                      <AppText variant="body" color={colors.error} bold style={styles.deleteText}>✕</AppText>
                     </TouchableOpacity>
                   </View>
                 ))}
@@ -358,18 +356,8 @@ const styles = StyleSheet.create({
   backButton: {
     marginBottom: spacing.md,
   },
-  backText: {
-    ...typography.body,
-    color: colors.primary,
-  },
   title: {
-    ...typography.h1,
-    color: colors.primary,
     marginBottom: spacing.xs,
-  },
-  subtitle: {
-    ...typography.body,
-    color: colors.textSecondary,
   },
   infoBox: {
     backgroundColor: colors.surface,
@@ -378,10 +366,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
     borderLeftWidth: 4,
     borderLeftColor: colors.primary,
-  },
-  infoText: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
   },
   addButton: {
     marginBottom: spacing.lg,
@@ -393,8 +377,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   inputLabel: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
     marginBottom: spacing.sm,
     marginTop: spacing.md,
   },
@@ -414,13 +396,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     borderColor: colors.primary,
   },
-  categoryChipText: {
-    ...typography.caption,
-    color: colors.textSecondary,
-  },
-  categoryChipTextSelected: {
-    color: colors.textOnPrimary,
-  },
   formButtons: {
     flexDirection: 'row',
     marginTop: spacing.md,
@@ -436,17 +411,12 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   sectionTitle: {
-    ...typography.h3,
-    color: colors.textPrimary,
     marginBottom: spacing.md,
   },
   categoryGroup: {
     marginBottom: spacing.lg,
   },
   categoryTitle: {
-    ...typography.bodySmall,
-    color: colors.primary,
-    fontWeight: '600',
     marginBottom: spacing.sm,
   },
   suggestionCard: {
@@ -460,14 +430,7 @@ const styles = StyleSheet.create({
   suggestionContent: {
     flex: 1,
   },
-  suggestionAction: {
-    ...typography.body,
-    color: colors.textPrimary,
-    fontWeight: '600',
-  },
   suggestionDescription: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
     marginTop: spacing.xs,
   },
   deleteButton: {
@@ -475,9 +438,6 @@ const styles = StyleSheet.create({
     marginLeft: spacing.sm,
   },
   deleteText: {
-    ...typography.body,
-    color: colors.error,
-    fontWeight: '600',
     fontSize: 18,
   },
 });

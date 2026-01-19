@@ -39,7 +39,8 @@
       "Bash(xargs cat:*)",
       "Bash(unzip:*)",
       "Bash(powershell.exe -Command \"Expand-Archive -Path ''opendyslexic-0.92.zip'' -DestinationPath ''./extracted'' -Force\")",
-      "Bash(timeout 30 npx expo start:*)"
+      "Bash(timeout 30 npx expo start:*)",
+      "Bash(npx expo lint:*)"
     ]
   }
 }
