@@ -107,6 +107,7 @@ How-to guides and operational procedures.
 | Document | Description |
 |----------|-------------|
 | **[fix-workflow.md](runbooks/fix-workflow.md)** | **🎯 START HERE: Meta-playbook for the entire fix process** |
+| [firebase-hosting-deploy.md](runbooks/firebase-hosting-deploy.md) | Firebase Hosting deployment (CI/CD and manual) |
 | [android-build.md](runbooks/android-build.md) | Android build instructions |
 | [layout-cleanup.md](runbooks/layout-cleanup.md) | Systemic layout cleanup procedure |
 | [dom-rollback.md](runbooks/dom-rollback.md) | DOM refactor rollback procedure |

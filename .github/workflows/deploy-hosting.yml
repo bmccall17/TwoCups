@@ -1,0 +1,115 @@
+name: Deploy to Firebase Hosting
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Build and Deploy to Firebase Hosting
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: TwoCupsApp/package-lock.json
+
+      - name: Install dependencies
+        working-directory: TwoCupsApp
+        run: npm ci
+
+      - name: Build web app
+        working-directory: TwoCupsApp
+        run: npm run build:web
+
+      - name: Verify build output
+        working-directory: TwoCupsApp
+        run: |
+          echo ""
+          echo "========================================"
+          echo "  🔍 VERIFYING BUILD OUTPUT"
+          echo "========================================"
+          echo ""
+
+          REQUIRED_FILES=(
+            "dist/index.html"
+            "dist/sw.js"
+            "dist/manifest.json"
+            "dist/build-manifest.json"
+            "dist/assets/icon.png"
+            "dist/assets/adaptive-icon.png"
+            "dist/assets/favicon.png"
+          )
+
+          MISSING=0
+          for file in "${REQUIRED_FILES[@]}"; do
+            if [[ -f "$file" ]]; then
+              echo "✅ $file"
+            else
+              echo "❌ MISSING: $file"
+              MISSING=$((MISSING + 1))
+            fi
+          done
+
+          echo ""
+
+          if [[ $MISSING -gt 0 ]]; then
+            echo "========================================"
+            echo "  ❌ BUILD VERIFICATION FAILED"
+            echo "  $MISSING required files missing!"
+            echo "========================================"
+            exit 1
+          fi
+
+          FILE_COUNT=$(find dist -type f | wc -l)
+          echo "📦 Total files in dist: $FILE_COUNT"
+          echo ""
+          echo "✅ All required files present!"
+
+      - name: Display deployment banner
+        run: |
+          echo ""
+          echo "╔══════════════════════════════════════════════════════════════╗"
+          echo "║                                                              ║"
+          echo "║   🚀 DEPLOYING TWO CUPS TO FIREBASE HOSTING                  ║"
+          echo "║                                                              ║"
+          echo "╠══════════════════════════════════════════════════════════════╣"
+          echo "║                                                              ║"
+          echo "║   Commit SHA:    ${{ github.sha }}"
+          echo "║   Commit Short:  ${GITHUB_SHA::7}"
+          echo "║   Branch:        ${{ github.ref_name }}"
+          echo "║   Triggered by:  ${{ github.actor }}"
+          echo "║   Timestamp:     $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo "║   Public Dir:    TwoCupsApp/dist"
+          echo "║                                                              ║"
+          echo "╚══════════════════════════════════════════════════════════════╝"
+          echo ""
+
+      - name: Deploy to Firebase Hosting
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          channelId: live
+          projectId: twocups-2026
+
+      - name: Post-deploy confirmation
+        run: |
+          echo ""
+          echo "╔══════════════════════════════════════════════════════════════╗"
+          echo "║                                                              ║"
+          echo "║   ✅ DEPLOYMENT COMPLETE                                     ║"
+          echo "║                                                              ║"
+          echo "║   Site: https://twocups-2026.web.app                         ║"
+          echo "║   Commit: ${GITHUB_SHA::7}                                   ║"
+          echo "║   Time: $(date -u '+%Y-%m-%d %H:%M:%S UTC')                  ║"
+          echo "║                                                              ║"
+          echo "╚══════════════════════════════════════════════════════════════╝"
+          echo ""

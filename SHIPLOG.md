@@ -1,5 +1,35 @@
 # Two Cups - Ship Log
 
+## 2026-01-19 - GitHub Actions CI/CD for Firebase Hosting
+
+### Overview
+Added automated deployment to Firebase Hosting via GitHub Actions. Pushing to `main` now triggers automatic build and deploy.
+
+### Changes
+
+#### New: GitHub Actions Workflow (`.github/workflows/deploy-hosting.yml`)
+- Triggers on push to `main` branch
+- Runs in `TwoCupsApp/` directory
+- Steps: `npm ci` → `npm run build:web` → verify files → deploy
+- Verifies required files exist before deploying (same checks as `deploy-hosting.sh`)
+- Displays deployment banner with commit SHA, timestamp, and deployed directory
+- Uses `FirebaseExtended/action-hosting-deploy@v0` action
+
+#### New: Runbook (`docs/runbooks/firebase-hosting-deploy.md`)
+- Documents both automatic (CI/CD) and manual deployment methods
+- Includes troubleshooting guide
+- GitHub secret setup instructions
+
+### Required Setup
+Add `FIREBASE_SERVICE_ACCOUNT` secret to GitHub repository (see runbook for instructions).
+
+### Files Changed
+- `.github/workflows/deploy-hosting.yml` (new)
+- `docs/runbooks/firebase-hosting-deploy.md` (new)
+- `docs/README.md` (TOC updated)
+
+---
+
 ## 2026-01-17 - History Tab Redesign & Navigation Bar Updates
 
 ### Overview
