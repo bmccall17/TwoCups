@@ -10,6 +10,44 @@ Welcome to the TwoCups documentation. This directory contains all project docume
 
 ---
 
+## Start Here
+
+**New to our docs?** Start with these resources:
+
+| Resource | Purpose |
+|----------|---------|
+| [GOVERNANCE.md](GOVERNANCE.md) | **📋 Rules for adding/maintaining docs** — Read this if you're writing a new doc |
+| [templates/](templates/) | **📝 Document templates** — Copy the right template for your doc type |
+| Decision tree below | **🤔 Where do I put this?** — Quick guide to finding the right category |
+
+---
+
+## Where Do I Put This?
+
+**Decision Tree (30 seconds):**
+
+```
+Is it describing how to do something?
+├─ YES → docs/runbooks/
+└─ NO  → Continue...
+
+Is it a feature or product requirement?
+├─ YES → docs/prd/
+└─ NO  → Continue...
+
+Is it technical design or architecture?
+├─ YES → docs/specs/
+└─ NO  → Continue...
+
+Is it an audit or review?
+├─ YES → docs/audits/
+└─ NO  → docs/reference/
+```
+
+**Still not sure?** Read [GOVERNANCE.md](GOVERNANCE.md#how-to-add-a-new-doc-3-steps) for detailed guidance.
+
+---
+
 ## PRDs & Feature Specs
 
 Product requirements and feature specifications for planned or in-progress work.

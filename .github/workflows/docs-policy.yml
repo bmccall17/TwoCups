@@ -1,0 +1,110 @@
+name: Documentation Policy Enforcement
+
+on:
+  pull_request:
+    paths:
+      - '**.md'
+      - '.github/workflows/docs-policy.yml'
+
+jobs:
+  check-docs-policy:
+    runs-on: ubuntu-latest
+    name: Enforce Documentation Governance
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v40
+        with:
+          files: |
+            **.md
+
+      - name: Check for markdown files outside /docs
+        run: |
+          # Allowlisted markdown files in root
+          ALLOWLIST="README.md|AGENTS.md|SHIPLOG.md|LICENSE.md|CONTRIBUTING.md"
+
+          # Get all changed markdown files
+          if [ -n "${{ steps.changed-files.outputs.all_changed_files }}" ]; then
+            for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
+              # Check if file is in root (not in a subdirectory)
+              if [[ ! "$file" =~ "/" ]]; then
+                # Check if it's in the allowlist
+                if [[ ! "$file" =~ ^($ALLOWLIST)$ ]]; then
+                  echo "❌ ERROR: New markdown file '$file' is in root directory"
+                  echo "📋 All docs must go in /docs/ subdirectories"
+                  echo "ℹ️  Allowlisted root docs: $ALLOWLIST"
+                  exit 1
+                fi
+              fi
+            done
+          fi
+
+      - name: Check if docs/README.md was updated when adding new docs
+        run: |
+          # Check if any new markdown files were added to /docs
+          NEW_DOCS=$(git diff --name-only --diff-filter=A HEAD~1 HEAD -- "docs/**/*.md" 2>/dev/null || echo "")
+
+          if [ -n "$NEW_DOCS" ]; then
+            # Check if docs/README.md was modified
+            README_UPDATED=$(git diff --name-only HEAD~1 HEAD -- "docs/README.md" 2>/dev/null || echo "")
+
+            if [ -z "$README_UPDATED" ]; then
+              echo "⚠️  WARNING: New documentation files added but docs/README.md was not updated"
+              echo ""
+              echo "New files:"
+              echo "$NEW_DOCS"
+              echo ""
+              echo "Please update docs/README.md to add these files to the table of contents."
+              echo "See: docs/GOVERNANCE.md#how-to-add-a-new-doc-3-steps"
+              echo ""
+              echo "Note: This is a warning, not a blocker. But please update the TOC!"
+            fi
+          fi
+
+      - name: Verify header blocks in new docs
+        run: |
+          # Get new markdown files in /docs
+          NEW_DOCS=$(git diff --name-only --diff-filter=A HEAD~1 HEAD -- "docs/**/*.md" 2>/dev/null || echo "")
+
+          MISSING_HEADERS=0
+
+          if [ -n "$NEW_DOCS" ]; then
+            for file in $NEW_DOCS; do
+              # Check for required header fields
+              if ! grep -q "^**Status:**" "$file"; then
+                echo "⚠️  WARNING: $file missing 'Status:' header"
+                MISSING_HEADERS=$((MISSING_HEADERS + 1))
+              fi
+              if ! grep -q "^**Owner:**" "$file"; then
+                echo "⚠️  WARNING: $file missing 'Owner:' header"
+                MISSING_HEADERS=$((MISSING_HEADERS + 1))
+              fi
+              if ! grep -q "^**Last Updated:**" "$file"; then
+                echo "⚠️  WARNING: $file missing 'Last Updated:' header"
+                MISSING_HEADERS=$((MISSING_HEADERS + 1))
+              fi
+            done
+
+            if [ $MISSING_HEADERS -gt 0 ]; then
+              echo ""
+              echo "📋 New docs should include header blocks with metadata."
+              echo "See: docs/templates/ for template examples"
+              echo "Docs: docs/GOVERNANCE.md#doc-header-block-required"
+            fi
+          fi
+
+      - name: Summary
+        if: success()
+        run: |
+          echo "✅ Documentation policy checks passed!"
+          echo ""
+          echo "📖 Quick reference:"
+          echo "  - New docs must go in docs/ subdirectories"
+          echo "  - Root-level docs: README.md, AGENTS.md, SHIPLOG.md only"
+          echo "  - Use docs/README.md to link all docs"
+          echo "  - See docs/GOVERNANCE.md for details"

@@ -4,6 +4,18 @@
 
 -
 
+## Documentation Changes
+
+- [ ] This PR changes behavior (feature/bug fix/API change) **AND** updates at least one doc **OR** includes comment "no doc change needed"
+- [ ] If I added/changed a doc:
+  - [ ] Doc lives under `/docs` in the right category
+  - [ ] Doc has Status/Owner/Last Updated header block
+  - [ ] File naming follows conventions (lowercase-with-hyphens.md)
+  - [ ] `docs/README.md` TOC is updated (if new doc)
+  - [ ] If replacing a doc, old doc marked deprecated and moved to `docs/archive/`
+
+**See [docs/GOVERNANCE.md](../docs/GOVERNANCE.md) for details.**
+
 ## Type of Change
 
 - [ ] Bug fix
