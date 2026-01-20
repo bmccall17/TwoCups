@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback, memo, useMemo, useRef } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   TouchableOpacity,
   Dimensions,
@@ -205,7 +204,7 @@ const AddButton = memo(function AddButton({ title, subtitle, icon, onPress }: Ad
   return (
     <TouchableOpacity style={styles.addButton} onPress={onPress} activeOpacity={0.7}>
       <View style={styles.addButtonIcon}>
-        <Text style={styles.addButtonEmoji}>{icon}</Text>
+        <AppText style={styles.addButtonEmoji}>{icon}</AppText>
       </View>
       <View style={styles.addButtonContent}>
         <AppText variant="body" color={colors.primary} bold style={styles.addButtonTitle}>{title}</AppText>
@@ -520,7 +519,7 @@ export function AcknowledgeScreen({
           <>
             {/* When no pending items - Show Requests & Suggestions prominently */}
             <View style={styles.emptyStateCard}>
-              <Text style={styles.emptyStateIcon}>✨</Text>
+              <AppText style={styles.emptyStateIcon}>✨</AppText>
               <AppText variant="h3" style={styles.emptyStateTitle}>All caught up!</AppText>
               <AppText variant="body" color={colors.textSecondary} style={styles.emptyStateText}>
                 No pending acknowledgements. Take this time to manage your requests and suggestions.
