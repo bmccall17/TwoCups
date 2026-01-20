@@ -30,6 +30,7 @@ Only these files are permitted at the repository root level:
 | Technical Specs | `docs/specs/` | Architecture, API specs, design standards |
 | Runbooks | `docs/runbooks/` | How-to guides, operational procedures |
 | Audit Reports | `docs/audits/` | Code reviews, analysis, assessments |
+| Investigations | `docs/investigations/` | Bug fixes, debugging sessions, audit crumbs |
 | Reference Material | `docs/reference/` | Reference tables, symbol guides, glossaries |
 | Archived Docs | `docs/archive/` | Completed work, deprecated docs, historical records |
 
@@ -211,6 +212,115 @@ EOF
 
 ### Step 3: Update docs/README.md
 Add an entry in the appropriate section table and commit both files together.
+
+---
+
+## Shiplog + Investigations Policy
+
+This section establishes how we preserve audit trails while keeping documentation organized: **investigations are "crumb" docs**, and **SHIPLOG.md is the canonical changelog**.
+
+### Overview
+
+- **SHIPLOG.md** is the canonical record of what shipped, fixed, and when
+- **Investigations** are short docs that capture problem → root cause → fix → verification
+- **Resolved investigations** are summarized into SHIPLOG.md on a consistent cadence
+- Investigations stay detailed; SHIPLOG stays concise
+
+### When to Create an Investigation
+
+Create an investigation doc when:
+- The fix required debugging/auditing beyond a quick glance
+- Root cause is non-obvious or likely to recur
+- The change affects foundations: navigation, layout, auth, data integrity, build/deploy, performance, or security
+- You want a breadcrumb trail for future developers or backlog candidates
+
+**Skip investigations for:**
+- Single-file, obvious cause, low-risk, quick-to-verify trivial fixes
+- In this case, add entry directly to SHIPLOG or note "no investigation needed" in PR
+
+### Investigation Metadata (Required Header)
+
+Every investigation must include:
+```markdown
+**Status:** open | resolved | superseded | archived
+**Owner:** [Agent name(s) or developer]
+**Created:** [YYYY-MM-DD]
+**Last Updated:** [YYYY-MM-DD]
+**Related:** [PR/commit links, specs, related investigations]
+```
+
+### Investigation Status Values
+
+- **open** - Still being investigated or not fully fixed/verified
+- **resolved** - Fixed and verified (ready to compile into SHIPLOG)
+- **superseded** - Replaced by another investigation (link to the new one)
+- **archived** - Completed and moved out of active investigations (optional)
+
+### Investigation Naming
+
+```
+docs/investigations/YYYY-MM-DD-short-slug.md
+```
+
+Example: `docs/investigations/2026-01-19-history-tab-inset.md`
+
+### Investigation Template & Structure
+
+Use template: `docs/templates/investigation.md`
+
+Minimum required sections:
+- Problem / Symptoms
+- Scope
+- Investigation Notes
+- Root Cause
+- Fix
+- Verification Steps
+- Follow-ups / Backlog Candidates
+- Links (PRs/commits, related docs)
+
+### How Investigations Become SHIPLOG
+
+**Compilation rule:**
+1. When an investigation changes to `resolved`, it gets compiled into SHIPLOG.md
+2. SHIPLOG entry references the investigation doc and PR/commit
+3. Investigation doc remains as permanent crumb trail
+
+**Compilation cadence (pick one and stick to it):**
+- End of day (recommended for fast-moving work)
+- End of sprint
+- Before release
+
+### SHIPLOG Format (Concise)
+
+SHIPLOG entries should be short:
+- Date
+- What shipped/fixed (1–3 bullets)
+- Verification (1 bullet)
+- Links to investigation doc(s) and PR/commit
+
+**SHIPLOG should NOT contain:**
+- Deep root-cause writeups (those live in investigation crumbs)
+- Extended investigation notes
+
+### Single Source of Truth Pointers
+
+- **`SHIPLOG.md`** answers: "What changed recently?"
+- **`docs/investigations/README.md`** answers: "What investigations are active/resolved?"
+- **Individual investigation docs** answer: "Why was this broken and what did we do?"
+
+### PR Checklist for Investigations
+
+When adding an investigation:
+- [ ] Investigation lives in `docs/investigations/YYYY-MM-DD-slug.md`
+- [ ] Includes required header block (Status, Owner, Created, Last Updated, Related)
+- [ ] Uses template from `docs/templates/investigation.md`
+- [ ] Updated `docs/investigations/README.md` with new crumb link
+
+When resolving an investigation:
+- [ ] Investigation status changed to `resolved`
+- [ ] SHIPLOG.md entry added referencing investigation
+- [ ] `docs/investigations/README.md` updated to reflect new status
+- [ ] PR/commit linked in investigation `Related` field
 
 ---
 

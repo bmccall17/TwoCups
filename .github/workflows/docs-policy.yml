@@ -98,6 +98,66 @@ jobs:
             fi
           fi
 
+      - name: Check investigations format
+        run: |
+          # Get new investigation files
+          NEW_INVESTIGATIONS=$(git diff --name-only --diff-filter=A HEAD~1 HEAD -- "docs/investigations/**/*.md" 2>/dev/null || echo "")
+
+          ISSUES=0
+
+          if [ -n "$NEW_INVESTIGATIONS" ]; then
+            for file in $NEW_INVESTIGATIONS; do
+              # Skip the README
+              if [[ "$file" == "docs/investigations/README.md" ]]; then
+                continue
+              fi
+
+              # Check for YYYY-MM-DD naming
+              if [[ ! "$file" =~ docs/investigations/[0-9]{4}-[0-9]{2}-[0-9]{2}- ]]; then
+                echo "⚠️  WARNING: $file should use YYYY-MM-DD- prefix (e.g., docs/investigations/2026-01-19-slug.md)"
+                ISSUES=$((ISSUES + 1))
+              fi
+
+              # Check for required investigation headers
+              if ! grep -q "^**Status:**" "$file"; then
+                echo "⚠️  WARNING: $file missing 'Status:' header"
+                ISSUES=$((ISSUES + 1))
+              fi
+              if ! grep -q "^**Owner:**" "$file"; then
+                echo "⚠️  WARNING: $file missing 'Owner:' header"
+                ISSUES=$((ISSUES + 1))
+              fi
+              if ! grep -q "^**Created:**" "$file"; then
+                echo "⚠️  WARNING: $file missing 'Created:' header"
+                ISSUES=$((ISSUES + 1))
+              fi
+              if ! grep -q "^**Last Updated:**" "$file"; then
+                echo "⚠️  WARNING: $file missing 'Last Updated:' header"
+                ISSUES=$((ISSUES + 1))
+              fi
+
+              # Check for required sections
+              if ! grep -q "^## Problem" "$file"; then
+                echo "⚠️  WARNING: $file missing 'Problem / Symptoms' section"
+                ISSUES=$((ISSUES + 1))
+              fi
+              if ! grep -q "^## Root Cause" "$file"; then
+                echo "⚠️  WARNING: $file missing 'Root Cause' section"
+                ISSUES=$((ISSUES + 1))
+              fi
+              if ! grep -q "^## Fix" "$file"; then
+                echo "⚠️  WARNING: $file missing 'Fix' section"
+                ISSUES=$((ISSUES + 1))
+              fi
+            done
+
+            if [ $ISSUES -gt 0 ]; then
+              echo ""
+              echo "📋 Investigations should follow the template: docs/templates/investigation.md"
+              echo "See: docs/GOVERNANCE.md#shiplog--investigations-policy"
+            fi
+          fi
+
       - name: Summary
         if: success()
         run: |

@@ -27,6 +27,10 @@ Welcome to the TwoCups documentation. This directory contains all project docume
 **Decision Tree (30 seconds):**
 
 ```
+Is it a bug fix/debugging/investigation?
+├─ YES → docs/investigations/
+└─ NO  → Continue...
+
 Is it describing how to do something?
 ├─ YES → docs/runbooks/
 └─ NO  → Continue...
@@ -86,6 +90,14 @@ Reference screenshots for visual regression testing:
 
 - [golden-history-tab.png](audits/screenshots/golden-history-tab.png)
 - [golden-home-tab.png](audits/screenshots/golden-home-tab.png)
+
+## Investigations
+
+Bug fixes, debugging sessions, and audit trails. Each investigation captures problem → root cause → fix → verification.
+
+**[Investigations Index](investigations/README.md)** - Browse open, resolved, and superseded investigations
+
+**See:** [Shiplog + Investigations Policy](GOVERNANCE.md#shiplog--investigations-policy) for how investigations are documented and compiled into SHIPLOG.
 
 ## Runbooks
 

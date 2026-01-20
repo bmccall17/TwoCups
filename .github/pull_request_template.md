@@ -6,15 +6,23 @@
 
 ## Documentation Changes
 
-- [ ] This PR changes behavior (feature/bug fix/API change) **AND** updates at least one doc **OR** includes comment "no doc change needed"
-- [ ] If I added/changed a doc:
-  - [ ] Doc lives under `/docs` in the right category
-  - [ ] Doc has Status/Owner/Last Updated header block
-  - [ ] File naming follows conventions (lowercase-with-hyphens.md)
-  - [ ] `docs/README.md` TOC is updated (if new doc)
-  - [ ] If replacing a doc, old doc marked deprecated and moved to `docs/archive/`
+- [ ] This PR changes behavior (feature/bug fix/API change) **AND** handles docs **OR** includes comment "no doc change needed"
 
-**See [docs/GOVERNANCE.md](../docs/GOVERNANCE.md) for details.**
+**If this is a non-trivial fix:**
+- [ ] Investigation doc created in `docs/investigations/YYYY-MM-DD-slug.md`
+- [ ] Investigation includes header block (Status, Owner, Created, Last Updated, Related)
+- [ ] Investigation includes required sections (Problem, Scope, Root Cause, Fix, Verification, Follow-ups)
+- [ ] `docs/investigations/README.md` updated to list the investigation
+- [ ] If fix is resolved: SHIPLOG.md entry added and investigation marked `resolved`
+
+**If this is a general doc change:**
+- [ ] Doc lives under `/docs` in the right category
+- [ ] Doc has Status/Owner/Last Updated header block
+- [ ] File naming follows conventions (lowercase-with-hyphens.md)
+- [ ] `docs/README.md` TOC is updated (if new doc)
+- [ ] If replacing a doc, old doc marked deprecated and moved to `docs/archive/`
+
+**See [docs/GOVERNANCE.md](../docs/GOVERNANCE.md) for details on both docs and investigations.**
 
 ## Type of Change
 
