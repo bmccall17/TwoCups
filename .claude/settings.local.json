@@ -43,7 +43,12 @@
       "Bash(npx expo lint:*)",
       "Bash(npx eslint:*)",
       "Bash(tree:*)",
-      "Bash(git status:*)"
+      "Bash(git status:*)",
+      "Bash(file:*)",
+      "Bash(git mv:*)",
+      "Bash(git rm:*)",
+      "Bash(git commit:*)",
+      "Bash(bash:*)"
     ]
   }
 }

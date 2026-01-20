@@ -1,0 +1,289 @@
+{
+  "audit_date": "2026-01-19",
+  "audit_version": "1.0",
+
+  "gem_types": [
+    {
+      "name": "gem",
+      "description": "Single gem type (no variants)",
+      "stored_as": "number"
+    }
+  ],
+
+  "event_types": [
+    {
+      "id": "log_attempt",
+      "trigger": "User submits LogAttemptScreen form",
+      "gems_awarded": 1,
+      "recipient": "actor",
+      "side_effects": ["creates_attempt_doc", "updates_player_gemCount", "updates_couple_lastActivityAt"]
+    },
+    {
+      "id": "fulfill_request",
+      "trigger": "log_attempt with matching active request (case-insensitive exact match)",
+      "gems_awarded": 2,
+      "recipient": "actor",
+      "side_effects": ["marks_request_fulfilled", "links_attempt_to_request"]
+    },
+    {
+      "id": "acknowledge",
+      "trigger": "User presses Acknowledge button on AcknowledgeScreen",
+      "gems_awarded": 3,
+      "recipient": "both_players",
+      "side_effects": [
+        "marks_attempt_acknowledged",
+        "updates_actor_gemCount",
+        "updates_recipient_gemCount",
+        "updates_recipient_cupLevel",
+        "updates_collective_cupLevel"
+      ]
+    },
+    {
+      "id": "create_request",
+      "trigger": "User submits MakeRequestScreen form",
+      "gems_awarded": 0,
+      "side_effects": ["creates_request_doc"]
+    },
+    {
+      "id": "cancel_request",
+      "trigger": "User deletes active request",
+      "gems_awarded": 0,
+      "side_effects": ["sets_request_status_canceled"]
+    },
+    {
+      "id": "create_suggestion",
+      "trigger": "User submits ManageSuggestionsScreen form",
+      "gems_awarded": 0,
+      "side_effects": ["creates_suggestion_doc"]
+    },
+    {
+      "id": "delete_suggestion",
+      "trigger": "User deletes suggestion",
+      "gems_awarded": 0,
+      "side_effects": ["deletes_suggestion_doc"]
+    }
+  ],
+
+  "state_fields": {
+    "player": {
+      "cupLevel": {
+        "type": "number",
+        "range": [0, 100],
+        "overflow_behavior": "reset_to_excess"
+      },
+      "gemCount": {
+        "type": "number",
+        "range": [0, "unbounded"]
+      },
+      "achievedMilestones": {
+        "type": "number[]",
+        "optional": true
+      }
+    },
+    "couple": {
+      "collectiveCupLevel": {
+        "type": "number",
+        "range": [0, 100],
+        "overflow_behavior": "reset_to_excess"
+      },
+      "pointsPerAcknowledgment": {
+        "type": "number",
+        "default": 5
+      }
+    },
+    "attempt": {
+      "acknowledged": {
+        "type": "boolean",
+        "transitions": ["false -> true"]
+      },
+      "fulfilledRequestId": {
+        "type": "string | null"
+      }
+    },
+    "request": {
+      "status": {
+        "type": "enum",
+        "values": ["active", "fulfilled", "canceled"],
+        "transitions": ["active -> fulfilled", "active -> canceled"]
+      }
+    }
+  },
+
+  "point_values": {
+    "BASE_GEM_AWARD": 1,
+    "REQUEST_FULFILLMENT_BONUS": 2,
+    "ACK_GEM_AWARD": 3,
+    "ACK_COLLECTIVE_CUP_AWARD": 3,
+    "DEFAULT_POINTS_PER_ACK": 5
+  },
+
+  "cup_models": {
+    "individual": {
+      "exists": true,
+      "stored_at": "couples/{coupleId}/players/{uid}.cupLevel",
+      "fills_on": "acknowledge (recipient only)",
+      "fill_amount": "pointsPerAcknowledgment (default 5)",
+      "range": [0, 100],
+      "overflow": "resets to (level - 100)"
+    },
+    "collective": {
+      "exists": true,
+      "stored_at": "couples/{coupleId}.collectiveCupLevel",
+      "fills_on": "any acknowledge",
+      "fill_amount": 3,
+      "range": [0, 100],
+      "overflow": "resets to (level - 100)"
+    },
+    "personal": {
+      "exists": false
+    },
+    "shared": {
+      "exists": false,
+      "note": "collective cup serves this role"
+    }
+  },
+
+  "transformations": {
+    "gem_to_liquid": {
+      "exists": false
+    },
+    "acknowledgment_effects": {
+      "exists": true,
+      "description": "Acknowledgment awards gems to both players, fills recipient cup, fills collective cup"
+    },
+    "aging_decay": {
+      "exists": false
+    },
+    "coal_state": {
+      "exists": false
+    },
+    "cup_overflow_reset": {
+      "exists": true,
+      "formula": "new_level = old_level + points - 100 (when >= 100)"
+    }
+  },
+
+  "side_effects": {
+    "notifications": {
+      "exists": false,
+      "note": "No push notifications found"
+    },
+    "streaks": {
+      "exists": false
+    },
+    "achievements": {
+      "exists": true,
+      "field": "achievedMilestones",
+      "implementation": "MilestoneCelebrationContext",
+      "note": "Milestone thresholds not fully traced"
+    },
+    "celebration_overlays": {
+      "exists": true,
+      "triggers": ["cup_overflow", "collective_cup_overflow", "request_fulfilled"],
+      "component": "CelebrationOverlay"
+    },
+    "gem_animations": {
+      "exists": true,
+      "component": "GemAnimation via GemAnimationContext"
+    }
+  },
+
+  "invariants": {
+    "enforced": [
+      {
+        "rule": "daily_attempt_limit",
+        "value": 20,
+        "scope": "per_player_per_day",
+        "source": "actions.ts:27"
+      },
+      {
+        "rule": "active_request_limit",
+        "value": 5,
+        "scope": "per_player",
+        "source": "actions.ts:28"
+      },
+      {
+        "rule": "no_self_attempts",
+        "description": "forPlayerId !== byPlayerId",
+        "source": "actions.ts:216-218, firestore.rules:183"
+      },
+      {
+        "rule": "no_duplicate_acknowledgment",
+        "description": "acknowledged must be false to acknowledge",
+        "source": "actions.ts:334-336, firestore.rules:191-192"
+      },
+      {
+        "rule": "only_recipient_can_acknowledge",
+        "description": "forPlayerId === current user",
+        "source": "actions.ts:329-331, firestore.rules:190"
+      },
+      {
+        "rule": "only_creator_can_cancel_request",
+        "description": "byPlayerId === current user",
+        "source": "actions.ts:498-500, firestore.rules:227-228"
+      },
+      {
+        "rule": "cup_level_bounded",
+        "description": "cupLevel clamped to 0-100 range",
+        "source": "CupVisualization.tsx:22"
+      },
+      {
+        "rule": "new_player_starts_at_zero",
+        "description": "cupLevel=0, gemCount=0 on create",
+        "source": "firestore.rules:157-158"
+      }
+    ],
+    "not_enforced": [
+      {
+        "rule": "race_condition_protection",
+        "note": "No transactions for acknowledgment; concurrent acks could theoretically both succeed"
+      },
+      {
+        "rule": "offline_conflict_resolution",
+        "note": "No offline queue or sync detected"
+      }
+    ]
+  },
+
+  "persistence": {
+    "primary": "firestore",
+    "computation": "client_side",
+    "backup": "cloud_functions_exist_but_usage_unclear",
+    "collections": [
+      "users",
+      "usernames",
+      "couples",
+      "couples/{coupleId}/players",
+      "couples/{coupleId}/attempts",
+      "couples/{coupleId}/requests",
+      "couples/{coupleId}/suggestions",
+      "inviteCodes"
+    ]
+  },
+
+  "not_implemented": [
+    "liquid",
+    "ledger (separate collection)",
+    "streak",
+    "gem_types (emerald/sapphire/ruby/diamond)",
+    "gem_to_liquid_transformation",
+    "aging_decay",
+    "coal_state",
+    "time_based_bonuses",
+    "offline_support"
+  ],
+
+  "file_references": {
+    "core_logic": "TwoCupsApp/src/services/api/actions.ts",
+    "cloud_functions": "functions/src/index.ts",
+    "types": "TwoCupsApp/src/types/index.ts",
+    "security_rules": "firestore.rules",
+    "cup_rendering": "TwoCupsApp/src/components/cups/CupVisualization.tsx",
+    "player_data_hook": "TwoCupsApp/src/hooks/usePlayerData.ts",
+    "gem_history": "TwoCupsApp/src/screens/GemHistoryScreen.tsx",
+    "log_attempt_ui": "TwoCupsApp/src/screens/LogAttemptScreen.tsx",
+    "acknowledge_ui": "TwoCupsApp/src/screens/AcknowledgeScreen.tsx",
+    "request_ui": "TwoCupsApp/src/screens/MakeRequestScreen.tsx",
+    "home_ui": "TwoCupsApp/src/screens/HomeScreen.tsx"
+  }
+}
