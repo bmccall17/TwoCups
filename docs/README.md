@@ -16,6 +16,7 @@ Welcome to the TwoCups documentation. This directory contains all project docume
 
 | Resource | Purpose |
 |----------|---------|
+| **[runbooks/fix-workflow.md](runbooks/fix-workflow.md)** | **🎯 The complete fix process** — Start here when fixing anything |
 | [GOVERNANCE.md](GOVERNANCE.md) | **📋 Rules for adding/maintaining docs** — Read this if you're writing a new doc |
 | [templates/](templates/) | **📝 Document templates** — Copy the right template for your doc type |
 | Decision tree below | **🤔 Where do I put this?** — Quick guide to finding the right category |
@@ -105,6 +106,7 @@ How-to guides and operational procedures.
 
 | Document | Description |
 |----------|-------------|
+| **[fix-workflow.md](runbooks/fix-workflow.md)** | **🎯 START HERE: Meta-playbook for the entire fix process** |
 | [android-build.md](runbooks/android-build.md) | Android build instructions |
 | [layout-cleanup.md](runbooks/layout-cleanup.md) | Systemic layout cleanup procedure |
 | [dom-rollback.md](runbooks/dom-rollback.md) | DOM refactor rollback procedure |
