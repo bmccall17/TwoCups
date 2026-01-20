@@ -1,13 +1,13 @@
 import React from 'react';
 import {
   TouchableOpacity,
-  Text,
   StyleSheet,
   ActivityIndicator,
   ViewStyle,
   TextStyle,
 } from 'react-native';
-import { colors, spacing, typography, borderRadius } from '../../theme';
+import { AppText } from './AppText';
+import { colors, spacing, borderRadius } from '../../theme';
 
 interface ButtonProps {
   title: string;
@@ -46,14 +46,12 @@ export function Button({
           color={variant === 'outline' ? colors.primary : colors.textOnPrimary}
         />
       ) : (
-        <Text
-          style={[
-            styles.text,
-            variant === 'outline' && styles.outlineText,
-            textStyle,
-          ]}>
+        <AppText
+          variant="button"
+          color={variant === 'outline' ? colors.primary : colors.textOnPrimary}
+          style={textStyle}>
           {title}
-        </Text>
+        </AppText>
       )}
     </TouchableOpacity>
   );
@@ -81,12 +79,5 @@ const styles = StyleSheet.create({
   },
   disabled: {
     opacity: 0.5,
-  },
-  text: {
-    ...typography.button,
-    color: colors.textOnPrimary,
-  },
-  outlineText: {
-    color: colors.primary,
   },
 });
