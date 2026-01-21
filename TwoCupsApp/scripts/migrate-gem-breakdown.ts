@@ -19,6 +19,11 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 
+// Define __dirname for ESM compatibility or use fallback
+const scriptDir = typeof import.meta !== 'undefined' && import.meta.url
+  ? path.dirname(fileURLToPath(import.meta.url))
+  : (typeof __dirname !== 'undefined' ? __dirname : process.cwd());
+
 /**
  * Initialize Firebase Admin with flexible credential loading
  */
@@ -29,9 +34,6 @@ function initializeFirebase() {
     initializeApp();
     return;
   }
-
-  // Define __dirname for ESM compatibility
-  const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 
   // Option 2: Look for serviceAccountKey.json in common locations
   const commonPaths = [
@@ -52,9 +54,12 @@ function initializeFirebase() {
   }
 
   console.error('\nERROR: Firebase Admin credentials not found!');
-  console.log('Please either:');
+  console.log('Checked the following locations:');
+  commonPaths.forEach(p => console.log(` - ${p}`));
+
+  console.log('\nPlease either:');
   console.log('1. Set GOOGLE_APPLICATION_CREDENTIALS environment variable');
-  console.log('2. Place serviceAccountKey.json in the current directory or TwoCupsApp/ directory\n');
+  console.log('2. Place serviceAccountKey.json in one of the locations above\n');
   process.exit(1);
 }
 
