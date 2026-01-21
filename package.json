@@ -8,7 +8,8 @@
     "install:all": "npm install && npm run install:app && npm run install:functions && npm run install:tests",
     "build:app": "cd TwoCupsApp && npm run build:web",
     "deploy:app": "cd TwoCupsApp && npm run deploy",
-    "deploy:functions": "cd functions && npm run deploy"
+    "deploy:functions": "cd functions && npm run deploy",
+    "migrate:gems": "./scripts/run-migration.sh"
   },
   "dependencies": {
     "lucide-react": "^0.562.0"
