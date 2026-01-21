@@ -2,7 +2,7 @@
 
 **Status:** active
 **Owner:** Engineering
-**Last Updated:** 2026-01-19
+**Last Updated:** 2026-01-21
 
 This directory contains investigation crumbs: short documentation of bugs, audits, debugging sessions, and non-trivial fixes.
 
@@ -35,6 +35,7 @@ See [Shiplog + Investigations Policy](../GOVERNANCE.md#shiplog--investigations-p
 
 | Date | Title | SHIPLOG Entry | PR |
 |------|-------|---|-----|
+| 2026-01-21 | [Package Lock Desynchronization](./2026-01-21-package-lock-desync.md) | [2026-01-21](../../SHIPLOG.md) | - |
 
 ---
 

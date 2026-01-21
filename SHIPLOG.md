@@ -1701,6 +1701,41 @@ if (userData?.username) {
 
 ---
 
+## 2026-01-21 - Fix Package Lock Desynchronization & Root Scripts
+
+### Overview
+Resolved a critical issue where `TwoCupsApp/package-lock.json` was out of sync with `package.json`, causing CI deployment failures. Also introduced a root-level `package.json` with unified management scripts to coordinate dependency management across the entire repository.
+
+### Changes
+
+#### Root Management System
+- **New: Root `package.json`** - Added centralized scripts for all sub-packages:
+  - `npm run install:all` - Coordinated `npm install` for App, Functions, and Tests
+  - `npm run build:app` - Unified build command for the Expo app
+  - `npm run deploy:app` / `deploy:functions` - Centralized deployment commands
+- **Standardized Dependencies**: Moved `lucide-react` to root for shared use in documentation and potential future monorepo features.
+
+#### Dependency Fixes
+- **Lockfile Synchronization**: Synchronized all `package-lock.json` files (`TwoCupsApp`, `functions`, `tests`) with their respective `package.json` files.
+- **Version Correction**: Fixed `@types/node` version mismatch in `TwoCupsApp` lockfile.
+- **Restored DevDependencies**: Ensured `ts-node` and `@types/node` are correctly listed in `TwoCupsApp/package.json` and its lockfile.
+
+#### Documentation & Governance
+- **New Investigation**: [2026-01-21-package-lock-desync.md](docs/investigations/2026-01-21-package-lock-desync.md)
+- **TOC Update**: Updated `docs/README.md` and `docs/investigations/README.md` (TOC updated)
+
+### Files Changed
+- `package.json` (modified)
+- `package-lock.json` (modified)
+- `TwoCupsApp/package-lock.json` (modified)
+- `functions/package-lock.json` (modified)
+- `tests/package-lock.json` (new/modified)
+- `docs/investigations/2026-01-21-package-lock-desync.md` (new)
+- `docs/README.md` (modified)
+- `docs/investigations/README.md` (modified)
+
+---
+
 ## 2026-01-16 - Firebase Hosting Deploy Audit & Fix
 
 **Status:** Complete - Deployed
