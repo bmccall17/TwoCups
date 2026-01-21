@@ -14,47 +14,9 @@
  */
 
 import * as admin from 'firebase-admin';
-import * as fs from 'fs';
-import * as path from 'path';
-
-/**
- * Initialize Firebase Admin with flexible credential loading
- */
-function initializeFirebase() {
-  // Option 1: Use GOOGLE_APPLICATION_CREDENTIALS if set
-  if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-    console.log('Using credentials from GOOGLE_APPLICATION_CREDENTIALS');
-    admin.initializeApp();
-    return;
-  }
-
-  // Option 2: Look for serviceAccountKey.json in common locations
-  const commonPaths = [
-    path.join(process.cwd(), 'serviceAccountKey.json'),
-    path.join(process.cwd(), 'TwoCupsApp', 'serviceAccountKey.json'),
-    path.join(__dirname, '..', 'serviceAccountKey.json'),
-    path.join(__dirname, '..', '..', 'TwoCupsApp', 'serviceAccountKey.json'),
-  ];
-
-  for (const certPath of commonPaths) {
-    if (fs.existsSync(certPath)) {
-      console.log(`Using credentials from: ${certPath}`);
-      admin.initializeApp({
-        credential: admin.credential.cert(certPath),
-      });
-      return;
-    }
-  }
-
-  console.error('\nERROR: Firebase Admin credentials not found!');
-  console.log('Please either:');
-  console.log('1. Set GOOGLE_APPLICATION_CREDENTIALS environment variable');
-  console.log('2. Place serviceAccountKey.json in the current directory or TwoCupsApp/ directory\n');
-  process.exit(1);
-}
 
 // Initialize Firebase Admin
-initializeFirebase();
+admin.initializeApp();
 const db = admin.firestore();
 
 // Gem economy constants (must match app constants)

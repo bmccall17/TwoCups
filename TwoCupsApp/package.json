@@ -16,7 +16,6 @@
     "deploy": "npm run build:web && cd .. && firebase deploy --only hosting",
     "deploy:preview": "npm run build:web && cd .. && firebase hosting:channel:deploy preview --expires 7d",
     "verify:prod": "node scripts/verify-deploy.js",
-    "migrate:gems": "ts-node scripts/migrate-gem-breakdown.ts",
     "lint": "expo lint"
   },
   "dependencies": {
@@ -43,11 +42,9 @@
     "react-native-web": "^0.21.0"
   },
   "devDependencies": {
-    "@types/node": "^22.0.0",
     "@types/react": "~19.1.0",
     "eslint": "^9.0.0",
     "eslint-config-expo": "~10.0.0",
-    "ts-node": "^10.9.2",
     "typescript": "~5.9.2"
   },
   "private": true
