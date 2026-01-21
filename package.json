@@ -1,4 +1,15 @@
 {
+  "name": "twocups-root",
+  "private": true,
+  "scripts": {
+    "install:app": "cd TwoCupsApp && npm install",
+    "install:functions": "cd functions && npm install",
+    "install:tests": "cd tests && npm install",
+    "install:all": "npm install && npm run install:app && npm run install:functions && npm run install:tests",
+    "build:app": "cd TwoCupsApp && npm run build:web",
+    "deploy:app": "cd TwoCupsApp && npm run deploy",
+    "deploy:functions": "cd functions && npm run deploy"
+  },
   "dependencies": {
     "lucide-react": "^0.562.0"
   }
