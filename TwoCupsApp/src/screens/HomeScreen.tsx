@@ -5,7 +5,9 @@ import { useMilestoneCelebration } from '../context/MilestoneCelebrationContext'
 import { usePlayerData } from '../hooks';
 import { Screen, Stack, Row, AppText, LoadingSpinner, ErrorState, SacredGeometryBackground, SectionDivider } from '../components/common';
 import { CupVisualization } from '../components/cups';
+import { GemBreakdownDisplay } from '../components/gems';
 import { colors, spacing, borderRadius } from '../theme';
+import { EMPTY_GEM_BREAKDOWN } from '../types';
 
 interface HomeScreenProps {
   onNavigateToLogAttempt?: () => void;
@@ -37,6 +39,11 @@ export function HomeScreen({
   const partnerCupLevel = useMemo(() => partnerPlayer?.cupLevel ?? 0, [partnerPlayer?.cupLevel]);
   const myGemCount = useMemo(() => myPlayer?.gemCount ?? 0, [myPlayer?.gemCount]);
   const partnerGemCount = useMemo(() => partnerPlayer?.gemCount ?? 0, [partnerPlayer?.gemCount]);
+
+  // Gem economy data
+  const myLiquidBreakdown = useMemo(() => myPlayer?.liquidBreakdown ?? EMPTY_GEM_BREAKDOWN, [myPlayer?.liquidBreakdown]);
+  const partnerLiquidBreakdown = useMemo(() => partnerPlayer?.liquidBreakdown ?? EMPTY_GEM_BREAKDOWN, [partnerPlayer?.liquidBreakdown]);
+  const myGemBreakdown = useMemo(() => myPlayer?.gemBreakdown ?? EMPTY_GEM_BREAKDOWN, [myPlayer?.gemBreakdown]);
 
   useEffect(() => {
     if (myPlayer && previousGemCount.current !== null) {
@@ -100,12 +107,14 @@ export function HomeScreen({
               level={myCupLevel}
               label={myName}
               size="small"
+              liquidBreakdown={myLiquidBreakdown}
             />
             <Text style={styles.connectionHeart}>💕</Text>
             <CupVisualization
               level={partnerCupLevel}
               label={partnerName}
               size="small"
+              liquidBreakdown={partnerLiquidBreakdown}
             />
           </Row>
         </View>
@@ -158,6 +167,16 @@ export function HomeScreen({
             <Text style={styles.gemsIcon}>💎</Text>
             <AppText variant="h2" bold>{totalGems.toLocaleString()}</AppText>
           </Row>
+          {/* Gem breakdown by type */}
+          <View style={styles.gemBreakdownRow}>
+            <GemBreakdownDisplay
+              emerald={myGemBreakdown.emerald}
+              sapphire={myGemBreakdown.sapphire}
+              ruby={myGemBreakdown.ruby}
+              diamond={myGemBreakdown.diamond}
+              size="small"
+            />
+          </View>
         </TouchableOpacity>
       </Stack>
     </Screen>
@@ -234,5 +253,11 @@ const styles = StyleSheet.create({
   },
   gemsIcon: {
     fontSize: 24,
+  },
+  gemBreakdownRow: {
+    marginTop: spacing.sm,
+    paddingTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
   },
 });

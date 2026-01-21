@@ -1,5 +1,45 @@
 import { Timestamp } from "firebase-admin/firestore";
 
+// ============================================
+// GEM ECONOMY TYPES
+// ============================================
+
+// Gem types with their associated values
+export type GemType = "emerald" | "sapphire" | "ruby" | "diamond";
+
+// Gem states in lifecycle
+export type GemState = "solid" | "liquid" | "coal";
+
+// Breakdown of gems by type
+export interface GemBreakdown {
+  emerald: number;
+  sapphire: number;
+  ruby: number;
+  diamond: number;
+}
+
+// Empty gem breakdown for initialization
+export const EMPTY_GEM_BREAKDOWN: GemBreakdown = {
+  emerald: 0,
+  sapphire: 0,
+  ruby: 0,
+  diamond: 0,
+};
+
+// Gem economy constants
+export const GEM_VALUES = {
+  emerald: 1,   // Attempt logged
+  sapphire: 2,  // Request fulfilled
+  ruby: 3,      // Acknowledgment (both players)
+  diamond: 5,   // Milestones/overflow
+} as const;
+
+export const COAL_THRESHOLD_DAYS = 14;
+
+// ============================================
+// USER & COUPLE TYPES
+// ============================================
+
 // User document in /users/{uid}
 export interface User {
   displayName: string;
@@ -17,14 +57,20 @@ export interface Couple {
   collectiveCupLevel: number; // 0–100
   createdAt: Timestamp;
   lastActivityAt: Timestamp;
+  // Gem economy fields
+  anniversaryDate?: Timestamp;
+  collectiveLiquidBreakdown?: GemBreakdown;
 }
 
 // Player document in /couples/{coupleId}/players/{uid}
 export interface Player {
   cupLevel: number; // 0–100
-  gemCount: number;
+  gemCount: number; // KEEP for backward compat
   joinedAt: Timestamp;
   achievedMilestones?: number[]; // Milestones the player has achieved
+  // Gem economy fields
+  gemBreakdown?: GemBreakdown;
+  liquidBreakdown?: GemBreakdown;
 }
 
 // Attempt document in /couples/{coupleId}/attempts/{attemptId}
@@ -38,6 +84,10 @@ export interface Attempt {
   acknowledged: boolean;
   acknowledgedAt?: Timestamp;
   fulfilledRequestId?: string;
+  // Gem economy fields
+  gemType?: GemType;
+  gemState?: GemState;
+  coalAt?: Timestamp;
 }
 
 // Request document in /couples/{coupleId}/requests/{requestId}
@@ -105,6 +155,7 @@ export interface LogAttemptResponse {
   attemptId: string;
   gemsAwarded: number;
   fulfilledRequestId?: string;
+  gemType?: GemType;
 }
 
 export interface AcknowledgeAttemptRequest {
@@ -116,4 +167,6 @@ export interface AcknowledgeAttemptResponse {
   gemsAwarded: number;
   cupOverflow: boolean;
   collectiveCupOverflow: boolean;
+  wasCoal?: boolean;
+  diamondAwarded?: boolean;
 }

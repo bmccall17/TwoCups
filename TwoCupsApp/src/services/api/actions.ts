@@ -17,6 +17,7 @@ import {
   validateActionServer,
   validateDescriptionServer,
 } from '../../utils/validation';
+import { GemType, GemState, GemBreakdown, EMPTY_GEM_BREAKDOWN } from '../../types';
 
 // Game configuration
 const BASE_GEM_AWARD = 1;
@@ -26,6 +27,23 @@ const ACK_COLLECTIVE_CUP_AWARD = 3;
 const DEFAULT_POINTS_PER_ACK = 5;
 const DAILY_ATTEMPT_LIMIT = 20;
 const ACTIVE_REQUEST_LIMIT = 5;
+
+// Gem economy constants
+export const GEM_VALUES = {
+  emerald: 1,   // Attempt logged
+  sapphire: 2,  // Request fulfilled
+  ruby: 3,      // Acknowledgment (both players)
+  diamond: 5,   // Milestones/overflow (base value, can be 5-10)
+} as const;
+
+export const GEM_COLORS = {
+  emerald: '#50C878',   // Green base layer
+  sapphire: '#0F52BA',  // Blue accents
+  ruby: '#E0115F',      // Red highlights
+  diamond: '#B9F2FF',   // Prismatic shimmer (light cyan base)
+} as const;
+
+export const COAL_THRESHOLD_DAYS = 14; // Days until unacked attempt becomes coal
 
 export interface LogAttemptParams {
   coupleId: string;
@@ -39,6 +57,7 @@ export interface LogAttemptResult {
   attemptId: string;
   gemsAwarded: number;
   fulfilledRequestId?: string;
+  gemType: GemType;  // Which gem type was awarded
 }
 
 export interface DailyAttemptsInfo {
@@ -69,6 +88,8 @@ export interface AcknowledgeAttemptResult {
   gemsAwarded: number;
   cupOverflow: boolean;
   collectiveCupOverflow: boolean;
+  wasCoal?: boolean;              // True if acknowledged a coal-state attempt
+  diamondAwarded?: boolean;       // True if diamond was awarded (overflow)
 }
 
 /**
@@ -245,16 +266,15 @@ export async function logAttempt(params: LogAttemptParams): Promise<LogAttemptRe
     }
   }
 
-  // Calculate gems
-  let gemsAwarded = BASE_GEM_AWARD;
-  if (fulfilledRequestId) {
-    gemsAwarded += REQUEST_FULFILLMENT_BONUS;
-  }
+  // Determine gem type based on whether request is fulfilled
+  // Sapphire (2) for fulfilled request, Emerald (1) for regular attempt
+  const gemType: GemType = fulfilledRequestId ? 'sapphire' : 'emerald';
+  const gemsAwarded = GEM_VALUES[gemType];
 
   const now = Timestamp.now();
   const batch = writeBatch(db);
 
-  // Create attempt document
+  // Create attempt document with gem economy fields
   const attemptDocRef = doc(collection(db, 'couples', coupleId, 'attempts'));
   batch.set(attemptDocRef, {
     byPlayerId: uid,
@@ -265,12 +285,24 @@ export async function logAttempt(params: LogAttemptParams): Promise<LogAttemptRe
     createdAt: now,
     acknowledged: false,
     fulfilledRequestId: fulfilledRequestId || null,
+    // Gem economy fields
+    gemType,
+    gemState: 'solid' as GemState,  // New attempts are solid until acknowledged
   });
 
-  // Update player gems
+  // Get current player data for gem breakdown update
   const playerDocRef = doc(db, 'couples', coupleId, 'players', uid);
+  const playerDoc = await getDoc(playerDocRef);
+  const playerData = playerDoc.data();
+  const currentBreakdown: GemBreakdown = playerData?.gemBreakdown || { ...EMPTY_GEM_BREAKDOWN };
+
+  // Update player gems (dual-write: both gemCount and gemBreakdown)
   batch.update(playerDocRef, {
-    gemCount: increment(gemsAwarded),
+    gemCount: increment(gemsAwarded),  // Backward compat
+    gemBreakdown: {
+      ...currentBreakdown,
+      [gemType]: (currentBreakdown[gemType] || 0) + 1,
+    },
   });
 
   // Update couple lastActivityAt
@@ -292,11 +324,13 @@ export async function logAttempt(params: LogAttemptParams): Promise<LogAttemptRe
     attemptId: attemptDocRef.id,
     gemsAwarded,
     fulfilledRequestId,
+    gemType,
   };
 }
 
 /**
  * Acknowledge an action done by partner
+ * Awards ruby gems to both players and transforms gem state from solid->liquid
  */
 export async function acknowledgeAttempt(params: AcknowledgeAttemptParams): Promise<AcknowledgeAttemptResult> {
   const uid = getCurrentUserId();
@@ -335,41 +369,81 @@ export async function acknowledgeAttempt(params: AcknowledgeAttemptParams): Prom
     throw new Error('Attempt already acknowledged');
   }
 
+  // Check if this was a coal-state attempt (reignition)
+  const wasCoal = attemptData.gemState === 'coal';
+  const originalGemType: GemType = attemptData.gemType || 'emerald';
+
   // Get couple for pointsPerAcknowledgment
   const coupleDoc = await getDoc(coupleDocRef);
   const coupleData = coupleDoc.data();
   const pointsPerAck = coupleData?.pointsPerAcknowledgment ?? DEFAULT_POINTS_PER_ACK;
 
-  // Get recipient player for cup level calculation
+  // Get both players' data for gem breakdown updates
   const recipientPlayerDocRef = doc(db, 'couples', coupleId, 'players', uid);
-  const recipientPlayerDoc = await getDoc(recipientPlayerDocRef);
+  const actorPlayerDocRef = doc(db, 'couples', coupleId, 'players', attemptData.byPlayerId);
+
+  const [recipientPlayerDoc, actorPlayerDoc] = await Promise.all([
+    getDoc(recipientPlayerDocRef),
+    getDoc(actorPlayerDocRef),
+  ]);
+
   const recipientPlayer = recipientPlayerDoc.data();
+  const actorPlayer = actorPlayerDoc.data();
   const currentCupLevel = recipientPlayer?.cupLevel ?? 0;
+
+  // Get current gem breakdowns
+  const recipientGemBreakdown: GemBreakdown = recipientPlayer?.gemBreakdown || { ...EMPTY_GEM_BREAKDOWN };
+  const recipientLiquidBreakdown: GemBreakdown = recipientPlayer?.liquidBreakdown || { ...EMPTY_GEM_BREAKDOWN };
+  const actorGemBreakdown: GemBreakdown = actorPlayer?.gemBreakdown || { ...EMPTY_GEM_BREAKDOWN };
+  const actorLiquidBreakdown: GemBreakdown = actorPlayer?.liquidBreakdown || { ...EMPTY_GEM_BREAKDOWN };
 
   // Calculate cup overflow
   const newCupLevel = currentCupLevel + pointsPerAck;
   const cupOverflow = newCupLevel >= 100;
   const finalCupLevel = cupOverflow ? newCupLevel - 100 : newCupLevel;
 
+  // Check for diamond trigger on overflow
+  let diamondAwarded = false;
+
   const now = Timestamp.now();
   const batch = writeBatch(db);
 
-  // Mark attempt as acknowledged
+  // Mark attempt as acknowledged with gem state transition
   batch.update(attemptDocRef, {
     acknowledged: true,
     acknowledgedAt: now,
+    gemState: 'liquid' as GemState,  // solid -> liquid (or coal -> liquid for reignition)
   });
 
-  // Award gems to actor (the one who did the action)
-  const actorPlayerDocRef = doc(db, 'couples', coupleId, 'players', attemptData.byPlayerId);
+  // Award ruby gems to actor (the one who did the action)
+  // Update both gemCount (backward compat) and gemBreakdown
   batch.update(actorPlayerDocRef, {
-    gemCount: increment(ACK_GEM_AWARD),
+    gemCount: increment(GEM_VALUES.ruby),
+    gemBreakdown: {
+      ...actorGemBreakdown,
+      ruby: (actorGemBreakdown.ruby || 0) + 1,
+    },
+    liquidBreakdown: {
+      ...actorLiquidBreakdown,
+      ruby: (actorLiquidBreakdown.ruby || 0) + 1,
+      // Also move the original gem type to liquid (actor earned it)
+      [originalGemType]: (actorLiquidBreakdown[originalGemType] || 0) + 1,
+    },
   });
 
-  // Award gems to recipient and update cup level
+  // Award ruby gems to recipient and update cup level
+  // The recipient also gets credit for the "received" gem becoming liquid
   batch.update(recipientPlayerDocRef, {
-    gemCount: increment(ACK_GEM_AWARD),
+    gemCount: increment(GEM_VALUES.ruby),
     cupLevel: finalCupLevel,
+    gemBreakdown: {
+      ...recipientGemBreakdown,
+      ruby: (recipientGemBreakdown.ruby || 0) + 1,
+    },
+    liquidBreakdown: {
+      ...recipientLiquidBreakdown,
+      ruby: (recipientLiquidBreakdown.ruby || 0) + 1,
+    },
   });
 
   // Update collective cup (with overflow handling like individual cups)
@@ -377,6 +451,23 @@ export async function acknowledgeAttempt(params: AcknowledgeAttemptParams): Prom
   const newCollectiveCupRaw = currentCollectiveCup + ACK_COLLECTIVE_CUP_AWARD;
   const collectiveCupOverflow = newCollectiveCupRaw >= 100;
   const finalCollectiveCup = collectiveCupOverflow ? newCollectiveCupRaw - 100 : newCollectiveCupRaw;
+
+  // If overflow, award diamond
+  if (cupOverflow || collectiveCupOverflow) {
+    diamondAwarded = true;
+    // Award diamond to both players on any overflow
+    batch.update(actorPlayerDocRef, {
+      gemCount: increment(GEM_VALUES.diamond),
+      'gemBreakdown.diamond': increment(1),
+      'liquidBreakdown.diamond': increment(1),
+    });
+    batch.update(recipientPlayerDocRef, {
+      gemCount: increment(GEM_VALUES.diamond),
+      'gemBreakdown.diamond': increment(1),
+      'liquidBreakdown.diamond': increment(1),
+    });
+  }
+
   batch.update(coupleDocRef, {
     collectiveCupLevel: finalCollectiveCup,
     lastActivityAt: now,
@@ -384,11 +475,16 @@ export async function acknowledgeAttempt(params: AcknowledgeAttemptParams): Prom
 
   await batch.commit();
 
+  // Total gems awarded: ruby to each (2x) + original gem becoming liquid + potential diamond
+  const totalGemsAwarded = GEM_VALUES.ruby * 2;
+
   return {
     success: true,
-    gemsAwarded: ACK_GEM_AWARD * 2, // Total for both players
+    gemsAwarded: totalGemsAwarded,
     cupOverflow,
     collectiveCupOverflow,
+    wasCoal,
+    diamondAwarded,
   };
 }
 
@@ -622,4 +718,115 @@ export async function deleteSuggestion(params: {
   await deleteDoc(suggestionDocRef);
 
   return { success: true };
+}
+
+// ============================================
+// GEM ECONOMY FUNCTIONS
+// ============================================
+
+/**
+ * Process coal transitions for unacknowledged attempts
+ * Call this on app foreground or via Cloud Function cron
+ * Transitions solid gems to coal after COAL_THRESHOLD_DAYS
+ */
+export async function processCoalTransitions(coupleId: string): Promise<{ transitioned: number }> {
+  const coalThresholdDate = new Date();
+  coalThresholdDate.setDate(coalThresholdDate.getDate() - COAL_THRESHOLD_DAYS);
+  const coalThresholdTimestamp = Timestamp.fromDate(coalThresholdDate);
+
+  const attemptsRef = collection(db, 'couples', coupleId, 'attempts');
+
+  // Query attempts that are:
+  // - Not acknowledged
+  // - In solid state (or no gemState for legacy)
+  // - Created before the coal threshold
+  const q = query(
+    attemptsRef,
+    where('acknowledged', '==', false),
+    where('createdAt', '<', coalThresholdTimestamp)
+  );
+
+  const snapshot = await getDocs(q);
+  let transitioned = 0;
+  const now = Timestamp.now();
+  const batch = writeBatch(db);
+
+  for (const docSnap of snapshot.docs) {
+    const data = docSnap.data();
+    // Only transition if currently solid (not already coal)
+    if (data.gemState !== 'coal') {
+      batch.update(docSnap.ref, {
+        gemState: 'coal' as GemState,
+        coalAt: now,
+      });
+      transitioned++;
+    }
+  }
+
+  if (transitioned > 0) {
+    await batch.commit();
+  }
+
+  return { transitioned };
+}
+
+/**
+ * Check for mutual same-day acknowledgment (Diamond trigger)
+ * Returns true if both partners have acknowledged something today
+ */
+export async function checkMutualSameDayAck(coupleId: string): Promise<boolean> {
+  const startOfDay = new Date();
+  startOfDay.setHours(0, 0, 0, 0);
+  const startOfDayTimestamp = Timestamp.fromDate(startOfDay);
+
+  const attemptsRef = collection(db, 'couples', coupleId, 'attempts');
+  const q = query(
+    attemptsRef,
+    where('acknowledged', '==', true),
+    where('acknowledgedAt', '>=', startOfDayTimestamp)
+  );
+
+  const snapshot = await getDocs(q);
+
+  // Get unique acknowledgers (forPlayerId is the one who acknowledged)
+  const acknowledgers = new Set<string>();
+  snapshot.docs.forEach(doc => {
+    const data = doc.data();
+    acknowledgers.add(data.forPlayerId);
+  });
+
+  // Mutual ack = both partners acknowledged something today
+  return acknowledgers.size >= 2;
+}
+
+/**
+ * Check for weekly reflection (both players logged attempts this week)
+ * Returns true if both partners have logged at least one attempt this week
+ */
+export async function checkWeeklyReflection(coupleId: string): Promise<boolean> {
+  // Get start of week (Monday)
+  const startOfWeek = new Date();
+  const dayOfWeek = startOfWeek.getDay();
+  const daysToSubtract = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+  startOfWeek.setDate(startOfWeek.getDate() - daysToSubtract);
+  startOfWeek.setHours(0, 0, 0, 0);
+  const startOfWeekTimestamp = Timestamp.fromDate(startOfWeek);
+
+  const attemptsRef = collection(db, 'couples', coupleId, 'attempts');
+  const q = query(
+    attemptsRef,
+    where('createdAt', '>=', startOfWeekTimestamp)
+  );
+
+  const snapshot = await getDocs(q);
+
+  // Get unique loggers (byPlayerId is who created the attempt)
+  const loggers = new Set<string>();
+  snapshot.docs.forEach(doc => {
+    const data = doc.data();
+    loggers.add(data.byPlayerId);
+  });
+
+  // Weekly reflection = both partners logged something this week
+  return loggers.size >= 2;
 }

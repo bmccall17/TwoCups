@@ -17,9 +17,11 @@ import { useToast } from '../context/ToastContext';
 import { useGemAnimation } from '../context/GemAnimationContext';
 import { acknowledgeAttempt } from '../services/api';
 import { Screen, Stack, Row, AppText, Button, LoadingSpinner, EmptyState, ErrorState, CelebrationOverlay, SectionHeader, EmptyHint } from '../components/common';
+import { AttemptGemIndicator } from '../components/gems';
 import { colors, spacing, borderRadius } from '../theme';
-import { Attempt, Request, Suggestion } from '../types';
+import { Attempt, Request, Suggestion, GemType, GemState } from '../types';
 import { getErrorMessage } from '../types/utils';
+import { GEM_VALUES, GEM_COLORS } from '../services/api/actions';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -115,10 +117,19 @@ const AttemptCard = memo(function AttemptCard({
   acknowledging,
   onAcknowledge,
 }: AttemptCardProps) {
+  // Determine gem type from attempt data or infer from fulfilledRequestId
+  const gemType: GemType = attempt.gemType || (attempt.fulfilledRequestId ? 'sapphire' : 'emerald');
+  const gemState: GemState = attempt.gemState || 'solid';
+  const isCoal = gemState === 'coal';
+  const gemColor = GEM_COLORS[gemType];
+
   return (
-    <View style={styles.attemptCard}>
+    <View style={[styles.attemptCard, isCoal && styles.attemptCardCoal]}>
       <View style={styles.attemptHeader}>
-        <AppText variant="bodySmall" color={colors.primary} bold style={styles.attemptBy}>{partnerName}</AppText>
+        <View style={styles.attemptHeaderLeft}>
+          <AppText variant="bodySmall" color={colors.primary} bold style={styles.attemptBy}>{partnerName}</AppText>
+          <AttemptGemIndicator gemType={gemType} gemState={gemState} size="small" />
+        </View>
         <AppText variant="caption" color={colors.textMuted}>{formatDate(attempt.createdAt)}</AppText>
       </View>
       <AppText variant="body" bold style={styles.attemptAction}>{attempt.action}</AppText>
@@ -126,12 +137,17 @@ const AttemptCard = memo(function AttemptCard({
         <AppText variant="bodySmall" color={colors.textSecondary} style={styles.attemptDescription}>{attempt.description}</AppText>
       )}
       {attempt.fulfilledRequestId && (
-        <View style={styles.fulfilledBadge}>
-          <AppText variant="caption" color={colors.success} bold>✨ Fulfilled your request!</AppText>
+        <View style={[styles.fulfilledBadge, { backgroundColor: gemColor + '20' }]}>
+          <AppText variant="caption" color={gemColor} bold>✨ Fulfilled your request!</AppText>
+        </View>
+      )}
+      {isCoal && (
+        <View style={styles.coalBadge}>
+          <AppText variant="caption" color={colors.warning} bold>🔥 Reignite this with acknowledgment!</AppText>
         </View>
       )}
       <Button
-        title={acknowledging === attempt.id ? 'Acknowledging...' : 'Acknowledge with Gratitude'}
+        title={acknowledging === attempt.id ? 'Acknowledging...' : isCoal ? 'Reignite with Gratitude' : 'Acknowledge with Gratitude'}
         onPress={() => onAcknowledge(attempt)}
         loading={acknowledging === attempt.id}
         disabled={acknowledging !== null}
@@ -646,10 +662,28 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     marginBottom: spacing.sm,
   },
+  attemptCardCoal: {
+    borderWidth: 1,
+    borderColor: colors.warning + '40',
+    backgroundColor: colors.card + 'CC',
+  },
   attemptHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  attemptHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  coalBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.warning + '20',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.full,
     marginBottom: spacing.sm,
   },
   attemptBy: {

@@ -2,11 +2,13 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { doc, onSnapshot, collection } from 'firebase/firestore';
 import { db } from '../services/firebase/config';
 import { useAuth } from '../context/AuthContext';
-import { Player } from '../types';
+import { Player, GemBreakdown, EMPTY_GEM_BREAKDOWN } from '../types';
 
 interface PlayerWithId extends Player {
   odI: string;
   achievedMilestones: number[];
+  gemBreakdown: GemBreakdown;
+  liquidBreakdown: GemBreakdown;
 }
 
 interface UsePlayerDataResult {
@@ -62,6 +64,9 @@ export function usePlayerData(): UsePlayerDataResult {
             gemCount: data?.gemCount ?? 0,
             joinedAt: data?.joinedAt?.toDate() ?? new Date(),
             achievedMilestones: data?.achievedMilestones ?? [],
+            // Gem economy fields
+            gemBreakdown: data?.gemBreakdown ?? { ...EMPTY_GEM_BREAKDOWN },
+            liquidBreakdown: data?.liquidBreakdown ?? { ...EMPTY_GEM_BREAKDOWN },
           });
         }
         setLoading(false);
@@ -90,6 +95,9 @@ export function usePlayerData(): UsePlayerDataResult {
               gemCount: data?.gemCount ?? 0,
               joinedAt: data?.joinedAt?.toDate() ?? new Date(),
               achievedMilestones: data?.achievedMilestones ?? [],
+              // Gem economy fields
+              gemBreakdown: data?.gemBreakdown ?? { ...EMPTY_GEM_BREAKDOWN },
+              liquidBreakdown: data?.liquidBreakdown ?? { ...EMPTY_GEM_BREAKDOWN },
             });
           }
         },

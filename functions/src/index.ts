@@ -16,7 +16,14 @@ import {
   LogAttemptResponse,
   AcknowledgeAttemptRequest,
   AcknowledgeAttemptResponse,
+  GemType,
+  GemBreakdown,
+  EMPTY_GEM_BREAKDOWN,
+  GEM_VALUES,
 } from "./types";
+
+// Export diamond cron functions
+export { diamondCron } from "./diamondCron";
 
 admin.initializeApp();
 
@@ -352,16 +359,20 @@ export const logAttempt = onCall(
       }
     }
 
-    // Calculate gems
-    let gemsAwarded = BASE_GEM_AWARD;
-    if (fulfilledRequestId) {
-      gemsAwarded += REQUEST_FULFILLMENT_BONUS;
-    }
+    // Determine gem type based on whether request is fulfilled
+    const gemType: GemType = fulfilledRequestId ? "sapphire" : "emerald";
+    const gemsAwarded = GEM_VALUES[gemType];
+
+    // Get current player data for gem breakdown update
+    const playerRef = coupleRef.collection("players").doc(uid);
+    const playerDoc = await playerRef.get();
+    const playerData = playerDoc.data() as Player | undefined;
+    const currentBreakdown: GemBreakdown = playerData?.gemBreakdown || { ...EMPTY_GEM_BREAKDOWN };
 
     // Create attempt and update state in batch
     const batch = db.batch();
 
-    // Create attempt
+    // Create attempt with gem economy fields
     const attemptRef = coupleRef.collection("attempts").doc();
     const attemptData: Attempt = {
       byPlayerId: uid,
@@ -372,13 +383,19 @@ export const logAttempt = onCall(
       createdAt: now,
       acknowledged: false,
       fulfilledRequestId,
+      // Gem economy fields
+      gemType,
+      gemState: "solid",  // New attempts are solid until acknowledged
     };
     batch.set(attemptRef, attemptData);
 
-    // Update player gems
-    const playerRef = coupleRef.collection("players").doc(uid);
+    // Update player gems (dual-write: both gemCount and gemBreakdown)
     batch.update(playerRef, {
       gemCount: FieldValue.increment(gemsAwarded),
+      gemBreakdown: {
+        ...currentBreakdown,
+        [gemType]: (currentBreakdown[gemType] || 0) + 1,
+      },
     });
 
     // Update couple lastActivityAt
@@ -400,12 +417,14 @@ export const logAttempt = onCall(
       attemptId: attemptRef.id,
       gemsAwarded,
       fulfilledRequestId,
+      gemType,
     };
   }
 );
 
 /**
  * acknowledgeAttempt - Acknowledge an action done by partner
+ * Awards ruby gems to both players and transforms gem state from solid->liquid
  */
 export const acknowledgeAttempt = onCall(
   async (
@@ -456,44 +475,101 @@ export const acknowledgeAttempt = onCall(
       throw new HttpsError("already-exists", "Attempt already acknowledged");
     }
 
+    // Check if this was a coal-state attempt (reignition)
+    const wasCoal = attemptData.gemState === "coal";
+    const originalGemType: GemType = attemptData.gemType || "emerald";
+
     // Get couple for pointsPerAcknowledgment
     const coupleDoc = await coupleRef.get();
     const coupleData = coupleDoc.data() as Couple;
 
     const now = Timestamp.now();
 
-    // Calculate cup overflow
+    // Get both players' data for gem breakdown updates
     const recipientPlayerRef = coupleRef.collection("players").doc(uid);
-    const recipientPlayerDoc = await recipientPlayerRef.get();
-    const recipientPlayer = recipientPlayerDoc.data() as Player;
+    const actorPlayerRef = coupleRef.collection("players").doc(attemptData.byPlayerId);
 
+    const [recipientPlayerDoc, actorPlayerDoc] = await Promise.all([
+      recipientPlayerRef.get(),
+      actorPlayerRef.get(),
+    ]);
+
+    const recipientPlayer = recipientPlayerDoc.data() as Player;
+    const actorPlayer = actorPlayerDoc.data() as Player;
+
+    // Get current gem breakdowns
+    const recipientGemBreakdown: GemBreakdown = recipientPlayer?.gemBreakdown || { ...EMPTY_GEM_BREAKDOWN };
+    const recipientLiquidBreakdown: GemBreakdown = recipientPlayer?.liquidBreakdown || { ...EMPTY_GEM_BREAKDOWN };
+    const actorGemBreakdown: GemBreakdown = actorPlayer?.gemBreakdown || { ...EMPTY_GEM_BREAKDOWN };
+    const actorLiquidBreakdown: GemBreakdown = actorPlayer?.liquidBreakdown || { ...EMPTY_GEM_BREAKDOWN };
+
+    // Calculate cup overflow
     const newCupLevel = recipientPlayer.cupLevel + coupleData.pointsPerAcknowledgment;
     const cupOverflow = newCupLevel >= 100;
     const finalCupLevel = cupOverflow ? newCupLevel - 100 : newCupLevel;
 
+    // Check for diamond trigger on overflow
+    let diamondAwarded = false;
+
     // Update everything in a batch
     const batch = db.batch();
 
-    // Mark attempt as acknowledged
+    // Mark attempt as acknowledged with gem state transition
     batch.update(attemptRef, {
       acknowledged: true,
       acknowledgedAt: now,
+      gemState: "liquid",  // solid -> liquid (or coal -> liquid for reignition)
     });
 
-    // Award gems to both players
-    const actorPlayerRef = coupleRef.collection("players").doc(attemptData.byPlayerId);
+    // Award ruby gems to actor (the one who did the action)
     batch.update(actorPlayerRef, {
-      gemCount: FieldValue.increment(ACK_GEM_AWARD),
+      gemCount: FieldValue.increment(GEM_VALUES.ruby),
+      gemBreakdown: {
+        ...actorGemBreakdown,
+        ruby: (actorGemBreakdown.ruby || 0) + 1,
+      },
+      liquidBreakdown: {
+        ...actorLiquidBreakdown,
+        ruby: (actorLiquidBreakdown.ruby || 0) + 1,
+        [originalGemType]: (actorLiquidBreakdown[originalGemType] || 0) + 1,
+      },
     });
+
+    // Award ruby gems to recipient and update cup level
     batch.update(recipientPlayerRef, {
-      gemCount: FieldValue.increment(ACK_GEM_AWARD),
+      gemCount: FieldValue.increment(GEM_VALUES.ruby),
       cupLevel: finalCupLevel,
+      gemBreakdown: {
+        ...recipientGemBreakdown,
+        ruby: (recipientGemBreakdown.ruby || 0) + 1,
+      },
+      liquidBreakdown: {
+        ...recipientLiquidBreakdown,
+        ruby: (recipientLiquidBreakdown.ruby || 0) + 1,
+      },
     });
 
     // Update collective cup (with overflow handling)
     const newCollectiveCupRaw = coupleData.collectiveCupLevel + ACK_COLLECTIVE_CUP_AWARD;
     const collectiveCupOverflow = newCollectiveCupRaw >= 100;
     const finalCollectiveCup = collectiveCupOverflow ? newCollectiveCupRaw - 100 : newCollectiveCupRaw;
+
+    // If overflow, award diamond
+    if (cupOverflow || collectiveCupOverflow) {
+      diamondAwarded = true;
+      // Award diamond to both players on any overflow
+      batch.update(actorPlayerRef, {
+        gemCount: FieldValue.increment(GEM_VALUES.diamond),
+        "gemBreakdown.diamond": FieldValue.increment(1),
+        "liquidBreakdown.diamond": FieldValue.increment(1),
+      });
+      batch.update(recipientPlayerRef, {
+        gemCount: FieldValue.increment(GEM_VALUES.diamond),
+        "gemBreakdown.diamond": FieldValue.increment(1),
+        "liquidBreakdown.diamond": FieldValue.increment(1),
+      });
+    }
+
     batch.update(coupleRef, {
       collectiveCupLevel: finalCollectiveCup,
       lastActivityAt: now,
@@ -503,9 +579,11 @@ export const acknowledgeAttempt = onCall(
 
     return {
       success: true,
-      gemsAwarded: ACK_GEM_AWARD * 2, // Total for both players
+      gemsAwarded: GEM_VALUES.ruby * 2, // Ruby to both players
       cupOverflow,
       collectiveCupOverflow,
+      wasCoal,
+      diamondAwarded,
     };
   }
 );

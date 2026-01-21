@@ -129,8 +129,10 @@ service cloud.firestore {
         (
           request.auth.uid in resource.data.partnerIds
           && request.resource.data.keys().hasOnly([
-            'partnerIds', 'status', 'inviteCode', 'collectiveCupLevel', 
-            'pointsPerAcknowledgment', 'createdAt', 'lastActivityAt'
+            'partnerIds', 'status', 'inviteCode', 'collectiveCupLevel',
+            'pointsPerAcknowledgment', 'createdAt', 'lastActivityAt',
+            // Gem economy fields
+            'anniversaryDate', 'collectiveLiquidBreakdown'
           ])
           // Cannot change partnerIds, status, inviteCode, createdAt
           && request.resource.data.partnerIds == resource.data.partnerIds
@@ -153,14 +155,22 @@ service cloud.firestore {
         // Users can create their own player document (for joining a couple)
         allow create: if isAuthenticated()
           && playerId == request.auth.uid
-          && request.resource.data.keys().hasOnly(['cupLevel', 'gemCount', 'joinedAt', 'achievedMilestones'])
+          && request.resource.data.keys().hasOnly([
+            'cupLevel', 'gemCount', 'joinedAt', 'achievedMilestones',
+            // Gem economy fields
+            'gemBreakdown', 'liquidBreakdown'
+          ])
           && request.resource.data.cupLevel == 0
           && request.resource.data.gemCount == 0
           && request.resource.data.joinedAt is timestamp;
 
         // Only partners can update player documents, restricted fields
         allow update: if isPartnerInCouple(coupleId)
-          && request.resource.data.keys().hasOnly(['cupLevel', 'gemCount', 'joinedAt', 'achievedMilestones'])
+          && request.resource.data.keys().hasOnly([
+            'cupLevel', 'gemCount', 'joinedAt', 'achievedMilestones',
+            // Gem economy fields
+            'gemBreakdown', 'liquidBreakdown'
+          ])
           && request.resource.data.joinedAt == resource.data.joinedAt;
 
         // No delete allowed
@@ -185,17 +195,35 @@ service cloud.firestore {
           && request.resource.data.action is string
           && request.resource.data.createdAt is timestamp;
 
-        // Only recipient can acknowledge (update acknowledged + acknowledgedAt)
-        allow update: if isPartnerInCouple(coupleId)
-          && resource.data.forPlayerId == request.auth.uid
-          && resource.data.acknowledged == false
-          && request.resource.data.acknowledged == true
-          && request.resource.data.acknowledgedAt is timestamp
-          // Cannot change other fields
-          && request.resource.data.byPlayerId == resource.data.byPlayerId
-          && request.resource.data.forPlayerId == resource.data.forPlayerId
-          && request.resource.data.action == resource.data.action
-          && request.resource.data.createdAt == resource.data.createdAt;
+        // Only recipient can acknowledge (update acknowledged + acknowledgedAt + gem state)
+        // Also allow coal transitions (gemState changes)
+        allow update: if isPartnerInCouple(coupleId) && (
+          // ACKNOWLEDGE: Recipient marks as acknowledged
+          (
+            resource.data.forPlayerId == request.auth.uid
+            && resource.data.acknowledged == false
+            && request.resource.data.acknowledged == true
+            && request.resource.data.acknowledgedAt is timestamp
+            // Cannot change immutable fields
+            && request.resource.data.byPlayerId == resource.data.byPlayerId
+            && request.resource.data.forPlayerId == resource.data.forPlayerId
+            && request.resource.data.action == resource.data.action
+            && request.resource.data.createdAt == resource.data.createdAt
+          )
+          ||
+          // COAL TRANSITION: Either partner can update gemState to coal
+          (
+            resource.data.acknowledged == false
+            && request.resource.data.gemState == 'coal'
+            && request.resource.data.coalAt is timestamp
+            // Cannot change other fields
+            && request.resource.data.acknowledged == resource.data.acknowledged
+            && request.resource.data.byPlayerId == resource.data.byPlayerId
+            && request.resource.data.forPlayerId == resource.data.forPlayerId
+            && request.resource.data.action == resource.data.action
+            && request.resource.data.createdAt == resource.data.createdAt
+          )
+        );
 
         // No delete allowed
         allow delete: if false;

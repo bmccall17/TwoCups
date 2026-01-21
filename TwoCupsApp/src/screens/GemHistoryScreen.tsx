@@ -27,23 +27,23 @@ import {
 import { db, getCurrentUserId } from '../services/firebase/config';
 import { useAuth } from '../context/AuthContext';
 import { Screen, Stack, LoadingSpinner, EmptyState, ErrorState, Button, AppText } from '../components/common';
+import { GemIcon } from '../components/gems';
 import { colors, spacing, borderRadius, shadows } from '../theme';
-import { Attempt } from '../types';
+import { Attempt, GemType, GemState } from '../types';
+import { GEM_VALUES, GEM_COLORS } from '../services/api/actions';
 
 const PAGE_SIZE = 20;
-
-const BASE_GEM_AWARD = 1;
-const REQUEST_FULFILLMENT_BONUS = 2;
-const ACK_GEM_AWARD = 3;
 
 interface GemHistoryEntry {
   id: string;
   amount: number;
-  reason: 'logged_attempt' | 'request_fulfilled' | 'acknowledged_received' | 'acknowledged_given';
+  reason: 'logged_attempt' | 'request_fulfilled' | 'acknowledged_received' | 'acknowledged_given' | 'diamond_overflow';
   reasonLabel: string;
   timestamp: Date;
   attemptId?: string;
   attemptAction?: string;
+  gemType?: GemType;  // Which gem type was awarded
+  gemState?: GemState; // Current state of the gem
 }
 
 interface GemHistoryScreenProps {
@@ -98,39 +98,36 @@ export function GemHistoryScreen({ onGoBack }: GemHistoryScreenProps) {
       const forPlayerId = data.forPlayerId;
       const fulfilledRequestId = data.fulfilledRequestId;
       const acknowledged = data.acknowledged;
+      // Gem economy fields
+      const gemType: GemType = data.gemType || (fulfilledRequestId ? 'sapphire' : 'emerald');
+      const gemState: GemState = data.gemState || (acknowledged ? 'liquid' : 'solid');
 
       if (byPlayerId === uid) {
+        // Use gem type values from new system
+        const gemValue = GEM_VALUES[gemType];
         gemEntries.push({
           id: `${attemptId}-logged`,
-          amount: BASE_GEM_AWARD,
+          amount: gemValue,
           reason: 'logged_attempt',
-          reasonLabel: 'Logged attempt',
+          reasonLabel: fulfilledRequestId ? 'Fulfilled request' : 'Logged attempt',
           timestamp: createdAt,
           attemptId,
           attemptAction,
+          gemType,
+          gemState,
         });
-
-        if (fulfilledRequestId) {
-          gemEntries.push({
-            id: `${attemptId}-fulfilled`,
-            amount: REQUEST_FULFILLMENT_BONUS,
-            reason: 'request_fulfilled',
-            reasonLabel: 'Fulfilled request bonus',
-            timestamp: createdAt,
-            attemptId,
-            attemptAction,
-          });
-        }
 
         if (acknowledged && acknowledgedAt) {
           gemEntries.push({
             id: `${attemptId}-ack-given`,
-            amount: ACK_GEM_AWARD,
+            amount: GEM_VALUES.ruby,
             reason: 'acknowledged_given',
             reasonLabel: 'Partner acknowledged',
             timestamp: acknowledgedAt,
             attemptId,
             attemptAction,
+            gemType: 'ruby',
+            gemState: 'liquid',
           });
         }
       }
@@ -138,12 +135,14 @@ export function GemHistoryScreen({ onGoBack }: GemHistoryScreenProps) {
       if (forPlayerId === uid && acknowledged && acknowledgedAt) {
         gemEntries.push({
           id: `${attemptId}-ack-received`,
-          amount: ACK_GEM_AWARD,
+          amount: GEM_VALUES.ruby,
           reason: 'acknowledged_received',
           reasonLabel: 'You acknowledged',
           timestamp: acknowledgedAt,
           attemptId,
           attemptAction,
+          gemType: 'ruby',
+          gemState: 'liquid',
         });
       }
     });
@@ -247,47 +246,38 @@ export function GemHistoryScreen({ onGoBack }: GemHistoryScreenProps) {
     return date.toLocaleDateString();
   };
 
-  const getReasonIcon = (reason: GemHistoryEntry['reason']): string => {
-    switch (reason) {
-      case 'logged_attempt':
-        return '💝';
-      case 'request_fulfilled':
-        return '🎯';
-      case 'acknowledged_received':
-        return '✅';
-      case 'acknowledged_given':
-        return '🤝';
-      default:
-        return '💎';
+  const getReasonColor = (entry: GemHistoryEntry): string => {
+    // Use gem type color if available
+    if (entry.gemType) {
+      return GEM_COLORS[entry.gemType];
     }
-  };
-
-  const getReasonColor = (reason: GemHistoryEntry['reason']): string => {
-    switch (reason) {
+    // Fallback to reason-based colors
+    switch (entry.reason) {
       case 'logged_attempt':
-        return colors.primary;
+        return GEM_COLORS.emerald;
       case 'request_fulfilled':
-        return colors.success;
+        return GEM_COLORS.sapphire;
       case 'acknowledged_received':
-        return colors.primaryLight;
       case 'acknowledged_given':
-        return colors.gem;
+        return GEM_COLORS.ruby;
+      case 'diamond_overflow':
+        return GEM_COLORS.diamond;
       default:
         return colors.textSecondary;
     }
   };
 
   const renderEntry = ({ item, index }: { item: GemHistoryEntry; index: number }) => {
-    const reasonColor = getReasonColor(item.reason);
-    const reasonIcon = getReasonIcon(item.reason);
+    const reasonColor = getReasonColor(item);
+    const gemType = item.gemType || 'emerald';
 
     return (
-      <View style={styles.entryCard}>
+      <View style={[styles.entryCard, { borderLeftColor: reasonColor }]}>
         <View style={styles.entryRow}>
           <View style={styles.entryIconContainer}>
-            <Text style={styles.entryIcon}>{reasonIcon}</Text>
+            <GemIcon type={gemType} state={item.gemState} size="medium" />
           </View>
-          
+
           <View style={styles.entryContent}>
             <AppText variant="body" bold style={styles.entryReason}>{item.reasonLabel}</AppText>
             {item.attemptAction && (
@@ -301,7 +291,6 @@ export function GemHistoryScreen({ onGoBack }: GemHistoryScreenProps) {
           <View style={styles.entryAmount}>
             <View style={[styles.gemBadge, { backgroundColor: reasonColor + '20' }]}>
               <AppText variant="body" bold color={reasonColor}>+{item.amount}</AppText>
-              <Text style={styles.gemBadgeIcon}> 💎</Text>
             </View>
           </View>
         </View>
@@ -464,7 +453,7 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     marginBottom: spacing.sm,
     borderLeftWidth: 3,
-    borderLeftColor: colors.gem,
+    // borderLeftColor is set dynamically based on gem type
   },
   entryRow: {
     flexDirection: 'row',
