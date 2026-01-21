@@ -62,6 +62,7 @@ Product requirements and feature specifications for planned or in-progress work.
 | [gem-economy.md](prd/gem-economy.md) | Gem economy system design (Figma-based PRD) |
 | [firebase-setup.md](prd/firebase-setup.md) | Firebase iOS configuration and setup |
 | [android-plan.md](prd/android-plan.md) | Android platform implementation plan |
+| [claude-plan-storage.md](prd/claude-plan-storage.md) | Claude Code plan file storage strategy (draft) |
 
 ## Technical Specifications
 
