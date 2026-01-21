@@ -13,7 +13,8 @@
  *   - GOOGLE_APPLICATION_CREDENTIALS environment variable set
  */
 
-import * as admin from 'firebase-admin';
+import { initializeApp, cert } from 'firebase-admin/app';
+import { getFirestore, Timestamp, DocumentData } from 'firebase-admin/firestore';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -24,7 +25,7 @@ function initializeFirebase() {
   // Option 1: Use GOOGLE_APPLICATION_CREDENTIALS if set
   if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
     console.log('Using credentials from GOOGLE_APPLICATION_CREDENTIALS');
-    admin.initializeApp();
+    initializeApp();
     return;
   }
 
@@ -39,8 +40,8 @@ function initializeFirebase() {
   for (const certPath of commonPaths) {
     if (fs.existsSync(certPath)) {
       console.log(`Using credentials from: ${certPath}`);
-      admin.initializeApp({
-        credential: admin.credential.cert(certPath),
+      initializeApp({
+        credential: cert(certPath),
       });
       return;
     }
@@ -55,7 +56,7 @@ function initializeFirebase() {
 
 // Initialize Firebase Admin
 initializeFirebase();
-const db = admin.firestore();
+const db = getFirestore();
 
 // Gem economy constants (must match app constants)
 const GEM_VALUES = {
@@ -139,7 +140,7 @@ async function migrateGemBreakdown(): Promise<MigrationStats> {
  */
 async function processCoupleData(
   coupleId: string,
-  coupleData: admin.firestore.DocumentData,
+  coupleData: DocumentData,
   stats: MigrationStats
 ): Promise<void> {
   const partnerIds = coupleData.partnerIds || [];
@@ -201,7 +202,7 @@ async function processCoupleData(
       if (!attemptData.gemState) {
         updateData.gemState = gemState;
         if (gemState === 'coal') {
-          updateData.coalAt = admin.firestore.Timestamp.now();
+          updateData.coalAt = Timestamp.now();
         }
       }
 
