@@ -176,7 +176,7 @@ async function processCoupleData(
 
   console.log(`  Found ${attemptsSnapshot.size} attempts`);
 
-  const batch = db.batch();
+  let batch = db.batch();
   let batchCount = 0;
   const MAX_BATCH_SIZE = 450; // Firestore limit is 500, leave some buffer
 
@@ -248,6 +248,7 @@ async function processCoupleData(
     if (batchCount >= MAX_BATCH_SIZE) {
       await batch.commit();
       console.log(`  Committed batch of ${batchCount} updates`);
+      batch = db.batch();
       batchCount = 0;
     }
   }
@@ -262,17 +263,13 @@ async function processCoupleData(
 
     const playerDoc = await playerRef.get();
     if (playerDoc.exists) {
-      const existingData = playerDoc.data();
-
-      // Only update if not already migrated
-      if (!existingData?.gemBreakdown) {
-        batch.update(playerRef, {
-          gemBreakdown: playerBreakdowns[playerId].gemBreakdown,
-          liquidBreakdown: playerBreakdowns[playerId].liquidBreakdown,
-        });
-        batchCount++;
-        stats.playersUpdated++;
-      }
+      // Always update to ensure data is correct
+      batch.update(playerRef, {
+        gemBreakdown: playerBreakdowns[playerId].gemBreakdown,
+        liquidBreakdown: playerBreakdowns[playerId].liquidBreakdown,
+      });
+      batchCount++;
+      stats.playersUpdated++;
     }
   }
 
