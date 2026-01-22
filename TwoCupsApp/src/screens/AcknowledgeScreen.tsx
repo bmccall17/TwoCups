@@ -357,7 +357,7 @@ export function AcknowledgeScreen({
     setRefreshing(true);
   }, []);
 
-  const handleAcknowledge = async (attempt: Attempt) => {
+  const handleAcknowledge = useCallback(async (attempt: Attempt) => {
     if (!coupleId) return;
 
     setAcknowledging(attempt.id);
@@ -395,7 +395,7 @@ export function AcknowledgeScreen({
     } finally {
       setAcknowledging(null);
     }
-  };
+  }, [coupleId, showGemAnimation, showSuccess, showError]);
 
   const handleDismissCelebration = useCallback(() => {
     setCelebration({ visible: false, message: '' });
