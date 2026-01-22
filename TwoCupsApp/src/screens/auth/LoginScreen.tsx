@@ -87,7 +87,7 @@ export function LoginScreen({ onNavigateToSignUp }: LoginScreenProps) {
           keyboardShouldPersistTaps="handled">
           <View style={styles.header}>
             <Text style={styles.title}>Two Cups</Text>
-            <Text style={styles.subtitle}>Fill each other's cups</Text>
+            <Text style={styles.subtitle}>Fill each other&apos;s cups</Text>
           </View>
 
           <View style={styles.form}>
@@ -122,7 +122,7 @@ export function LoginScreen({ onNavigateToSignUp }: LoginScreenProps) {
           </View>
 
           <View style={styles.footer}>
-            <Text style={styles.footerText}>Don't have an account?</Text>
+            <Text style={styles.footerText}>Don&apos;t have an account?</Text>
             <Button
               title="Create Account"
               onPress={onNavigateToSignUp}
