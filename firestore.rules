@@ -77,9 +77,8 @@ service cloud.firestore {
       // Users can only update their own document, cannot change createdAt
       allow update: if isAuthenticated()
         && request.auth.uid == userId
-        && request.resource.data.keys().hasOnly(['username', 'initial', 'activeCoupleId', 'createdAt'])
-        && (request.resource.data.activeCoupleId == null || request.resource.data.activeCoupleId is string)
-        && request.resource.data.createdAt == resource.data.createdAt;
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['username', 'initial', 'activeCoupleId'])
+        && (request.resource.data.activeCoupleId == null || request.resource.data.activeCoupleId is string);
 
       // No delete allowed
       allow delete: if false;
@@ -128,17 +127,13 @@ service cloud.firestore {
         // NORMAL UPDATES: Only existing partners can update
         (
           request.auth.uid in resource.data.partnerIds
-          && request.resource.data.keys().hasOnly([
-            'partnerIds', 'status', 'inviteCode', 'collectiveCupLevel',
-            'pointsPerAcknowledgment', 'createdAt', 'lastActivityAt',
-            // Gem economy fields
-            'anniversaryDate', 'collectiveLiquidBreakdown'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'collectiveCupLevel',
+            'pointsPerAcknowledgment',
+            'lastActivityAt',
+            'anniversaryDate',
+            'collectiveLiquidBreakdown'
           ])
-          // Cannot change partnerIds, status, inviteCode, createdAt
-          && request.resource.data.partnerIds == resource.data.partnerIds
-          && request.resource.data.status == resource.data.status
-          && request.resource.data.inviteCode == resource.data.inviteCode
-          && request.resource.data.createdAt == resource.data.createdAt
         )
       );
 
@@ -166,12 +161,10 @@ service cloud.firestore {
 
         // Only partners can update player documents, restricted fields
         allow update: if isPartnerInCouple(coupleId)
-          && request.resource.data.keys().hasOnly([
-            'cupLevel', 'gemCount', 'joinedAt', 'achievedMilestones',
-            // Gem economy fields
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'cupLevel', 'gemCount', 'achievedMilestones',
             'gemBreakdown', 'liquidBreakdown'
-          ])
-          && request.resource.data.joinedAt == resource.data.joinedAt;
+          ]);
 
         // No delete allowed
         allow delete: if false;
