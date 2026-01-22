@@ -28,6 +28,10 @@ Welcome to the TwoCups documentation. This directory contains all project docume
 **Decision Tree (30 seconds):**
 
 ```
+Is it a significant architectural decision?
+├─ YES → docs/adr/
+└─ NO  → Continue...
+
 Is it a bug fix/debugging/investigation?
 ├─ YES → docs/investigations/
 └─ NO  → Continue...
@@ -53,6 +57,14 @@ Is it an audit or review?
 
 ---
 
+## Architectural Decision Records (ADRs)
+
+Records of significant architectural decisions.
+
+| Document | Description |
+|----------|-------------|
+| [0000-use-markdown-architectural-decision-records.md](adr/0000-use-markdown-architectural-decision-records.md) | Decision to use ADRs |
+
 ## PRDs & Feature Specs
 
 Product requirements and feature specifications for planned or in-progress work.
@@ -64,12 +76,13 @@ Product requirements and feature specifications for planned or in-progress work.
 | [android-plan.md](prd/android-plan.md) | Android platform implementation plan |
 | [claude-plan-storage.md](prd/claude-plan-storage.md) | Claude Code plan file storage strategy (draft) |
 
-## Technical Specifications
+## Technical Specifications & Architecture
 
-Detailed technical specifications for implemented features.
+Detailed technical specifications for implemented features and system architecture.
 
 | Document | Description |
 |----------|-------------|
+| [system-context.md](architecture/system-context.md) | System Context Diagram |
 | [bottom-navbar.md](specs/bottom-navbar.md) | Bottom navigation bar specification |
 | [gem-system.md](specs/gem-system.md) | Gem economy technical implementation |
 | [design-principles.md](specs/design-principles.md) | UI/UX design principles and guidelines |

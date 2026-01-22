@@ -282,7 +282,7 @@ export function GemHistoryScreen({ onGoBack }: GemHistoryScreenProps) {
             <AppText variant="body" bold style={styles.entryReason}>{item.reasonLabel}</AppText>
             {item.attemptAction && (
               <AppText variant="bodySmall" color={colors.textSecondary} style={styles.entryAction} numberOfLines={1}>
-                "{item.attemptAction}"
+                &quot;{item.attemptAction}&quot;
               </AppText>
             )}
             <AppText variant="caption" color={colors.textMuted} style={styles.entryTime}>{formatTime(item.timestamp)}</AppText>

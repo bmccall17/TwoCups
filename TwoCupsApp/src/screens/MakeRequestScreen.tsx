@@ -277,7 +277,7 @@ export function MakeRequestScreen({ onGoBack }: MakeRequestScreenProps) {
         {visibleRequests.length === 0 && (
           <View style={styles.infoBox}>
             <AppText variant="bodySmall" color={colors.textSecondary}>
-              Your request will appear in your partner's Log Attempt screen. When they fulfill it, you both get bonus gems!
+              Your request will appear in your partner&apos;s Log Attempt screen. When they fulfill it, you both get bonus gems!
             </AppText>
           </View>
         )}

@@ -301,7 +301,7 @@ export function LogAttemptScreen({ onGoBack }: LogAttemptScreenProps) {
         {/* Partner's Requests */}
         {partnerRequests.length > 0 && (
           <View style={styles.requestsSection}>
-            <AppText variant="h3" style={styles.sectionTitle}>Partner's Requests</AppText>
+            <AppText variant="h3" style={styles.sectionTitle}>Partner&apos;s Requests</AppText>
             <AppText variant="caption" color={colors.success} style={styles.sectionHint}>Fulfill a request for +2 bonus gems!</AppText>
             {partnerRequests.map((request) => (
               <TouchableOpacity
@@ -320,8 +320,8 @@ export function LogAttemptScreen({ onGoBack }: LogAttemptScreenProps) {
 
         {/* Partner's Suggestions */}
         <View style={styles.suggestionsSection}>
-          <AppText variant="h3" style={styles.sectionTitle}>Partner's Suggestions</AppText>
-          <AppText variant="caption" color={colors.textSecondary} style={styles.suggestionHint}>Ways to fill your partner's cup</AppText>
+          <AppText variant="h3" style={styles.sectionTitle}>Partner&apos;s Suggestions</AppText>
+          <AppText variant="caption" color={colors.textSecondary} style={styles.suggestionHint}>Ways to fill your partner&apos;s cup</AppText>
           
           {/* Category filter chips */}
           {partnerSuggestions.length > 0 && (
